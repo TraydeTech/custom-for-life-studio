@@ -10,6 +10,7 @@ import Cadastro from "./pages/Cadastro";
 import Loja from "./pages/Loja";
 import Carrinho from "./pages/Carrinho";
 import NotFound from "./pages/NotFound";
+import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminProdutos from "./pages/admin/Produtos";
 import AdminCategorias from "./pages/admin/Categorias";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/carrinho" element={<Carrinho />} />
             
             {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/produtos" element={<AdminProdutos />} />
             <Route path="/admin/categorias" element={<AdminCategorias />} />
