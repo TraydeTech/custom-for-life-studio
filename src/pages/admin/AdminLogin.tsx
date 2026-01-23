@@ -71,8 +71,14 @@ export default function AdminLogin() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Verificar código secreto
-    if (secretCode !== ADMIN_SECRET_CODE) {
+    // Verificar código secreto (ignora espaços e case)
+    const cleanCode = secretCode.trim().toUpperCase();
+    const expectedCode = ADMIN_SECRET_CODE.toUpperCase();
+    
+    console.log('Código digitado:', cleanCode);
+    console.log('Código esperado:', expectedCode);
+    
+    if (cleanCode !== expectedCode) {
       toast.error('Código de acesso inválido');
       return;
     }
