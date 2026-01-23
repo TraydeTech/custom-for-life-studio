@@ -51,19 +51,9 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2">
-          <Link to="/" className="flex items-center gap-2">
-            <img src={logoImage} alt="Custom For Life" className="h-[50px] w-auto" />
-          </Link>
-          {/* Admin Access Icon */}
-          <Link 
-            to="/admin" 
-            className="p-2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-            title="Acesso Administrativo"
-          >
-            <Settings className="h-4 w-4" />
-          </Link>
-        </div>
+        <Link to="/" className="flex items-center gap-2">
+          <img src={logoImage} alt="Custom For Life" className="h-[50px] w-auto" />
+        </Link>
 
         {/* Search Bar - Desktop */}
         <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
@@ -154,6 +144,13 @@ export function Header() {
               </Link>
               <Link to="/cadastro">
                 <Button>Criar Conta</Button>
+              </Link>
+              <Link 
+                to="/admin" 
+                className="p-2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                title="Acesso Administrativo"
+              >
+                <Settings className="h-4 w-4" />
               </Link>
             </div>
           )}
