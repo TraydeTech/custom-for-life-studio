@@ -43,7 +43,15 @@ export default function AdminClientes() {
   const { data: customers, isLoading } = useQuery({
     queryKey: ['admin-customers'],
     queryFn: async () => {
-      // Buscar todos os profiles
+      // Buscar IDs dos admins para excluí-los da lista de clientes
+      const { data: adminRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin');
+      
+      const adminIds = adminRoles?.map(r => r.user_id) || [];
+
+      // Buscar todos os profiles exceto admins
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
@@ -51,9 +59,12 @@ export default function AdminClientes() {
 
       if (profilesError) throw profilesError;
 
-      // Para cada profile, buscar endereços e pedidos
+      // Filtrar para remover admins
+      const customerProfiles = (profiles || []).filter(p => !adminIds.includes(p.user_id));
+
+      // Para cada profile de cliente, buscar endereços e pedidos
       const customersWithDetails: CustomerWithDetails[] = await Promise.all(
-        (profiles || []).map(async (profile) => {
+        customerProfiles.map(async (profile) => {
           const [addressesResult, ordersResult] = await Promise.all([
             supabase.from('addresses').select('*').eq('user_id', profile.user_id),
             supabase.from('orders').select('*').eq('user_id', profile.user_id).order('created_at', { ascending: false }),
