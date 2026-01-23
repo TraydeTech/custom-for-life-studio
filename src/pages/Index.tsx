@@ -3,6 +3,13 @@ import { Instagram, Sparkles, Gift, Star, ArrowRight, Heart, CheckCircle, Phone,
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import heroImage from "@/assets/hero-brindes.jpg";
 import brindeCopo from "@/assets/brinde-copo.jpg";
 import brindeCamiseta from "@/assets/brinde-camiseta.jpg";
@@ -10,6 +17,28 @@ import brindeKit from "@/assets/brinde-kit.jpg";
 import brindeEcobag from "@/assets/brinde-ecobag.jpg";
 import brindeCaderno from "@/assets/brinde-caderno.jpg";
 
+// Imagens de produtos reais
+import produtoCanecaSandra from "@/assets/produto-caneca-sandra.png";
+import produtoCopoMarca from "@/assets/produto-copo-marca.png";
+import produtoStanleyVermelho from "@/assets/produto-stanley-vermelho.png";
+import produtoCopoAzul from "@/assets/produto-copo-azul.png";
+import produtoStanleyHope from "@/assets/produto-stanley-hope.png";
+import produtoConjuntoCafe from "@/assets/produto-conjunto-cafe.png";
+import produtoCoposCores from "@/assets/produto-copos-cores.png";
+import produtoChurrasco from "@/assets/produto-churrasco.png";
+import produtoChinelo from "@/assets/produto-chinelo.png";
+
+const produtosReais = [
+  produtoCanecaSandra,
+  produtoCopoMarca,
+  produtoStanleyVermelho,
+  produtoCopoAzul,
+  produtoStanleyHope,
+  produtoConjuntoCafe,
+  produtoCoposCores,
+  produtoChurrasco,
+  produtoChinelo,
+];
 const brindes = [
   {
     title: "Copos Personalizados",
@@ -145,6 +174,47 @@ const Index = () => {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Galeria de Produtos Reais */}
+      <section className="py-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-sm text-muted-foreground mb-4">
+              <Star className="w-4 h-4 text-primary" />
+              Nossos Trabalhos
+            </span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-heading font-bold mb-4">
+              Projetos <span className="gradient-text">Realizados</span>
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Veja alguns dos brindes personalizados que já criamos para nossos clientes
+            </p>
+          </div>
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {produtosReais.map((produto, index) => (
+                <CarouselItem key={index} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                  <div className="gradient-border overflow-hidden rounded-2xl">
+                    <img
+                      src={produto}
+                      alt={`Produto personalizado ${index + 1}`}
+                      className="w-full aspect-square object-cover hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden md:flex -left-4" />
+            <CarouselNext className="hidden md:flex -right-4" />
+          </Carousel>
         </div>
       </section>
 
