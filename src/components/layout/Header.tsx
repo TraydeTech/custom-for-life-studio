@@ -146,7 +146,7 @@ export function Header() {
                 <Button>Criar Conta</Button>
               </Link>
               <Link 
-                to="/admin" 
+                to="/admin/login" 
                 className="p-2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
                 title="Acesso Administrativo"
               >
