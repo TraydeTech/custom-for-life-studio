@@ -31,6 +31,9 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Extrair o primeiro nome do usuário
+  const userName = user?.user_metadata?.full_name?.split(' ')[0] || 'Cliente';
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -87,11 +90,16 @@ export function Header() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" className="flex items-center gap-2">
                     <User className="h-5 w-5" />
+                    <span className="hidden lg:inline text-sm">Olá, {userName}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-2 py-1.5 text-sm font-medium lg:hidden">
+                    Olá, {userName}
+                  </div>
+                  <DropdownMenuSeparator className="lg:hidden" />
                   <DropdownMenuItem asChild>
                     <Link to="/minha-conta" className="flex items-center">
                       <User className="mr-2 h-4 w-4" />
@@ -175,6 +183,9 @@ export function Header() {
             
             {user ? (
               <>
+                <div className="px-4 py-2 text-sm font-medium text-primary">
+                  Olá, {userName}! 👋
+                </div>
                 <Link to="/carrinho" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start">
                     <ShoppingCart className="mr-2 h-4 w-4" />
