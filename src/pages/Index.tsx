@@ -1,6 +1,8 @@
-import { Instagram, Sparkles, Gift, Star, ArrowRight, Heart, CheckCircle, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Instagram, Sparkles, Gift, Star, ArrowRight, Heart, CheckCircle, Phone, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/logo-custom-forlife.png";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import heroImage from "@/assets/hero-brindes.jpg";
 import brindeCopo from "@/assets/brinde-copo.jpg";
 import brindeCamiseta from "@/assets/brinde-camiseta.jpg";
@@ -46,32 +48,10 @@ const diferenciais = [
 const Index = () => {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="container mx-auto flex items-center justify-between h-16 px-4">
-          <img src={logo} alt="Custom For Life" className="h-12 w-auto" />
-          <div className="flex items-center gap-4">
-            <a
-              href="https://www.instagram.com/custom_forlife/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Instagram className="w-5 h-5" />
-              <span className="hidden sm:inline">@custom_forlife</span>
-            </a>
-            <Button variant="hero" size="sm" asChild>
-              <a href="https://wa.me/5500000000000" target="_blank" rel="noopener noreferrer">
-                <Phone className="w-4 h-4" />
-                Contato
-              </a>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center pt-16">
+      <section className="relative min-h-screen flex items-center justify-center">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${heroImage})` }}
@@ -94,10 +74,10 @@ const Index = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button variant="hero" size="xl" asChild>
-                <a href="#brindes">
-                  Conheça nossos brindes
-                  <ArrowRight className="w-5 h-5" />
-                </a>
+                <Link to="/loja">
+                  <ShoppingBag className="w-5 h-5" />
+                  Ver Produtos
+                </Link>
               </Button>
               <Button variant="heroBorder" size="xl" asChild>
                 <a href="https://www.instagram.com/custom_forlife/" target="_blank" rel="noopener noreferrer">
@@ -286,10 +266,10 @@ const Index = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button variant="hero" size="xl" asChild>
-                <a href="https://wa.me/5500000000000" target="_blank" rel="noopener noreferrer">
-                  <Phone className="w-5 h-5" />
-                  Solicitar Orçamento
-                </a>
+                <Link to="/loja">
+                  <ShoppingBag className="w-5 h-5" />
+                  Ver Catálogo de Produtos
+                </Link>
               </Button>
               <Button variant="heroBorder" size="xl" asChild>
                 <a href="https://www.instagram.com/custom_forlife/" target="_blank" rel="noopener noreferrer">
@@ -302,32 +282,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 border-t border-border">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <img src={logo} alt="Custom For Life" className="h-14 w-auto" />
-              <div>
-                <p className="font-heading font-bold text-lg">Custom For Life</p>
-                <p className="text-sm text-muted-foreground">Brindes que criam conexões</p>
-              </div>
-            </div>
-            <a
-              href="https://www.instagram.com/custom_forlife/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Instagram className="w-6 h-6" />
-              <span>@custom_forlife</span>
-            </a>
-          </div>
-          <div className="mt-8 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-            <p>© 2025 Custom For Life. Todos os direitos reservados.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
