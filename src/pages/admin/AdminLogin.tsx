@@ -11,8 +11,8 @@ import { toast } from 'sonner';
 import { Settings, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import logo from '@/assets/logo-custom-forlife.png';
 
-// Código secreto para criar conta admin (mude isso para algo seguro)
-const ADMIN_SECRET_CODE = 'CUSTOMFORLIFE2024';
+// Código secreto para criar conta admin
+const ADMIN_SECRET_CODE = 'ADMIN2024';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
