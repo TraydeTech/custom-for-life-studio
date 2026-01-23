@@ -6,29 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Settings, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import logo from '@/assets/logo-custom-forlife.png';
-
-// Código secreto para criar conta admin
-const ADMIN_SECRET_CODE = 'ADMIN2024';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
-  // Login form
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  
-  // Register form
-  const [registerName, setRegisterName] = useState('');
-  const [registerEmail, setRegisterEmail] = useState('');
-  const [registerPassword, setRegisterPassword] = useState('');
-  const [secretCode, setSecretCode] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,66 +56,6 @@ export default function AdminLogin() {
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Verificar código secreto (ignora espaços e case)
-    const cleanCode = secretCode.trim().toUpperCase();
-    const expectedCode = ADMIN_SECRET_CODE.toUpperCase();
-    
-    console.log('Código digitado:', cleanCode);
-    console.log('Código esperado:', expectedCode);
-    
-    if (cleanCode !== expectedCode) {
-      toast.error('Código de acesso inválido');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Criar usuário
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: registerEmail,
-        password: registerPassword,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: {
-            full_name: registerName,
-          },
-        },
-      });
-
-      if (authError) {
-        toast.error('Erro ao criar conta: ' + authError.message);
-        return;
-      }
-
-      if (authData.user) {
-        // Adicionar role de admin
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .update({ role: 'admin' })
-          .eq('user_id', authData.user.id);
-
-        if (roleError) {
-          console.error('Erro ao definir role:', roleError);
-          // Tentar inserir se não existir
-          await supabase
-            .from('user_roles')
-            .insert({ user_id: authData.user.id, role: 'admin' });
-        }
-
-        toast.success('Conta de administrador criada com sucesso!');
-        navigate('/admin');
-      }
-    } catch (error) {
-      toast.error('Erro ao criar conta');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -153,119 +81,43 @@ export default function AdminLogin() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Entrar</TabsTrigger>
-                <TabsTrigger value="register">Criar Conta</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="admin@customforlife.com"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Senha</Label>
-                    <div className="relative">
-                      <Input
-                        id="login-password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Entrando...' : 'Entrar'}
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="login-email">Email</Label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  placeholder="admin@customforlife.com"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="login-password">Senha</Label>
+                <div className="relative">
+                  <Input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
-                </form>
-              </TabsContent>
-              
-              <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="register-name">Nome Completo</Label>
-                    <Input
-                      id="register-name"
-                      type="text"
-                      placeholder="Seu nome"
-                      value={registerName}
-                      onChange={(e) => setRegisterName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email">Email</Label>
-                    <Input
-                      id="register-email"
-                      type="email"
-                      placeholder="admin@customforlife.com"
-                      value={registerEmail}
-                      onChange={(e) => setRegisterEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">Senha</Label>
-                    <div className="relative">
-                      <Input
-                        id="register-password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="Mínimo 6 caracteres"
-                        value={registerPassword}
-                        onChange={(e) => setRegisterPassword(e.target.value)}
-                        minLength={6}
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="secret-code">Código de Acesso</Label>
-                    <Input
-                      id="secret-code"
-                      type="password"
-                      placeholder="Código secreto de administrador"
-                      value={secretCode}
-                      onChange={(e) => setSecretCode(e.target.value)}
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Digite o código fornecido pelo administrador do sistema
-                    </p>
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Criando conta...' : 'Criar Conta Admin'}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Entrando...' : 'Entrar'}
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>
