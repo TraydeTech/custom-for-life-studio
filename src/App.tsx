@@ -17,6 +17,7 @@ import AdminProdutos from "./pages/admin/Produtos";
 import AdminCategorias from "./pages/admin/Categorias";
 import AdminPedidos from "./pages/admin/Pedidos";
 import AdminClientes from "./pages/admin/Clientes";
+import AdminPDV from "./pages/admin/PDV";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/pdv" element={<AdminPDV />} />
               <Route path="/admin/produtos" element={<AdminProdutos />} />
               <Route path="/admin/categorias" element={<AdminCategorias />} />
               <Route path="/admin/pedidos" element={<AdminPedidos />} />

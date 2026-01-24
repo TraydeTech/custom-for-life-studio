@@ -6,7 +6,8 @@ import {
   Users, 
   Tags,
   LogOut,
-  Home
+  Home,
+  Store
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +16,7 @@ import logo from '@/assets/logo-custom-forlife.png';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
+  { icon: Store, label: 'PDV', path: '/admin/pdv' },
   { icon: Package, label: 'Produtos', path: '/admin/produtos' },
   { icon: Tags, label: 'Categorias', path: '/admin/categorias' },
   { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos' },
