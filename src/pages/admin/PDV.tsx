@@ -18,7 +18,9 @@ import {
   Banknote,
   QrCode,
   Check,
-  X
+  X,
+  AlertTriangle,
+  Package
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -61,7 +63,7 @@ export default function AdminPDV() {
         .from('products')
         .select('*')
         .eq('is_active', true)
-        .gt('stock', 0)
+        .order('stock', { ascending: false })
         .order('name');
       if (error) throw error;
       return data as Product[];
@@ -80,6 +82,11 @@ export default function AdminPDV() {
   }, [products, search]);
 
   const addToCart = (product: Product) => {
+    if (product.stock <= 0) {
+      toast.error('Produto sem estoque');
+      return;
+    }
+    
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
@@ -248,34 +255,55 @@ export default function AdminPDV() {
                     Nenhum produto encontrado
                   </div>
                 ) : (
-                  filteredProducts.map((product) => (
-                    <Card
-                      key={product.id}
-                      className="cursor-pointer hover:border-primary transition-colors"
-                      onClick={() => addToCart(product)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="aspect-square rounded-md overflow-hidden bg-muted mb-2">
-                          <img
-                            src={product.images?.[0] || '/placeholder.svg'}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <h3 className="font-medium text-sm line-clamp-2 mb-1">
-                          {product.name}
-                        </h3>
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-primary">
-                            {formatCurrency(product.price)}
-                          </span>
-                          <Badge variant="secondary" className="text-xs">
-                            {product.stock} un
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
+                  filteredProducts.map((product) => {
+                    const isOutOfStock = product.stock <= 0;
+                    const isLowStock = product.stock > 0 && product.stock <= 5;
+                    
+                    return (
+                      <Card
+                        key={product.id}
+                        className={`transition-colors relative ${
+                          isOutOfStock 
+                            ? 'opacity-60 cursor-not-allowed border-destructive/30' 
+                            : 'cursor-pointer hover:border-primary'
+                        }`}
+                        onClick={() => addToCart(product)}
+                      >
+                        {isOutOfStock && (
+                          <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center rounded-lg">
+                            <Badge variant="destructive" className="text-xs flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              Sem Estoque
+                            </Badge>
+                          </div>
+                        )}
+                        <CardContent className="p-3">
+                          <div className="aspect-square rounded-md overflow-hidden bg-muted mb-2 relative">
+                            <img
+                              src={product.images?.[0] || '/placeholder.svg'}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <h3 className="font-medium text-sm line-clamp-2 mb-1">
+                            {product.name}
+                          </h3>
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-primary">
+                              {formatCurrency(product.price)}
+                            </span>
+                            <Badge 
+                              variant={isOutOfStock ? 'destructive' : isLowStock ? 'outline' : 'secondary'} 
+                              className={`text-xs flex items-center gap-1 ${isLowStock ? 'border-amber-500 text-amber-600 dark:text-amber-400' : ''}`}
+                            >
+                              <Package className="h-3 w-3" />
+                              {product.stock} un
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })
                 )}
               </div>
             </div>
