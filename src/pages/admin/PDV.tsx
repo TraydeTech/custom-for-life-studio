@@ -54,6 +54,7 @@ export default function AdminPDV() {
   const [customerName, setCustomerName] = useState('');
   const [discount, setDiscount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [amountReceived, setAmountReceived] = useState<number>(0);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['pdv-products'],
@@ -122,6 +123,7 @@ export default function AdminPDV() {
     setCart([]);
     setDiscount(0);
     setCustomerName('');
+    setAmountReceived(0);
   };
 
   const subtotal = cart.reduce(
@@ -202,6 +204,7 @@ export default function AdminPDV() {
       // Reset
       clearCart();
       setPaymentMethod('');
+      setAmountReceived(0);
       setIsCheckoutOpen(false);
       
       // Refresh products to update stock
@@ -465,6 +468,45 @@ export default function AdminPDV() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Cash change calculator */}
+              {paymentMethod === 'dinheiro' && (
+                <div className="space-y-3 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Valor Recebido
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        R$
+                      </span>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={amountReceived || ''}
+                        onChange={(e) => setAmountReceived(Number(e.target.value))}
+                        className="pl-10"
+                        placeholder="0,00"
+                      />
+                    </div>
+                  </div>
+                  {amountReceived > 0 && (
+                    <div className={`flex justify-between items-center p-3 rounded-lg ${
+                      amountReceived >= total 
+                        ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300' 
+                        : 'bg-destructive/10 text-destructive'
+                    }`}>
+                      <span className="font-medium">
+                        {amountReceived >= total ? 'Troco' : 'Falta'}
+                      </span>
+                      <span className="text-lg font-bold">
+                        {formatCurrency(Math.abs(amountReceived - total))}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <Separator />
 
