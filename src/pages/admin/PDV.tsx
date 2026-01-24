@@ -166,6 +166,7 @@ export default function AdminPDV() {
           payment_method: paymentMethod,
           notes: customerName ? `Cliente: ${customerName}` : 'Venda PDV - Loja Física',
           delivered_at: new Date().toISOString(),
+          source: 'pdv',
         }])
         .select()
         .single();

@@ -204,6 +204,7 @@ export type Database = {
           shipped_at: string | null
           shipping_address: Json
           shipping_cost: number | null
+          source: string | null
           status: Database["public"]["Enums"]["order_status"]
           stripe_checkout_session_id: string | null
           stripe_payment_id: string | null
@@ -225,6 +226,7 @@ export type Database = {
           shipped_at?: string | null
           shipping_address: Json
           shipping_cost?: number | null
+          source?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stripe_checkout_session_id?: string | null
           stripe_payment_id?: string | null
@@ -246,6 +248,7 @@ export type Database = {
           shipped_at?: string | null
           shipping_address?: Json
           shipping_cost?: number | null
+          source?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stripe_checkout_session_id?: string | null
           stripe_payment_id?: string | null

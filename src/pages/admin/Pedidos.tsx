@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Eye, Package } from 'lucide-react';
+import { Search, Eye, Package, Store, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -149,6 +149,7 @@ export default function AdminPedidos() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Pedido</TableHead>
+                  <TableHead>Origem</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Status</TableHead>
@@ -159,13 +160,13 @@ export default function AdminPedidos() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       Carregando...
                     </TableCell>
                   </TableRow>
                 ) : filteredOrders?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Nenhum pedido encontrado
                     </TableCell>
                   </TableRow>
@@ -173,6 +174,19 @@ export default function AdminPedidos() {
                   filteredOrders?.map((order) => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium">{order.order_number}</TableCell>
+                      <TableCell>
+                        {order.source === 'pdv' ? (
+                          <Badge className="bg-orange-500/20 text-orange-500 flex items-center gap-1 w-fit">
+                            <Store className="h-3 w-3" />
+                            Loja
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-blue-500/20 text-blue-500 flex items-center gap-1 w-fit">
+                            <Globe className="h-3 w-3" />
+                            Site
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {format(new Date(order.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                       </TableCell>
