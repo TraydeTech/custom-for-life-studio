@@ -19,7 +19,6 @@ import {
   QrCode,
   Check,
   X,
-  AlertTriangle,
   Package
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -63,7 +62,7 @@ export default function AdminPDV() {
         .from('products')
         .select('*')
         .eq('is_active', true)
-        .order('stock', { ascending: false })
+        .gt('stock', 0) // Só mostra produtos com estoque disponível
         .order('name');
       if (error) throw error;
       return data as Product[];
@@ -82,11 +81,6 @@ export default function AdminPDV() {
   }, [products, search]);
 
   const addToCart = (product: Product) => {
-    if (product.stock <= 0) {
-      toast.error('Produto sem estoque');
-      return;
-    }
-    
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
@@ -256,29 +250,16 @@ export default function AdminPDV() {
                   </div>
                 ) : (
                   filteredProducts.map((product) => {
-                    const isOutOfStock = product.stock <= 0;
-                    const isLowStock = product.stock > 0 && product.stock <= 5;
+                    const isLowStock = product.stock <= 5;
                     
                     return (
                       <Card
                         key={product.id}
-                        className={`transition-colors relative ${
-                          isOutOfStock 
-                            ? 'opacity-60 cursor-not-allowed border-destructive/30' 
-                            : 'cursor-pointer hover:border-primary'
-                        }`}
+                        className="cursor-pointer hover:border-primary transition-colors"
                         onClick={() => addToCart(product)}
                       >
-                        {isOutOfStock && (
-                          <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center rounded-lg">
-                            <Badge variant="destructive" className="text-xs flex items-center gap-1">
-                              <AlertTriangle className="h-3 w-3" />
-                              Sem Estoque
-                            </Badge>
-                          </div>
-                        )}
                         <CardContent className="p-3">
-                          <div className="aspect-square rounded-md overflow-hidden bg-muted mb-2 relative">
+                          <div className="aspect-square rounded-md overflow-hidden bg-muted mb-2">
                             <img
                               src={product.images?.[0] || '/placeholder.svg'}
                               alt={product.name}
@@ -293,7 +274,7 @@ export default function AdminPDV() {
                               {formatCurrency(product.price)}
                             </span>
                             <Badge 
-                              variant={isOutOfStock ? 'destructive' : isLowStock ? 'outline' : 'secondary'} 
+                              variant={isLowStock ? 'outline' : 'secondary'} 
                               className={`text-xs flex items-center gap-1 ${isLowStock ? 'border-amber-500 text-amber-600 dark:text-amber-400' : ''}`}
                             >
                               <Package className="h-3 w-3" />

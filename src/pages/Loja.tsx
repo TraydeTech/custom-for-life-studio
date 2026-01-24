@@ -38,7 +38,8 @@ export default function Loja() {
           *,
           category:categories(name, slug)
         `)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .gt('stock', 0); // Só mostra produtos com estoque disponível
 
       if (categorySlug) {
         const category = categories.find(c => c.slug === categorySlug);
