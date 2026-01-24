@@ -189,15 +189,7 @@ export default function AdminPDV() {
 
       if (itemsError) throw itemsError;
 
-      // Update stock
-      for (const item of cart) {
-        const { error: stockError } = await supabase
-          .from('products')
-          .update({ stock: item.product.stock - item.quantity })
-          .eq('id', item.product.id);
-
-        if (stockError) throw stockError;
-      }
+      // Stock is automatically updated by database trigger
 
       toast.success(`Venda finalizada! Pedido ${order.order_number}`);
       
