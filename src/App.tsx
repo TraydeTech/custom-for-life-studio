@@ -8,6 +8,8 @@ import { AdminRedirect } from "@/components/admin/AdminRedirect";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
+import EsqueciSenha from "./pages/EsqueciSenha";
+import RedefinirSenha from "./pages/RedefinirSenha";
 import Loja from "./pages/Loja";
 import Carrinho from "./pages/Carrinho";
 import NotFound from "./pages/NotFound";
@@ -33,6 +35,8 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Cadastro />} />
+              <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+              <Route path="/redefinir-senha" element={<RedefinirSenha />} />
               <Route path="/loja" element={<Loja />} />
               <Route path="/carrinho" element={<Carrinho />} />
               
