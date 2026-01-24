@@ -43,8 +43,15 @@ export function Header() {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+    try {
+      await signOut();
+      // Force page reload to clear all state
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error signing out:', error);
+      // Force reload even on error
+      window.location.href = '/';
+    }
   };
 
   return (
