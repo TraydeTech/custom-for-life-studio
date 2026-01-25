@@ -11,6 +11,9 @@ import EsqueciSenha from "./pages/EsqueciSenha";
 import RedefinirSenha from "./pages/RedefinirSenha";
 import Loja from "./pages/Loja";
 import Carrinho from "./pages/Carrinho";
+import MinhaConta from "./pages/MinhaConta";
+import MeusPedidos from "./pages/MeusPedidos";
+import MeusEnderecos from "./pages/MeusEnderecos";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -37,6 +40,9 @@ const App = () => (
             <Route path="/redefinir-senha" element={<RedefinirSenha />} />
             <Route path="/loja" element={<Loja />} />
             <Route path="/carrinho" element={<Carrinho />} />
+            <Route path="/minha-conta" element={<MinhaConta />} />
+            <Route path="/minha-conta/pedidos" element={<MeusPedidos />} />
+            <Route path="/minha-conta/enderecos" element={<MeusEnderecos />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
