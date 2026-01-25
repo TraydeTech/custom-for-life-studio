@@ -8,16 +8,9 @@ interface Profile {
   cpf: string | null;
 }
 
-interface ProfileData {
-  full_name: string | null;
-  phone: string | null;
-  cpf: string | null;
-}
-
 const EMPTY_PROFILE: Profile = { full_name: '', phone: '', cpf: '' };
-const TIMEOUT_MS = 15000; // 15 segundos - tempo suficiente para conexões lentas
 
-export function useProfile(userId: string | undefined) {
+export function useProfile(userId: string | undefined, userMetaName?: string | null) {
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,33 +28,24 @@ export function useProfile(userId: string | undefined) {
     try {
       console.log('[useProfile] Buscando perfil para:', userId);
       
-      // Criar timeout promise
-      const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) => {
-        setTimeout(() => {
-          resolve({ data: null, error: new Error('Tempo esgotado ao carregar perfil') });
-        }, TIMEOUT_MS);
-      });
-
-      // Executar query com timeout
-      const queryPromise = supabase
+      const { data, error: fetchError } = await supabase
         .from('profiles')
         .select('full_name, phone, cpf')
         .eq('user_id', userId)
-        .maybeSingle()
-        .then((result) => result);
+        .maybeSingle();
 
-      const result = await Promise.race([queryPromise, timeoutPromise]);
-
-      if (result.error) {
-        console.error('[useProfile] Erro ao buscar:', result.error);
-        setError(result.error.message || 'Erro ao carregar perfil');
+      if (fetchError) {
+        console.error('[useProfile] Erro ao buscar:', fetchError);
+        setError(fetchError.message || 'Erro ao carregar perfil');
+        setLoading(false);
         return;
       }
 
-      console.log('[useProfile] Perfil carregado:', result.data);
-      const data = result.data as ProfileData | null;
+      console.log('[useProfile] Perfil carregado:', data);
+      
+      // Usar dados do banco, ou fallback para metadados do auth
       setProfile({
-        full_name: data?.full_name || '',
+        full_name: data?.full_name || userMetaName || '',
         phone: data?.phone || '',
         cpf: data?.cpf || '',
       });
@@ -72,7 +56,7 @@ export function useProfile(userId: string | undefined) {
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, userMetaName]);
 
   const saveProfile = useCallback(async (newProfile: Profile): Promise<boolean> => {
     if (!userId) {
@@ -86,36 +70,26 @@ export function useProfile(userId: string | undefined) {
     try {
       console.log('[useProfile] Iniciando salvamento para:', userId);
 
-      // Timeout para operações
-      const createTimeout = () => new Promise<{ data: null; error: Error }>((resolve) => {
-        setTimeout(() => {
-          resolve({ data: null, error: new Error('Tempo esgotado. Verifique sua conexão.') });
-        }, TIMEOUT_MS);
-      });
-
       // 1. Verificar se perfil existe
-      const checkQuery = supabase
+      const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('id')
         .eq('user_id', userId)
-        .maybeSingle()
-        .then((r) => r);
+        .maybeSingle();
 
-      const checkResult = await Promise.race([checkQuery, createTimeout()]);
-
-      if (checkResult.error) {
-        throw new Error(checkResult.error.message || 'Erro ao verificar perfil');
+      if (checkError) {
+        throw new Error(checkError.message || 'Erro ao verificar perfil');
       }
 
-      const exists = !!checkResult.data;
+      const exists = !!existingProfile;
       console.log('[useProfile] Perfil existente?', exists);
 
       // 2. Salvar (UPDATE ou INSERT)
-      let saveResult;
+      let saveError;
 
       if (exists) {
         console.log('[useProfile] Fazendo UPDATE...');
-        const updateQuery = supabase
+        const result = await supabase
           .from('profiles')
           .update({
             full_name: newProfile.full_name,
@@ -123,13 +97,12 @@ export function useProfile(userId: string | undefined) {
             cpf: newProfile.cpf,
           })
           .eq('user_id', userId)
-          .select()
-          .then((r) => r);
-
-        saveResult = await Promise.race([updateQuery, createTimeout()]);
+          .select();
+        saveError = result.error;
+        console.log('[useProfile] Resultado UPDATE:', result);
       } else {
         console.log('[useProfile] Fazendo INSERT...');
-        const insertQuery = supabase
+        const result = await supabase
           .from('profiles')
           .insert({
             user_id: userId,
@@ -137,16 +110,13 @@ export function useProfile(userId: string | undefined) {
             phone: newProfile.phone,
             cpf: newProfile.cpf,
           })
-          .select()
-          .then((r) => r);
-
-        saveResult = await Promise.race([insertQuery, createTimeout()]);
+          .select();
+        saveError = result.error;
+        console.log('[useProfile] Resultado INSERT:', result);
       }
 
-      console.log('[useProfile] Resultado:', saveResult);
-
-      if (saveResult.error) {
-        throw new Error(saveResult.error.message || 'Erro ao salvar perfil');
+      if (saveError) {
+        throw new Error(saveError.message || 'Erro ao salvar perfil');
       }
 
       setProfile(newProfile);
