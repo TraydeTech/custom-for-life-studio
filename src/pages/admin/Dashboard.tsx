@@ -1,5 +1,5 @@
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { AdminRoute } from '@/components/admin/AdminRoute';
+import { ProtectedAdminRoute } from '@/components/admin/ProtectedAdminRoute';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -33,7 +33,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <AdminRoute>
+    <ProtectedAdminRoute>
       <AdminLayout>
         <div className="space-y-8">
           <div>
@@ -196,6 +196,6 @@ export default function AdminDashboard() {
           )}
         </div>
       </AdminLayout>
-    </AdminRoute>
+    </ProtectedAdminRoute>
   );
 }
