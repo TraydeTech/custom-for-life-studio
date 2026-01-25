@@ -64,14 +64,11 @@ export function Header() {
     };
   }, [user]);
 
-  // Mostrar elementos de cliente SOMENTE se:
-  // - Há um usuário logado
-  // - Já verificamos se é admin
-  // - NÃO é admin
-  const showCustomerUI = user && isAdminUser === false;
-  
-  // Esconder UI enquanto verifica se é admin (para não piscar)
+  // Estados de exibição
+  const isLoggedIn = !!user;
   const isLoading = user && isAdminUser === null;
+  const isAdmin = user && isAdminUser === true;
+  const isCustomer = user && isAdminUser === false;
   
   // Extrair o primeiro nome do usuário
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || 'Cliente';
@@ -123,9 +120,10 @@ export function Header() {
           </Link>
 
           {isLoading ? (
-            // Estado de carregamento - mostrar apenas produtos
+            // Estado de carregamento
             <div className="w-24" />
-          ) : showCustomerUI ? (
+          ) : isCustomer ? (
+            // UI para CLIENTES logados
             <>
               <Link to="/carrinho" className="relative">
                 <Button variant="ghost" size="icon">
@@ -179,7 +177,25 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
+          ) : isAdmin ? (
+            // UI para ADMIN logado - apenas acesso ao painel e sair
+            <div className="flex items-center gap-2">
+              <Link to="/admin">
+                <Button variant="ghost" size="icon" title="Painel Administrativo">
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={handleSignOut}
+                title="Sair"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
           ) : (
+            // UI para visitantes NÃO logados
             <div className="flex items-center gap-2">
               <Link to="/login">
                 <Button variant="ghost">Entrar</Button>
@@ -230,7 +246,8 @@ export function Header() {
               <Button variant="ghost" className="w-full justify-start">Produtos</Button>
             </Link>
             
-            {showCustomerUI ? (
+            {isCustomer ? (
+              // Menu mobile para CLIENTES
               <>
                 <div className="px-4 py-2 text-sm font-medium text-primary">
                   Olá, {userName}! 👋
@@ -265,7 +282,29 @@ export function Header() {
                   Sair
                 </Button>
               </>
+            ) : isAdmin ? (
+              // Menu mobile para ADMIN
+              <>
+                <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Painel Admin
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-destructive"
+                  onClick={() => {
+                    handleSignOut();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </Button>
+              </>
             ) : !isLoading && (
+              // Menu mobile para VISITANTES
               <>
                 <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start">Entrar</Button>
