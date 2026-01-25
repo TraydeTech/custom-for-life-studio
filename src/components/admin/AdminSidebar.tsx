@@ -61,13 +61,7 @@ export function AdminSidebar() {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-border space-y-2">
-        <Link to="/">
-          <Button variant="ghost" className="w-full justify-start gap-3">
-            <Home className="h-5 w-5" />
-            Voltar ao Site
-          </Button>
-        </Link>
+      <div className="p-4 border-t border-border">
         <Button 
           variant="ghost" 
           className="w-full justify-start gap-3 text-destructive hover:text-destructive"
