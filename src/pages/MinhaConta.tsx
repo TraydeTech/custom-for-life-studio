@@ -70,44 +70,62 @@ export default function MinhaConta() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+    
     setSaving(true);
 
-    // Timeout de segurança - máximo 2 segundos
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-      setSaving(false);
-      toast.error('Tempo esgotado. Tente novamente.');
-    }, 2000);
-
     try {
-      const { error } = await supabase
+      // Primeiro tentar UPDATE (mais rápido se o perfil já existe)
+      const { data: existingProfile } = await supabase
         .from('profiles')
-        .upsert({
-          user_id: user!.id,
-          full_name: profile.full_name,
-          phone: profile.phone,
-          cpf: profile.cpf,
-        }, { 
-          onConflict: 'user_id' 
-        });
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      clearTimeout(timeoutId);
+      let error;
+      
+      if (existingProfile) {
+        // Perfil existe - fazer UPDATE
+        const result = await supabase
+          .from('profiles')
+          .update({
+            full_name: profile.full_name,
+            phone: profile.phone,
+            cpf: profile.cpf,
+          })
+          .eq('user_id', user.id);
+        error = result.error;
+      } else {
+        // Perfil não existe - fazer INSERT
+        const result = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            full_name: profile.full_name,
+            phone: profile.phone,
+            cpf: profile.cpf,
+          });
+        error = result.error;
+      }
 
       if (error) {
+        console.error('Erro ao salvar perfil:', error);
         toast.error('Erro ao atualizar perfil');
-        setSaving(false);
         return;
       }
 
       toast.success('Perfil atualizado com sucesso!');
-      setSaving(false);
 
-      // Auth metadata em background
+      // Auth metadata em background (não bloqueia)
       supabase.auth.updateUser({ data: { full_name: profile.full_name } }).catch(() => {});
-    } catch {
-      clearTimeout(timeoutId);
+    } catch (err) {
+      console.error('Erro inesperado:', err);
       toast.error('Erro ao atualizar perfil');
+    } finally {
       setSaving(false);
     }
   };
