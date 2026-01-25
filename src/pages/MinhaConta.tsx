@@ -73,12 +73,12 @@ export default function MinhaConta() {
     setSaving(true);
     console.log('Starting profile save...', { userId: user?.id, profile });
 
-    // Timeout de segurança para evitar botão travado
+    // Timeout de segurança - máximo 2 segundos
     const saveTimeout = setTimeout(() => {
       console.log('Save timeout reached');
       setSaving(false);
-      toast.error('Tempo limite excedido. Tente novamente.');
-    }, 10000);
+      toast.error('Erro ao salvar. Tente novamente.');
+    }, 2000);
 
     try {
       // Usar upsert para criar ou atualizar o perfil
