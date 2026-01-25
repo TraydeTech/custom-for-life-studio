@@ -32,6 +32,15 @@ export default function MinhaConta() {
     if (user) {
       fetchProfile();
     }
+
+    // Timeout de segurança para evitar loading infinito
+    const timeout = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeout);
   }, [user, authLoading, navigate]);
 
   const fetchProfile = async () => {
@@ -40,12 +49,15 @@ export default function MinhaConta() {
         .from('profiles')
         .select('full_name, phone, cpf')
         .eq('user_id', user!.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching profile:', error);
+      }
       
+      // Mesmo se não houver perfil, mostrar os campos vazios
       setProfile({
-        full_name: data?.full_name || '',
+        full_name: data?.full_name || user?.user_metadata?.full_name || '',
         phone: data?.phone || '',
         cpf: data?.cpf || '',
       });
