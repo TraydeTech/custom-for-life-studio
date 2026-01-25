@@ -23,35 +23,52 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      const { error } = await signIn(loginEmail, loginPassword);
+      // Primeiro faz o login
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
       
       if (error) {
         toast.error('Email ou senha incorretos');
+        setIsLoading(false);
         return;
       }
 
-      // Verificar se é admin
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
+      if (!authData.user) {
+        toast.error('Erro ao obter dados do usuário');
+        setIsLoading(false);
+        return;
+      }
 
-        if (roleData) {
-          toast.success('Bem-vindo ao painel administrativo!');
-          navigate('/admin');
-        } else {
-          await supabase.auth.signOut();
-          toast.error('Esta conta não tem permissão de administrador');
-        }
+      // Verifica se é admin usando o user_id retornado diretamente
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authData.user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (roleError) {
+        console.error('Erro ao verificar role:', roleError);
+        await supabase.auth.signOut();
+        toast.error('Erro ao verificar permissões');
+        setIsLoading(false);
+        return;
+      }
+
+      if (roleData) {
+        toast.success('Bem-vindo ao painel administrativo!');
+        // Usar window.location para garantir reload completo
+        window.location.href = '/admin';
+      } else {
+        await supabase.auth.signOut();
+        toast.error('Esta conta não tem permissão de administrador');
+        setIsLoading(false);
       }
     } catch (error) {
+      console.error('Erro no login:', error);
       toast.error('Erro ao fazer login');
-    } finally {
       setIsLoading(false);
     }
   };
