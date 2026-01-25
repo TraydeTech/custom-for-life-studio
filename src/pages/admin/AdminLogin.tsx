@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,25 +22,31 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
+      console.log('AdminLogin: attempting login...');
       const { error, isAdmin } = await signIn(loginEmail, loginPassword);
       
       if (error) {
+        console.error('AdminLogin: login error', error);
         toast.error('Email ou senha incorretos');
         setIsLoading(false);
         return;
       }
 
+      console.log('AdminLogin: login successful, isAdmin:', isAdmin);
+
       if (isAdmin) {
         toast.success('Bem-vindo ao painel administrativo!');
-        window.location.href = '/admin';
+        console.log('AdminLogin: redirecting to /admin');
+        window.location.replace('/admin');
       } else {
         // Não é admin, fazer logout e mostrar erro
+        console.log('AdminLogin: user is not admin, signing out');
+        await supabase.auth.signOut();
         toast.error('Esta conta não tem permissão de administrador');
         setIsLoading(false);
-        // O signOut será chamado pelo contexto
       }
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error('AdminLogin: unexpected error', error);
       toast.error('Erro ao fazer login');
       setIsLoading(false);
     }
