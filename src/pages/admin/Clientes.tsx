@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { AdminRoute } from '@/components/admin/AdminRoute';
+import { ProtectedAdminRoute } from '@/components/admin/ProtectedAdminRoute';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -133,7 +133,7 @@ export default function AdminClientes() {
   };
 
   return (
-    <AdminRoute>
+    <ProtectedAdminRoute>
       <AdminLayout>
         <div className="space-y-6">
           <div>
@@ -317,6 +317,6 @@ export default function AdminClientes() {
           </Dialog>
         </div>
       </AdminLayout>
-    </AdminRoute>
+    </ProtectedAdminRoute>
   );
 }
