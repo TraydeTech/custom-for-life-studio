@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,7 @@ export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const { signIn } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,10 +20,7 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error, isAdmin } = await signIn(email, password);
 
       if (error) {
         toast({
@@ -37,31 +34,13 @@ export function LoginForm() {
         return;
       }
 
-      if (!authData.user) {
-        toast({
-          variant: 'destructive',
-          title: 'Erro ao entrar',
-          description: 'Não foi possível obter dados do usuário',
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Verificar se é admin
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', authData.user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
       toast({
         title: 'Bem-vindo de volta!',
         description: 'Login realizado com sucesso.',
       });
 
       // Redirecionar para admin se for admin, senão para home
-      if (roleData) {
+      if (isAdmin) {
         window.location.href = '/admin';
       } else {
         window.location.href = '/';
