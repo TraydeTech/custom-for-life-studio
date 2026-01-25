@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AdminRedirectProps {
@@ -8,49 +8,23 @@ interface AdminRedirectProps {
 
 export function AdminRedirect({ children }: AdminRedirectProps) {
   const { isAdmin, user, loading } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
-  const [showContent, setShowContent] = useState(false);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   const isAdminRoute = location.pathname.startsWith('/admin');
 
-  // Timeout de segurança - mostra conteúdo após 3 segundos mesmo se ainda loading
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!showContent) {
-        setShowContent(true);
-      }
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  }, []);
-
-  // Atualiza showContent quando loading terminar
-  useEffect(() => {
-    if (!loading) {
-      setShowContent(true);
-    }
-  }, [loading]);
-
-  useEffect(() => {
-    // Quando terminar de carregar e for admin em página não-admin
+    // Quando terminar de carregar e for admin em página não-admin, redirecionar
     if (!loading && isAdmin && user && !isAdminRoute) {
-      // Usar window.location para garantir reload completo e evitar problemas de estado
+      setShouldRedirect(true);
+      // Usar window.location para garantir reload completo
       window.location.href = '/admin';
     }
   }, [isAdmin, user, loading, isAdminRoute]);
 
   // Mostrar loading enquanto verifica autenticação (máximo 3 segundos)
-  if (loading && !showContent) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  // Se for admin e não estiver em rota admin, mostrar loading enquanto redireciona
-  if (isAdmin && user && !isAdminRoute && !showContent) {
+  // ou enquanto está redirecionando admin
+  if (loading || shouldRedirect || (isAdmin && user && !isAdminRoute)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
