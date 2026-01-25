@@ -73,16 +73,22 @@ export default function MinhaConta() {
     setSaving(true);
 
     try {
+      // Usar upsert para criar ou atualizar o perfil
       const { error } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          user_id: user!.id,
           full_name: profile.full_name,
           phone: profile.phone,
           cpf: profile.cpf,
-        })
-        .eq('user_id', user!.id);
+        }, { 
+          onConflict: 'user_id' 
+        });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile update error:', error);
+        throw error;
+      }
 
       // Atualizar também os metadados do auth
       await supabase.auth.updateUser({
