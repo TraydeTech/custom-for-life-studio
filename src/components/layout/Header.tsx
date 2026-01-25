@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -25,15 +26,52 @@ import { useCart } from '@/hooks/useCart';
 import logoImage from '@/assets/logo-custom-forlife.png';
 
 export function Header() {
-  const { user, isAdmin, signOut, adminChecked } = useAuth();
+  const { user, signOut } = useAuth();
   const { cartCount } = useCart();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isAdminUser, setIsAdminUser] = useState<boolean | null>(null);
 
-  // Se for admin, não mostrar como usuário logado no site público
-  // (será redirecionado para o painel admin)
-  const isCustomer = user && !isAdmin && adminChecked;
+  // Verificar diretamente no banco se o usuário é admin
+  useEffect(() => {
+    let isMounted = true;
+    
+    const checkAdminStatus = async () => {
+      if (!user) {
+        if (isMounted) setIsAdminUser(null);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.rpc('has_role', {
+          _user_id: user.id,
+          _role: 'admin'
+        });
+
+        if (isMounted) {
+          setIsAdminUser(error ? false : !!data);
+        }
+      } catch {
+        if (isMounted) setIsAdminUser(false);
+      }
+    };
+
+    checkAdminStatus();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  // Mostrar elementos de cliente SOMENTE se:
+  // - Há um usuário logado
+  // - Já verificamos se é admin
+  // - NÃO é admin
+  const showCustomerUI = user && isAdminUser === false;
+  
+  // Esconder UI enquanto verifica se é admin (para não piscar)
+  const isLoading = user && isAdminUser === null;
   
   // Extrair o primeiro nome do usuário
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || 'Cliente';
@@ -49,11 +87,9 @@ export function Header() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      // Force page reload to clear all state
       window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
-      // Force reload even on error
       window.location.href = '/';
     }
   };
@@ -86,7 +122,10 @@ export function Header() {
             <Button variant="ghost">Produtos</Button>
           </Link>
 
-          {isCustomer ? (
+          {isLoading ? (
+            // Estado de carregamento - mostrar apenas produtos
+            <div className="w-24" />
+          ) : showCustomerUI ? (
             <>
               <Link to="/carrinho" className="relative">
                 <Button variant="ghost" size="icon">
@@ -191,7 +230,7 @@ export function Header() {
               <Button variant="ghost" className="w-full justify-start">Produtos</Button>
             </Link>
             
-            {isCustomer ? (
+            {showCustomerUI ? (
               <>
                 <div className="px-4 py-2 text-sm font-medium text-primary">
                   Olá, {userName}! 👋
@@ -226,7 +265,7 @@ export function Header() {
                   Sair
                 </Button>
               </>
-            ) : (
+            ) : !isLoading && (
               <>
                 <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start">Entrar</Button>
