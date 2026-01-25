@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,6 @@ export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -20,25 +19,62 @@ export function LoginForm() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await signIn(email, password);
-
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao entrar',
-        description: error.message === 'Invalid login credentials' 
-          ? 'Email ou senha incorretos' 
-          : error.message,
+    try {
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-    } else {
+
+      if (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao entrar',
+          description: error.message === 'Invalid login credentials' 
+            ? 'Email ou senha incorretos' 
+            : error.message,
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!authData.user) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao entrar',
+          description: 'Não foi possível obter dados do usuário',
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Verificar se é admin
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authData.user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
       toast({
         title: 'Bem-vindo de volta!',
         description: 'Login realizado com sucesso.',
       });
-      navigate('/');
-    }
 
-    setLoading(false);
+      // Redirecionar para admin se for admin, senão para home
+      if (roleData) {
+        window.location.href = '/admin';
+      } else {
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao entrar',
+        description: 'Ocorreu um erro inesperado',
+      });
+      setLoading(false);
+    }
   };
 
   return (
