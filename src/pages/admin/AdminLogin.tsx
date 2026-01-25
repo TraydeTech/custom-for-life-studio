@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +10,6 @@ import { Settings, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import logo from '@/assets/logo-custom-forlife.png';
 
 export default function AdminLogin() {
-  const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
@@ -22,31 +20,41 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      console.log('AdminLogin: attempting login...');
-      const { error, isAdmin } = await signIn(loginEmail, loginPassword);
+      // Login direto com Supabase para ter controle completo
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
       
       if (error) {
-        console.error('AdminLogin: login error', error);
         toast.error('Email ou senha incorretos');
         setIsLoading(false);
         return;
       }
 
-      console.log('AdminLogin: login successful, isAdmin:', isAdmin);
+      if (!data.user) {
+        toast.error('Erro ao fazer login');
+        setIsLoading(false);
+        return;
+      }
 
-      if (isAdmin) {
-        toast.success('Bem-vindo ao painel administrativo!');
-        console.log('AdminLogin: redirecting to /admin');
-        window.location.replace('/admin');
-      } else {
-        // Não é admin, fazer logout e mostrar erro
-        console.log('AdminLogin: user is not admin, signing out');
+      // Verificar se é admin
+      const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', {
+        _user_id: data.user.id,
+        _role: 'admin'
+      });
+
+      if (roleError || !isAdmin) {
         await supabase.auth.signOut();
         toast.error('Esta conta não tem permissão de administrador');
         setIsLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('AdminLogin: unexpected error', error);
+
+      // É admin, redirecionar
+      toast.success('Bem-vindo ao painel administrativo!');
+      window.location.href = '/admin';
+    } catch {
       toast.error('Erro ao fazer login');
       setIsLoading(false);
     }
