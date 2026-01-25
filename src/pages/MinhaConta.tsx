@@ -1,133 +1,37 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useProfile } from '@/hooks/useProfile';
 import { AccountLayout } from '@/components/account/AccountLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
-
-interface Profile {
-  full_name: string | null;
-  phone: string | null;
-  cpf: string | null;
-}
+import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function MinhaConta() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<Profile>({ full_name: '', phone: '', cpf: '' });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  
+  const { 
+    profile, 
+    setProfile, 
+    loading, 
+    saving, 
+    error,
+    saveProfile,
+    refetch 
+  } = useProfile(user?.id);
 
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/login');
-      return;
     }
-
-    if (user) {
-      fetchProfile();
-    }
-
-    // Timeout de segurança para evitar loading infinito
-    const timeout = setTimeout(() => {
-      if (loading) {
-        setLoading(false);
-      }
-    }, 2000);
-
-    return () => clearTimeout(timeout);
   }, [user, authLoading, navigate]);
-
-  const fetchProfile = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name, phone, cpf')
-        .eq('user_id', user!.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-      }
-      
-      // Mesmo se não houver perfil, mostrar os campos vazios
-      setProfile({
-        full_name: data?.full_name || user?.user_metadata?.full_name || '',
-        phone: data?.phone || '',
-        cpf: data?.cpf || '',
-      });
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!user) {
-      toast.error('Usuário não autenticado');
-      return;
-    }
-    
-    setSaving(true);
-
-    try {
-      // Primeiro tentar UPDATE (mais rápido se o perfil já existe)
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      let error;
-      
-      if (existingProfile) {
-        // Perfil existe - fazer UPDATE
-        const result = await supabase
-          .from('profiles')
-          .update({
-            full_name: profile.full_name,
-            phone: profile.phone,
-            cpf: profile.cpf,
-          })
-          .eq('user_id', user.id);
-        error = result.error;
-      } else {
-        // Perfil não existe - fazer INSERT
-        const result = await supabase
-          .from('profiles')
-          .insert({
-            user_id: user.id,
-            full_name: profile.full_name,
-            phone: profile.phone,
-            cpf: profile.cpf,
-          });
-        error = result.error;
-      }
-
-      if (error) {
-        console.error('Erro ao salvar perfil:', error);
-        toast.error('Erro ao atualizar perfil');
-        return;
-      }
-
-      toast.success('Perfil atualizado com sucesso!');
-
-      // Auth metadata em background (não bloqueia)
-      supabase.auth.updateUser({ data: { full_name: profile.full_name } }).catch(() => {});
-    } catch (err) {
-      console.error('Erro inesperado:', err);
-      toast.error('Erro ao atualizar perfil');
-    } finally {
-      setSaving(false);
-    }
+    await saveProfile(profile);
   };
 
   const formatPhone = (value: string) => {
@@ -146,7 +50,7 @@ export default function MinhaConta() {
     return value;
   };
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <AccountLayout title="Minha Conta">
         <div className="flex items-center justify-center h-64">
@@ -166,66 +70,95 @@ export default function MinhaConta() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={user?.email || ''}
-                disabled
-                className="bg-muted"
-              />
-              <p className="text-xs text-muted-foreground">
-                O email não pode ser alterado
-              </p>
+          {error && (
+            <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-destructive font-medium">Erro</p>
+                <p className="text-sm text-destructive/80">{error}</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={refetch}
+                className="flex-shrink-0"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Tentar novamente
+              </Button>
             </div>
+          )}
 
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo</Label>
-              <Input
-                id="name"
-                value={profile.full_name || ''}
-                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                placeholder="Seu nome completo"
-              />
+          {loading ? (
+            <div className="flex items-center justify-center h-32">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="ml-2 text-muted-foreground">Carregando...</span>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="phone"
-                  value={profile.phone || ''}
-                  onChange={(e) => setProfile({ ...profile, phone: formatPhone(e.target.value) })}
-                  placeholder="(00) 00000-0000"
-                  maxLength={15}
+                  id="email"
+                  type="email"
+                  value={user?.email || ''}
+                  disabled
+                  className="bg-muted"
                 />
+                <p className="text-xs text-muted-foreground">
+                  O email não pode ser alterado
+                </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cpf">CPF</Label>
+                <Label htmlFor="name">Nome Completo</Label>
                 <Input
-                  id="cpf"
-                  value={profile.cpf || ''}
-                  onChange={(e) => setProfile({ ...profile, cpf: formatCPF(e.target.value) })}
-                  placeholder="000.000.000-00"
-                  maxLength={14}
+                  id="name"
+                  value={profile.full_name || ''}
+                  onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                  placeholder="Seu nome completo"
+                  disabled={saving}
                 />
               </div>
-            </div>
 
-            <Button type="submit" disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                'Salvar Alterações'
-              )}
-            </Button>
-          </form>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input
+                    id="phone"
+                    value={profile.phone || ''}
+                    onChange={(e) => setProfile({ ...profile, phone: formatPhone(e.target.value) })}
+                    placeholder="(00) 00000-0000"
+                    maxLength={15}
+                    disabled={saving}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cpf">CPF</Label>
+                  <Input
+                    id="cpf"
+                    value={profile.cpf || ''}
+                    onChange={(e) => setProfile({ ...profile, cpf: formatCPF(e.target.value) })}
+                    placeholder="000.000.000-00"
+                    maxLength={14}
+                    disabled={saving}
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Alterações'
+                )}
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </AccountLayout>
