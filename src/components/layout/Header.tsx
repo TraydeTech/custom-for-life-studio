@@ -64,11 +64,13 @@ export function Header() {
     };
   }, [user]);
 
-  // Estados de exibição
+  // Estados de exibição - cliente é assumido quando não é admin
   const isLoggedIn = !!user;
-  const isLoading = user && isAdminUser === null;
+  const adminCheckComplete = isAdminUser !== null;
   const isAdmin = user && isAdminUser === true;
-  const isCustomer = user && isAdminUser === false;
+  // Cliente: usuário logado E (verificação completa mostrando que não é admin OU verificação ainda em andamento)
+  // Assumimos cliente por padrão para mostrar a UI rapidamente
+  const isCustomer = user && !isAdmin;
   
   // Extrair o primeiro nome do usuário
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || 'Cliente';
@@ -119,10 +121,7 @@ export function Header() {
             <Button variant="ghost">Produtos</Button>
           </Link>
 
-          {isLoading ? (
-            // Estado de carregamento
-            <div className="w-24" />
-          ) : isCustomer ? (
+          {isCustomer ? (
             // UI para CLIENTES logados
             <>
               <Link to="/carrinho" className="relative">
@@ -303,7 +302,7 @@ export function Header() {
                   Sair
                 </Button>
               </>
-            ) : !isLoading && (
+            ) : !isLoggedIn && (
               // Menu mobile para VISITANTES
               <>
                 <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
