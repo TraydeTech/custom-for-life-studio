@@ -15,7 +15,7 @@ interface ProfileData {
 }
 
 const EMPTY_PROFILE: Profile = { full_name: '', phone: '', cpf: '' };
-const TIMEOUT_MS = 8000;
+const TIMEOUT_MS = 15000; // 15 segundos - tempo suficiente para conexões lentas
 
 export function useProfile(userId: string | undefined) {
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
