@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +10,6 @@ import { Settings, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import logo from '@/assets/logo-custom-forlife.png';
 
 export default function AdminLogin() {
-  const navigate = useNavigate();
   const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -23,11 +21,7 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      // Primeiro faz o login
-      const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-      });
+      const { error, isAdmin } = await signIn(loginEmail, loginPassword);
       
       if (error) {
         toast.error('Email ou senha incorretos');
@@ -35,36 +29,14 @@ export default function AdminLogin() {
         return;
       }
 
-      if (!authData.user) {
-        toast.error('Erro ao obter dados do usuário');
-        setIsLoading(false);
-        return;
-      }
-
-      // Verifica se é admin usando o user_id retornado diretamente
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', authData.user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      if (roleError) {
-        console.error('Erro ao verificar role:', roleError);
-        await supabase.auth.signOut();
-        toast.error('Erro ao verificar permissões');
-        setIsLoading(false);
-        return;
-      }
-
-      if (roleData) {
+      if (isAdmin) {
         toast.success('Bem-vindo ao painel administrativo!');
-        // Usar window.location para garantir reload completo
         window.location.href = '/admin';
       } else {
-        await supabase.auth.signOut();
+        // Não é admin, fazer logout e mostrar erro
         toast.error('Esta conta não tem permissão de administrador');
         setIsLoading(false);
+        // O signOut será chamado pelo contexto
       }
     } catch (error) {
       console.error('Erro no login:', error);
