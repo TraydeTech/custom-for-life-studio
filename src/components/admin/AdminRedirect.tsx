@@ -35,9 +35,10 @@ export function AdminRedirect({ children }: AdminRedirectProps) {
   useEffect(() => {
     // Quando terminar de carregar e for admin em página não-admin
     if (!loading && isAdmin && user && !isAdminRoute) {
-      navigate('/admin', { replace: true });
+      // Usar window.location para garantir reload completo e evitar problemas de estado
+      window.location.href = '/admin';
     }
-  }, [isAdmin, user, loading, isAdminRoute, navigate]);
+  }, [isAdmin, user, loading, isAdminRoute]);
 
   // Mostrar loading enquanto verifica autenticação (máximo 3 segundos)
   if (loading && !showContent) {

@@ -20,24 +20,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const checkAdminRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
-      
-      if (error) {
+  const checkAdminRole = async (userId: string, retries = 3): Promise<boolean> => {
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .eq('role', 'admin')
+          .maybeSingle();
+        
+        if (error) {
+          // Se for AbortError, tentar novamente
+          if (error.message?.includes('AbortError') || error.message?.includes('aborted')) {
+            console.warn(`Admin check attempt ${attempt + 1} aborted, retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            continue;
+          }
+          console.error('Error checking admin role:', error);
+          return false;
+        }
+        return !!data;
+      } catch (error: any) {
+        // Se for erro de abort, tentar novamente
+        if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
+          console.warn(`Admin check attempt ${attempt + 1} aborted, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          continue;
+        }
         console.error('Error checking admin role:', error);
         return false;
       }
-      return !!data;
-    } catch (error) {
-      console.error('Error checking admin role:', error);
-      return false;
     }
+    console.error('Failed to check admin role after retries');
+    return false;
   };
 
   useEffect(() => {
