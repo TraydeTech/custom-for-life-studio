@@ -56,6 +56,15 @@ export default function MeusEnderecos() {
     if (user) {
       fetchAddresses();
     }
+
+    // Timeout de segurança para evitar loading infinito
+    const timeout = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeout);
   }, [user, authLoading, navigate]);
 
   const fetchAddresses = async () => {
@@ -66,7 +75,9 @@ export default function MeusEnderecos() {
         .eq('user_id', user!.id)
         .order('is_default', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching addresses:', error);
+      }
       setAddresses(data || []);
     } catch (error) {
       console.error('Error fetching addresses:', error);
