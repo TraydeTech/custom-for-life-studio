@@ -27,6 +27,12 @@ export function AdminSidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
 
+  const handleLogout = async () => {
+    await signOut();
+    // Força reload completo para limpar todo estado e ir para o site
+    window.location.href = '/';
+  };
+
   return (
     <aside className="w-64 bg-card border-r border-border min-h-screen flex flex-col">
       <div className="p-6 border-b border-border">
@@ -65,7 +71,7 @@ export function AdminSidebar() {
         <Button 
           variant="ghost" 
           className="w-full justify-start gap-3 text-destructive hover:text-destructive"
-          onClick={() => signOut()}
+          onClick={handleLogout}
         >
           <LogOut className="h-5 w-5" />
           Sair
