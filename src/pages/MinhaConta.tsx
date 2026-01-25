@@ -71,10 +71,19 @@ export default function MinhaConta() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    console.log('Starting profile save...', { userId: user?.id, profile });
+
+    // Timeout de segurança para evitar botão travado
+    const saveTimeout = setTimeout(() => {
+      console.log('Save timeout reached');
+      setSaving(false);
+      toast.error('Tempo limite excedido. Tente novamente.');
+    }, 10000);
 
     try {
       // Usar upsert para criar ou atualizar o perfil
-      const { error } = await supabase
+      console.log('Sending upsert request...');
+      const { data, error } = await supabase
         .from('profiles')
         .upsert({
           user_id: user!.id,
@@ -83,7 +92,10 @@ export default function MinhaConta() {
           cpf: profile.cpf,
         }, { 
           onConflict: 'user_id' 
-        });
+        })
+        .select();
+
+      console.log('Upsert response:', { data, error });
 
       if (error) {
         console.error('Profile update error:', error);
@@ -91,15 +103,23 @@ export default function MinhaConta() {
       }
 
       // Atualizar também os metadados do auth
-      await supabase.auth.updateUser({
+      console.log('Updating auth user metadata...');
+      const { error: authError } = await supabase.auth.updateUser({
         data: { full_name: profile.full_name }
       });
+      
+      if (authError) {
+        console.error('Auth update error:', authError);
+      }
 
+      clearTimeout(saveTimeout);
       toast.success('Perfil atualizado com sucesso!');
     } catch (error) {
       console.error('Error updating profile:', error);
+      clearTimeout(saveTimeout);
       toast.error('Erro ao atualizar perfil');
     } finally {
+      clearTimeout(saveTimeout);
       setSaving(false);
     }
   };
