@@ -20,11 +20,9 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      console.log('LoginForm: attempting login...');
       const { error, isAdmin } = await signIn(email, password);
 
       if (error) {
-        console.error('LoginForm: login error', error);
         toast({
           variant: 'destructive',
           title: 'Erro ao entrar',
@@ -36,24 +34,17 @@ export function LoginForm() {
         return;
       }
 
-      console.log('LoginForm: login successful, isAdmin:', isAdmin);
-
       toast({
         title: 'Bem-vindo de volta!',
         description: 'Login realizado com sucesso.',
       });
 
-      // Redirecionar para admin se for admin, senão para home
-      // Usar window.location.replace para garantir que não volte com botão voltar
       if (isAdmin) {
-        console.log('LoginForm: redirecting admin to /admin');
         window.location.replace('/admin');
       } else {
-        console.log('LoginForm: redirecting user to /');
         window.location.replace('/');
       }
-    } catch (error) {
-      console.error('LoginForm: unexpected error', error);
+    } catch {
       toast({
         variant: 'destructive',
         title: 'Erro ao entrar',
