@@ -13,6 +13,9 @@ export default function MinhaConta() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   
+  // Passar o nome do user_metadata como fallback
+  const userMetaName = user?.user_metadata?.full_name as string | undefined;
+  
   const { 
     profile, 
     setProfile, 
@@ -21,7 +24,7 @@ export default function MinhaConta() {
     error,
     saveProfile,
     refetch 
-  } = useProfile(user?.id);
+  } = useProfile(user?.id, userMetaName);
 
   useEffect(() => {
     if (!authLoading && !user) {
