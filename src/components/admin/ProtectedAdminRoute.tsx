@@ -59,11 +59,19 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
       }
     });
 
+    // Safety timeout para evitar loading infinito
+    const timeout = setTimeout(() => {
+      if (isMounted && isAuthorized === null) {
+        navigate('/admin/login', { replace: true });
+      }
+    }, 5000);
+
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      clearTimeout(timeout);
     };
-  }, [navigate]);
+  }, [navigate, isAuthorized]);
 
   if (isAuthorized === null) {
     return (
