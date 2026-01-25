@@ -72,8 +72,15 @@ export default function MinhaConta() {
     e.preventDefault();
     setSaving(true);
 
+    // Timeout de segurança - máximo 2 segundos
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      setSaving(false);
+      toast.error('Tempo esgotado. Tente novamente.');
+    }, 2000);
+
     try {
-      // Salvar perfil no banco
       const { error } = await supabase
         .from('profiles')
         .upsert({
@@ -85,22 +92,22 @@ export default function MinhaConta() {
           onConflict: 'user_id' 
         });
 
+      clearTimeout(timeoutId);
+
       if (error) {
-        console.error('Profile update error:', error);
         toast.error('Erro ao atualizar perfil');
+        setSaving(false);
         return;
       }
 
-      // Atualizar metadados do auth em background (não esperar)
-      supabase.auth.updateUser({
-        data: { full_name: profile.full_name }
-      }).catch(err => console.error('Auth update error:', err));
-
       toast.success('Perfil atualizado com sucesso!');
-    } catch (error) {
-      console.error('Error updating profile:', error);
+      setSaving(false);
+
+      // Auth metadata em background
+      supabase.auth.updateUser({ data: { full_name: profile.full_name } }).catch(() => {});
+    } catch {
+      clearTimeout(timeoutId);
       toast.error('Erro ao atualizar perfil');
-    } finally {
       setSaving(false);
     }
   };
