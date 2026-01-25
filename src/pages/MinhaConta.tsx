@@ -38,7 +38,7 @@ export default function MinhaConta() {
       if (loading) {
         setLoading(false);
       }
-    }, 5000);
+    }, 2000);
 
     return () => clearTimeout(timeout);
   }, [user, authLoading, navigate]);
