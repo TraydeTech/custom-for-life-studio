@@ -25,12 +25,16 @@ import { useCart } from '@/hooks/useCart';
 import logoImage from '@/assets/logo-custom-forlife.png';
 
 export function Header() {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, signOut, adminChecked } = useAuth();
   const { cartCount } = useCart();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Se for admin, não mostrar como usuário logado no site público
+  // (será redirecionado para o painel admin)
+  const isCustomer = user && !isAdmin && adminChecked;
+  
   // Extrair o primeiro nome do usuário
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || 'Cliente';
 
@@ -82,7 +86,7 @@ export function Header() {
             <Button variant="ghost">Produtos</Button>
           </Link>
 
-          {user ? (
+          {isCustomer ? (
             <>
               <Link to="/carrinho" className="relative">
                 <Button variant="ghost" size="icon">
@@ -125,17 +129,6 @@ export function Header() {
                       Endereços
                     </Link>
                   </DropdownMenuItem>
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin" className="flex items-center">
-                          <Settings className="mr-2 h-4 w-4" />
-                          Painel Admin
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={handleSignOut}
@@ -198,7 +191,7 @@ export function Header() {
               <Button variant="ghost" className="w-full justify-start">Produtos</Button>
             </Link>
             
-            {user ? (
+            {isCustomer ? (
               <>
                 <div className="px-4 py-2 text-sm font-medium text-primary">
                   Olá, {userName}! 👋
@@ -221,14 +214,6 @@ export function Header() {
                     Meus Pedidos
                   </Button>
                 </Link>
-                {isAdmin && (
-                  <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Painel Admin
-                    </Button>
-                  </Link>
-                )}
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-destructive"
