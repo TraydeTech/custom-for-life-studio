@@ -7,7 +7,8 @@ import {
   Tags,
   LogOut,
   Home,
-  Store
+  Store,
+  Wallet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,6 +21,7 @@ const menuItems = [
   { icon: Package, label: 'Produtos', path: '/admin/produtos' },
   { icon: Tags, label: 'Categorias', path: '/admin/categorias' },
   { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos' },
+  { icon: Wallet, label: 'Financeiro', path: '/admin/financeiro' },
   { icon: Users, label: 'Clientes', path: '/admin/clientes' },
 ];
 

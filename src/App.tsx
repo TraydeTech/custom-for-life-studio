@@ -22,6 +22,7 @@ import AdminCategorias from "./pages/admin/Categorias";
 import AdminPedidos from "./pages/admin/Pedidos";
 import AdminClientes from "./pages/admin/Clientes";
 import AdminPDV from "./pages/admin/PDV";
+import AdminFinanceiro from "./pages/admin/Financeiro";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/admin/produtos" element={<AdminProdutos />} />
             <Route path="/admin/categorias" element={<AdminCategorias />} />
             <Route path="/admin/pedidos" element={<AdminPedidos />} />
+            <Route path="/admin/financeiro" element={<AdminFinanceiro />} />
             <Route path="/admin/clientes" element={<AdminClientes />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
