@@ -69,6 +69,7 @@ type OrderDetails = {
   source: string | null;
   total: number;
   created_at: string;
+  customer_name: string | null;
   order_items: OrderItem[];
 };
 
@@ -120,12 +121,34 @@ function FinanceiroContent() {
       
       const { data: order, error: orderError } = await supabase
         .from('orders')
-        .select('id, order_number, payment_method, payment_status, source, total, created_at')
+        .select('id, order_number, payment_method, payment_status, source, total, created_at, shipping_address, user_id')
         .eq('id', selectedOrderId)
         .maybeSingle();
       
       if (orderError) throw orderError;
       if (!order) return null;
+
+      // Buscar nome do cliente
+      let customerName: string | null = null;
+      
+      // Primeiro tenta do perfil se tiver user_id
+      if (order.user_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', order.user_id)
+          .maybeSingle();
+        
+        if (profile?.full_name) {
+          customerName = profile.full_name;
+        }
+      }
+      
+      // Se não encontrou, tenta do shipping_address
+      if (!customerName && order.shipping_address) {
+        const addr = order.shipping_address as { name?: string };
+        customerName = addr.name || null;
+      }
 
       const { data: items, error: itemsError } = await supabase
         .from('order_items')
@@ -135,7 +158,14 @@ function FinanceiroContent() {
       if (itemsError) throw itemsError;
 
       return {
-        ...order,
+        id: order.id,
+        order_number: order.order_number,
+        payment_method: order.payment_method,
+        payment_status: order.payment_status,
+        source: order.source,
+        total: order.total,
+        created_at: order.created_at,
+        customer_name: customerName,
         order_items: items || []
       } as OrderDetails;
     },
@@ -550,6 +580,10 @@ function FinanceiroContent() {
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Pedido</p>
                   <p className="font-semibold">{orderDetails.order_number}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Cliente</p>
+                  <p className="font-semibold">{orderDetails.customer_name || 'Cliente PDV'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Data</p>
