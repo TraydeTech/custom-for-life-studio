@@ -121,6 +121,15 @@ export default function AdminLogin() {
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Entrando...' : 'Entrar'}
               </Button>
+              
+              <div className="text-center">
+                <Link 
+                  to="/esqueci-senha" 
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
             </form>
           </CardContent>
         </Card>
