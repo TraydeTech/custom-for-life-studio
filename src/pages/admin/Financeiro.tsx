@@ -128,10 +128,10 @@ function FinanceiroContent() {
       if (orderError) throw orderError;
       if (!order) return null;
 
-      // Buscar nome do cliente
+      // Buscar nome do cliente de várias fontes
       let customerName: string | null = null;
       
-      // Primeiro tenta do perfil se tiver user_id
+      // 1. Primeiro tenta do perfil se tiver user_id
       if (order.user_id) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -144,10 +144,23 @@ function FinanceiroContent() {
         }
       }
       
-      // Se não encontrou, tenta do shipping_address
+      // 2. Tenta do shipping_address (campo name)
       if (!customerName && order.shipping_address) {
-        const addr = order.shipping_address as { name?: string };
-        customerName = addr.name || null;
+        const addr = order.shipping_address as { name?: string; customer_name?: string };
+        customerName = addr.name || addr.customer_name || null;
+      }
+
+      // 3. Tenta da conta a receber vinculada
+      if (!customerName) {
+        const { data: receivable } = await supabase
+          .from('accounts_receivable')
+          .select('customer_name')
+          .eq('order_id', selectedOrderId)
+          .maybeSingle();
+        
+        if (receivable?.customer_name && receivable.customer_name !== 'Cliente PDV') {
+          customerName = receivable.customer_name;
+        }
       }
 
       const { data: items, error: itemsError } = await supabase
