@@ -14,15 +14,15 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
   useEffect(() => {
     let isMounted = true;
 
-    const checkAdminAccess = async () => {
+    const checkAdminAccess = async (retryCount = 0): Promise<void> => {
       // Evita verificação duplicada
       if (hasChecked.current) return;
-      hasChecked.current = true;
 
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session?.user) {
+          hasChecked.current = true;
           if (isMounted) {
             navigate('/admin/login', { replace: true });
           }
@@ -34,7 +34,23 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
           _role: 'admin'
         });
 
-        if (error || !isAdmin) {
+        // Se houver erro de rede, tenta novamente até 3 vezes
+        if (error) {
+          if (retryCount < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return checkAdminAccess(retryCount + 1);
+          }
+          // Após 3 tentativas, assume erro e redireciona
+          hasChecked.current = true;
+          if (isMounted) {
+            navigate('/admin/login', { replace: true });
+          }
+          return;
+        }
+
+        hasChecked.current = true;
+
+        if (!isAdmin) {
           await supabase.auth.signOut();
           if (isMounted) {
             navigate('/admin/login', { replace: true });
@@ -46,6 +62,12 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
           setIsAuthorized(true);
         }
       } catch {
+        // Em caso de erro de rede, tenta novamente
+        if (retryCount < 3) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return checkAdminAccess(retryCount + 1);
+        }
+        hasChecked.current = true;
         if (isMounted) {
           navigate('/admin/login', { replace: true });
         }
