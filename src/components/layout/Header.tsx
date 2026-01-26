@@ -85,11 +85,19 @@ export function Header() {
 
   const handleSignOut = async () => {
     try {
+      // Limpar estado local primeiro
+      setIsAdminUser(null);
+      
+      // Forçar limpeza do localStorage diretamente
+      localStorage.removeItem('sb-ihkbxdayhdewqzezdrfl-auth-token');
+      sessionStorage.clear();
+      
       await signOut();
-      window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
-      window.location.href = '/';
+    } finally {
+      // Sempre redirecionar com reload completo
+      window.location.replace('/');
     }
   };
 
@@ -169,10 +177,7 @@ export function Header() {
                   <div
                     role="menuitem"
                     className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm text-destructive outline-none transition-colors hover:bg-muted"
-                    onClick={async () => {
-                      await signOut();
-                      window.location.href = '/';
-                    }}
+                    onClick={handleSignOut}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     Sair
