@@ -6,11 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Profile {
   full_name: string;
@@ -18,96 +17,51 @@ interface Profile {
   cpf: string;
 }
 
-const EMPTY_PROFILE: Profile = { full_name: '', phone: '', cpf: '' };
-
-// Função para buscar perfil
-const fetchProfile = async (userId: string): Promise<Profile> => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('full_name, phone, cpf')
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (error) throw error;
-
-  return {
-    full_name: data?.full_name || '',
-    phone: data?.phone || '',
-    cpf: data?.cpf || '',
-  };
-};
-
-// Função para salvar perfil
-const saveProfile = async ({ userId, profile }: { userId: string; profile: Profile }) => {
-  const { error } = await supabase
-    .from('profiles')
-    .upsert({
-      user_id: userId,
-      full_name: profile.full_name,
-      phone: profile.phone,
-      cpf: profile.cpf,
-    }, { onConflict: 'user_id' });
-
-  if (error) throw error;
-  return profile;
-};
-
 export default function MinhaConta() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   
-  const [formData, setFormData] = useState<Profile>(EMPTY_PROFILE);
+  const [formData, setFormData] = useState<Profile>({ full_name: '', phone: '', cpf: '' });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
-  // Query para buscar perfil com cache
-  const { 
-    data: profile, 
-    isLoading, 
-    error, 
-    refetch 
-  } = useQuery({
-    queryKey: ['profile', user?.id],
-    queryFn: () => fetchProfile(user!.id),
-    enabled: !!user?.id,
-    staleTime: 1000 * 60 * 5, // 5 minutos de cache
-    retry: 2,
-    retryDelay: 500,
-  });
+  // Buscar perfil uma única vez quando user.id estiver disponível
+  const loadProfile = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name, phone, cpf')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-  // Mutation para salvar
-  const mutation = useMutation({
-    mutationFn: saveProfile,
-    onSuccess: (savedProfile) => {
-      queryClient.setQueryData(['profile', user?.id], savedProfile);
-      toast.success('Perfil atualizado com sucesso!');
-      // Atualizar metadata em background
-      supabase.auth.updateUser({ data: { full_name: savedProfile.full_name } }).catch(() => {});
-    },
-    onError: (err: Error) => {
-      toast.error(err.message || 'Erro ao salvar perfil');
-    },
-  });
+      if (error) throw error;
 
-  // Sincronizar formData com dados carregados
-  useEffect(() => {
-    if (profile) {
-      setFormData(profile);
-    } else if (user?.user_metadata?.full_name && !isLoading) {
-      // Fallback para metadata se não houver perfil
-      setFormData(prev => ({
-        ...prev,
-        full_name: (user.user_metadata.full_name as string) || prev.full_name,
-      }));
+      if (data) {
+        setFormData({
+          full_name: data.full_name || '',
+          phone: data.phone || '',
+          cpf: data.cpf || '',
+        });
+      }
+    } catch (err) {
+      console.error('Erro ao carregar perfil:', err);
+    } finally {
+      setIsLoading(false);
+      setHasLoaded(true);
     }
-  }, [profile, user?.user_metadata?.full_name, isLoading]);
+  }, []);
 
-  // Redirect se não autenticado
+  // Efeito para carregar perfil
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (user?.id && !hasLoaded) {
+      loadProfile(user.id);
+    } else if (!authLoading && !user) {
       navigate('/login');
     }
-  }, [authLoading, user, navigate]);
+  }, [user?.id, hasLoaded, authLoading, navigate, loadProfile]);
 
+  // Salvar perfil
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -116,7 +70,27 @@ export default function MinhaConta() {
       return;
     }
 
-    mutation.mutate({ userId: user.id, profile: formData });
+    setIsSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          full_name: formData.full_name,
+          phone: formData.phone,
+          cpf: formData.cpf,
+        }, { onConflict: 'user_id' });
+
+      if (error) throw error;
+
+      toast.success('Perfil atualizado com sucesso!');
+    } catch (err) {
+      toast.error('Erro ao salvar perfil');
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const formatPhone = (value: string) => {
@@ -135,7 +109,7 @@ export default function MinhaConta() {
     return value;
   };
 
-  // Loading inicial do auth
+  // Loading do auth
   if (authLoading) {
     return (
       <AccountLayout title="Minha Conta">
@@ -157,8 +131,6 @@ export default function MinhaConta() {
     );
   }
 
-  const showError = error && !isLoading;
-
   return (
     <AccountLayout title="Minha Conta">
       <Card>
@@ -169,25 +141,6 @@ export default function MinhaConta() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {showError && (
-            <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm text-destructive font-medium">Erro ao carregar</p>
-                <p className="text-sm text-destructive/80">{(error as Error).message}</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => refetch()}
-                className="flex-shrink-0"
-              >
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Tentar novamente
-              </Button>
-            </div>
-          )}
-
           {isLoading ? (
             <div className="space-y-4">
               <div className="space-y-2">
@@ -232,7 +185,7 @@ export default function MinhaConta() {
                   value={formData.full_name}
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                   placeholder="Seu nome completo"
-                  disabled={mutation.isPending}
+                  disabled={isSaving}
                 />
               </div>
 
@@ -245,7 +198,7 @@ export default function MinhaConta() {
                     onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
                     placeholder="(00) 00000-0000"
                     maxLength={15}
-                    disabled={mutation.isPending}
+                    disabled={isSaving}
                   />
                 </div>
 
@@ -257,13 +210,13 @@ export default function MinhaConta() {
                     onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
                     placeholder="000.000.000-00"
                     maxLength={14}
-                    disabled={mutation.isPending}
+                    disabled={isSaving}
                   />
                 </div>
               </div>
 
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? (
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Salvando...
