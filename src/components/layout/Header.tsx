@@ -169,9 +169,9 @@ export function Header() {
                   <div
                     role="menuitem"
                     className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm text-destructive outline-none transition-colors hover:bg-muted"
-                    onClick={() => {
+                    onClick={async () => {
+                      await signOut();
                       window.location.href = '/';
-                      signOut();
                     }}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
