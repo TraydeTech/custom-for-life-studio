@@ -40,11 +40,37 @@ import {
   Clock, 
   AlertCircle,
   DollarSign,
-  Calendar
+  Calendar,
+  Eye,
+  CreditCard,
+  Banknote,
+  Store,
+  Globe,
+  Package
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+
+type OrderItem = {
+  id: string;
+  product_name: string;
+  product_image: string | null;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+};
+
+type OrderDetails = {
+  id: string;
+  order_number: string;
+  payment_method: string | null;
+  payment_status: string | null;
+  source: string | null;
+  total: number;
+  created_at: string;
+  order_items: OrderItem[];
+};
 
 type AccountReceivable = {
   id: string;
@@ -75,6 +101,8 @@ type AccountPayable = {
 function FinanceiroContent() {
   const queryClient = useQueryClient();
   const [isPayableDialogOpen, setIsPayableDialogOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [newPayable, setNewPayable] = useState({
     description: '',
     amount: '',
@@ -82,6 +110,36 @@ function FinanceiroContent() {
     supplier_name: '',
     category: '',
     notes: ''
+  });
+
+  // Buscar detalhes do pedido
+  const { data: orderDetails, isLoading: loadingOrder } = useQuery({
+    queryKey: ['order_details', selectedOrderId],
+    queryFn: async () => {
+      if (!selectedOrderId) return null;
+      
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select('id, order_number, payment_method, payment_status, source, total, created_at')
+        .eq('id', selectedOrderId)
+        .maybeSingle();
+      
+      if (orderError) throw orderError;
+      if (!order) return null;
+
+      const { data: items, error: itemsError } = await supabase
+        .from('order_items')
+        .select('id, product_name, product_image, quantity, unit_price, total_price')
+        .eq('order_id', selectedOrderId);
+      
+      if (itemsError) throw itemsError;
+
+      return {
+        ...order,
+        order_items: items || []
+      } as OrderDetails;
+    },
+    enabled: !!selectedOrderId
   });
 
   // Buscar contas a receber
@@ -282,7 +340,20 @@ function FinanceiroContent() {
                           {format(new Date(item.due_date), 'dd/MM/yyyy', { locale: ptBR })}
                         </TableCell>
                         <TableCell>{getStatusBadge(item.status, item.due_date)}</TableCell>
-                        <TableCell>
+                        <TableCell className="space-x-2">
+                          {item.order_id && (
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => {
+                                setSelectedOrderId(item.order_id);
+                                setIsDetailsOpen(true);
+                              }}
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              Detalhes
+                            </Button>
+                          )}
                           {item.status !== 'paid' && (
                             <Button 
                               size="sm" 
@@ -457,6 +528,134 @@ function FinanceiroContent() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modal de Detalhes do Pedido */}
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Detalhes da Venda
+            </DialogTitle>
+          </DialogHeader>
+          
+          {loadingOrder ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : orderDetails ? (
+            <div className="space-y-6">
+              {/* Info do Pedido */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Pedido</p>
+                  <p className="font-semibold">{orderDetails.order_number}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Data</p>
+                  <p className="font-semibold">
+                    {format(new Date(orderDetails.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Origem</p>
+                  <div className="flex items-center gap-2">
+                    {orderDetails.source === 'pdv' ? (
+                      <>
+                        <Store className="h-4 w-4 text-orange-500" />
+                        <Badge variant="outline" className="border-orange-500 text-orange-500">Loja Física (PDV)</Badge>
+                      </>
+                    ) : (
+                      <>
+                        <Globe className="h-4 w-4 text-blue-500" />
+                        <Badge variant="outline" className="border-blue-500 text-blue-500">Site</Badge>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Forma de Pagamento</p>
+                  <div className="flex items-center gap-2">
+                    {orderDetails.payment_method === 'dinheiro' ? (
+                      <>
+                        <Banknote className="h-4 w-4 text-green-500" />
+                        <span className="font-semibold">Dinheiro</span>
+                      </>
+                    ) : orderDetails.payment_method === 'pix' ? (
+                      <>
+                        <DollarSign className="h-4 w-4 text-primary" />
+                        <span className="font-semibold">PIX</span>
+                      </>
+                    ) : orderDetails.payment_method === 'cartao_credito' ? (
+                      <>
+                        <CreditCard className="h-4 w-4 text-purple-500" />
+                        <span className="font-semibold">Cartão de Crédito</span>
+                      </>
+                    ) : orderDetails.payment_method === 'cartao_debito' ? (
+                      <>
+                        <CreditCard className="h-4 w-4 text-blue-500" />
+                        <span className="font-semibold">Cartão de Débito</span>
+                      </>
+                    ) : (
+                      <span className="font-semibold">{orderDetails.payment_method || 'Não informado'}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Produtos */}
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Produtos ({orderDetails.order_items.length})
+                </h4>
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {orderDetails.order_items.map((item) => (
+                    <div key={item.id} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
+                      <div className="w-16 h-16 bg-background rounded-lg overflow-hidden flex-shrink-0">
+                        {item.product_image ? (
+                          <img 
+                            src={item.product_image} 
+                            alt={item.product_name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                            <Package className="h-6 w-6" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{item.product_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {item.quantity}x {formatCurrency(Number(item.unit_price))}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-primary">
+                          {formatCurrency(Number(item.total_price))}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className="flex items-center justify-between pt-4 border-t">
+                <span className="text-lg font-semibold">Total</span>
+                <span className="text-2xl font-bold text-primary">
+                  {formatCurrency(Number(orderDetails.total))}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center py-8 text-muted-foreground">
+              Detalhes do pedido não encontrados
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
