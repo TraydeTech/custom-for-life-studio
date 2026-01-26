@@ -64,18 +64,6 @@ export function Header() {
     };
   }, [user]);
 
-  // Quando admin acessa o site público, deslogar automaticamente
-  useEffect(() => {
-    if (isAdminUser === true && user) {
-      // Admin tentando acessar site público - deslogar
-      const logoutAdmin = async () => {
-        await signOut();
-        window.location.href = '/';
-      };
-      logoutAdmin();
-    }
-  }, [isAdminUser, user, signOut]);
-
   // Estados de exibição
   const isLoggedIn = !!user;
   const adminCheckComplete = isAdminUser !== null;
@@ -214,8 +202,22 @@ export function Header() {
               </DropdownMenu>
             </>
           ) : isAdmin ? (
-            // Admin será deslogado automaticamente - não mostrar UI
-            null
+            // UI para ADMIN no site público - mostrar apenas acesso ao painel e sair
+            <div className="flex items-center gap-2">
+              <Link to="/admin">
+                <Button variant="ghost" size="icon" title="Painel Administrativo">
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={handleSignOut}
+                title="Sair"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
           ) : null}
         </nav>
 
@@ -303,8 +305,26 @@ export function Header() {
                 </Button>
               </>
             ) : isAdmin ? (
-              // Admin será deslogado automaticamente
-              null
+              // Menu mobile para ADMIN
+              <>
+                <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Painel Admin
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-destructive"
+                  onClick={() => {
+                    handleSignOut();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </Button>
+              </>
             ) : null}
           </nav>
         </div>
