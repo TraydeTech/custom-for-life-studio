@@ -26,8 +26,6 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
     setError(null);
 
     try {
-      console.log('[useProfile] Buscando perfil para:', userId);
-      
       const { data, error: fetchError } = await supabase
         .from('profiles')
         .select('full_name, phone, cpf')
@@ -35,15 +33,11 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
         .maybeSingle();
 
       if (fetchError) {
-        console.error('[useProfile] Erro ao buscar:', fetchError);
         setError(fetchError.message || 'Erro ao carregar perfil');
         setLoading(false);
         return;
       }
 
-      console.log('[useProfile] Perfil carregado:', data);
-      
-      // Usar dados do banco, ou fallback para metadados do auth
       setProfile({
         full_name: data?.full_name || userMetaName || '',
         phone: data?.phone || '',
@@ -51,7 +45,6 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro desconhecido';
-      console.error('[useProfile] Erro inesperado:', err);
       setError(message);
     } finally {
       setLoading(false);
@@ -68,52 +61,15 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
     setError(null);
 
     try {
-      console.log('[useProfile] Iniciando salvamento para:', userId);
-
-      // 1. Verificar se perfil existe
-      const { data: existingProfile, error: checkError } = await supabase
+      // Usar upsert para simplificar - mais rápido que check + update/insert
+      const { error: saveError } = await supabase
         .from('profiles')
-        .select('id')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (checkError) {
-        throw new Error(checkError.message || 'Erro ao verificar perfil');
-      }
-
-      const exists = !!existingProfile;
-      console.log('[useProfile] Perfil existente?', exists);
-
-      // 2. Salvar (UPDATE ou INSERT)
-      let saveError;
-
-      if (exists) {
-        console.log('[useProfile] Fazendo UPDATE...');
-        const result = await supabase
-          .from('profiles')
-          .update({
-            full_name: newProfile.full_name,
-            phone: newProfile.phone,
-            cpf: newProfile.cpf,
-          })
-          .eq('user_id', userId)
-          .select();
-        saveError = result.error;
-        console.log('[useProfile] Resultado UPDATE:', result);
-      } else {
-        console.log('[useProfile] Fazendo INSERT...');
-        const result = await supabase
-          .from('profiles')
-          .insert({
-            user_id: userId,
-            full_name: newProfile.full_name,
-            phone: newProfile.phone,
-            cpf: newProfile.cpf,
-          })
-          .select();
-        saveError = result.error;
-        console.log('[useProfile] Resultado INSERT:', result);
-      }
+        .upsert({
+          user_id: userId,
+          full_name: newProfile.full_name,
+          phone: newProfile.phone,
+          cpf: newProfile.cpf,
+        }, { onConflict: 'user_id' });
 
       if (saveError) {
         throw new Error(saveError.message || 'Erro ao salvar perfil');
@@ -128,7 +84,6 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro desconhecido';
-      console.error('[useProfile] Falha ao salvar:', message);
       setError(message);
       toast.error(message);
       return false;
