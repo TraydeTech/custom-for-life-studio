@@ -1,50 +1,144 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useProfile } from '@/hooks/useProfile';
 import { AccountLayout } from '@/components/account/AccountLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface Profile {
+  full_name: string;
+  phone: string;
+  cpf: string;
+}
 
 export default function MinhaConta() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [showTimeout, setShowTimeout] = useState(false);
   
-  // Passar o nome do user_metadata como fallback
-  const userMetaName = user?.user_metadata?.full_name as string | undefined;
-  
-  const { 
-    profile, 
-    setProfile, 
-    loading, 
-    saving, 
-    error,
-    saveProfile,
-    refetch 
-  } = useProfile(user?.id, userMetaName);
+  const [profile, setProfile] = useState<Profile>({ full_name: '', phone: '', cpf: '' });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Timeout de segurança para auth - máximo 2 segundos
-  useEffect(() => {
-    if (authLoading) {
-      const timer = setTimeout(() => setShowTimeout(true), 2000);
-      return () => clearTimeout(timer);
+  // Buscar perfil diretamente quando user estiver disponível
+  const fetchProfile = useCallback(async () => {
+    if (!user?.id) return;
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('profiles')
+        .select('full_name, phone, cpf')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (data) {
+        setProfile({
+          full_name: data.full_name || '',
+          phone: data.phone || '',
+          cpf: data.cpf || '',
+        });
+      } else {
+        // Usar metadata como fallback
+        setProfile({
+          full_name: (user.user_metadata?.full_name as string) || '',
+          phone: '',
+          cpf: '',
+        });
+      }
+    } catch (err) {
+      console.error('[MinhaConta] Erro ao buscar perfil:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao carregar perfil');
+      // Fallback para metadata
+      setProfile({
+        full_name: (user.user_metadata?.full_name as string) || '',
+        phone: '',
+        cpf: '',
+      });
+    } finally {
+      setLoading(false);
     }
-    setShowTimeout(false);
-  }, [authLoading]);
+  }, [user?.id, user?.user_metadata?.full_name]);
 
+  // Buscar perfil quando user estiver disponível
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (user?.id) {
+      fetchProfile();
+    } else if (!authLoading) {
+      // Se não está carregando e não tem user, redirecionar
       navigate('/login');
     }
-  }, [user, authLoading, navigate]);
+  }, [user?.id, authLoading, fetchProfile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await saveProfile(profile);
+    
+    if (!user?.id) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      // Verificar se perfil existe
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      let saveError;
+
+      if (existing) {
+        const result = await supabase
+          .from('profiles')
+          .update({
+            full_name: profile.full_name,
+            phone: profile.phone,
+            cpf: profile.cpf,
+          })
+          .eq('user_id', user.id);
+        saveError = result.error;
+      } else {
+        const result = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            full_name: profile.full_name,
+            phone: profile.phone,
+            cpf: profile.cpf,
+          });
+        saveError = result.error;
+      }
+
+      if (saveError) {
+        throw saveError;
+      }
+
+      toast.success('Perfil atualizado com sucesso!');
+      
+      // Atualizar metadata em background
+      supabase.auth.updateUser({ data: { full_name: profile.full_name } }).catch(() => {});
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao salvar perfil';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const formatPhone = (value: string) => {
@@ -63,8 +157,8 @@ export default function MinhaConta() {
     return value;
   };
 
-  // Se auth ainda está carregando mas passou do timeout, mostrar formulário
-  if (authLoading && !showTimeout) {
+  // Mostrar loading apenas se auth está carregando E não temos user
+  if (authLoading && !user) {
     return (
       <AccountLayout title="Minha Conta">
         <div className="flex items-center justify-center h-64">
@@ -94,7 +188,7 @@ export default function MinhaConta() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={refetch}
+                onClick={fetchProfile}
                 className="flex-shrink-0"
               >
                 <RefreshCw className="h-4 w-4 mr-1" />
@@ -128,7 +222,7 @@ export default function MinhaConta() {
                 <Label htmlFor="name">Nome Completo</Label>
                 <Input
                   id="name"
-                  value={profile.full_name || ''}
+                  value={profile.full_name}
                   onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
                   placeholder="Seu nome completo"
                   disabled={saving}
@@ -140,7 +234,7 @@ export default function MinhaConta() {
                   <Label htmlFor="phone">Telefone</Label>
                   <Input
                     id="phone"
-                    value={profile.phone || ''}
+                    value={profile.phone}
                     onChange={(e) => setProfile({ ...profile, phone: formatPhone(e.target.value) })}
                     placeholder="(00) 00000-0000"
                     maxLength={15}
@@ -152,7 +246,7 @@ export default function MinhaConta() {
                   <Label htmlFor="cpf">CPF</Label>
                   <Input
                     id="cpf"
-                    value={profile.cpf || ''}
+                    value={profile.cpf}
                     onChange={(e) => setProfile({ ...profile, cpf: formatCPF(e.target.value) })}
                     placeholder="000.000.000-00"
                     maxLength={14}
