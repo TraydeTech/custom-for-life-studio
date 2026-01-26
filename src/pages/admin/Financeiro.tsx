@@ -121,7 +121,7 @@ function FinanceiroContent() {
       
       const { data: order, error: orderError } = await supabase
         .from('orders')
-        .select('id, order_number, payment_method, payment_status, source, total, created_at, shipping_address, user_id')
+        .select('id, order_number, payment_method, payment_status, source, total, created_at, shipping_address, user_id, notes')
         .eq('id', selectedOrderId)
         .maybeSingle();
       
@@ -144,13 +144,21 @@ function FinanceiroContent() {
         }
       }
       
-      // 2. Tenta do shipping_address (campo name)
+      // 2. Tenta extrair do campo notes (formato "Cliente: Nome")
+      if (!customerName && order.notes) {
+        const match = order.notes.match(/^Cliente:\s*(.+)$/i);
+        if (match && match[1]) {
+          customerName = match[1].trim();
+        }
+      }
+      
+      // 3. Tenta do shipping_address (campo name)
       if (!customerName && order.shipping_address) {
         const addr = order.shipping_address as { name?: string; customer_name?: string };
         customerName = addr.name || addr.customer_name || null;
       }
 
-      // 3. Tenta da conta a receber vinculada
+      // 4. Tenta da conta a receber vinculada
       if (!customerName) {
         const { data: receivable } = await supabase
           .from('accounts_receivable')
