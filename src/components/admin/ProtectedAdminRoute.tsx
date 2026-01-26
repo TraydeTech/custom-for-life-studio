@@ -9,38 +9,32 @@ interface ProtectedAdminRouteProps {
 export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const hasChecked = useRef(false);
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    // Evitar verificações duplicadas
-    if (hasChecked.current) return;
-    
     let isMounted = true;
 
     const checkAdminAccess = async () => {
-      hasChecked.current = true;
-      
       try {
-        // Verificar sessão atual
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session?.user) {
-          if (isMounted) {
+          if (isMounted && !hasRedirected.current) {
+            hasRedirected.current = true;
             navigate('/admin/login', { replace: true });
           }
           return;
         }
 
-        // Verificar se é admin usando RPC
         const { data: isAdmin, error } = await supabase.rpc('has_role', {
           _user_id: session.user.id,
           _role: 'admin'
         });
 
         if (error || !isAdmin) {
-          // Não é admin, fazer logout e redirecionar
           await supabase.auth.signOut();
-          if (isMounted) {
+          if (isMounted && !hasRedirected.current) {
+            hasRedirected.current = true;
             navigate('/admin/login', { replace: true });
           }
           return;
@@ -50,7 +44,8 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
           setIsAuthorized(true);
         }
       } catch {
-        if (isMounted) {
+        if (isMounted && !hasRedirected.current) {
+          hasRedirected.current = true;
           navigate('/admin/login', { replace: true });
         }
       }
@@ -58,16 +53,16 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
 
     checkAdminAccess();
 
-    // Listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT' && !hasRedirected.current) {
+        hasRedirected.current = true;
         navigate('/admin/login', { replace: true });
       }
     });
 
-    // Safety timeout para evitar loading infinito
     const timeout = setTimeout(() => {
-      if (isMounted && isAuthorized === null) {
+      if (isMounted && isAuthorized === null && !hasRedirected.current) {
+        hasRedirected.current = true;
         navigate('/admin/login', { replace: true });
       }
     }, 5000);
