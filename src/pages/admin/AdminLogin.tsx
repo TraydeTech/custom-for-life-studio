@@ -20,7 +20,7 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      // Login direto com Supabase para ter controle completo
+      // Login direto com Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password: loginPassword,
@@ -38,26 +38,52 @@ export default function AdminLogin() {
         return;
       }
 
-      // Verificar se é admin
-      const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', {
-        _user_id: data.user.id,
-        _role: 'admin'
-      });
+      // Verificar se é admin com timeout
+      const checkAdminWithTimeout = async (): Promise<boolean> => {
+        return new Promise((resolve) => {
+          const timeout = setTimeout(() => {
+            console.log('Admin check timeout');
+            resolve(false);
+          }, 5000);
 
-      if (roleError || !isAdmin) {
-        // Limpar sessão completamente
-        localStorage.removeItem('sb-ihkbxdayhdewqzezdrfl-auth-token');
-        sessionStorage.clear();
+          supabase.rpc('has_role', {
+            _user_id: data.user.id,
+            _role: 'admin'
+          }).then(({ data: isAdminResult, error: roleError }) => {
+            clearTimeout(timeout);
+            if (roleError) {
+              console.error('Role check error:', roleError);
+              resolve(false);
+            } else {
+              resolve(!!isAdminResult);
+            }
+          });
+        });
+      };
+
+      const isAdminUser = await checkAdminWithTimeout();
+
+      if (!isAdminUser) {
+        // Não é admin - limpar e sair
+        try {
+          localStorage.removeItem('sb-ihkbxdayhdewqzezdrfl-auth-token');
+          sessionStorage.clear();
+        } catch (e) {
+          console.error('Storage clear error:', e);
+        }
         await supabase.auth.signOut({ scope: 'global' });
         toast.error('Esta conta não tem permissão de administrador');
         setIsLoading(false);
         return;
       }
 
-      // É admin, redirecionar
+      // É admin - redirecionar imediatamente
       toast.success('Bem-vindo ao painel administrativo!');
-      window.location.href = '/admin';
-    } catch {
+      
+      // Usar replace para evitar voltar para login
+      window.location.replace('/admin');
+    } catch (err) {
+      console.error('Login error:', err);
       toast.error('Erro ao fazer login');
       setIsLoading(false);
     }
