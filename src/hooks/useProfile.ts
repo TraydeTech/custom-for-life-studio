@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -9,95 +9,76 @@ interface Profile {
 }
 
 const EMPTY_PROFILE: Profile = { full_name: '', phone: '', cpf: '' };
-const FETCH_TIMEOUT = 8000; // 8 segundos de timeout (aumentado)
 
 export function useProfile(userId: string | undefined, userMetaName?: string | null) {
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
 
-  const fetchProfile = useCallback(async () => {
-    // Cancelar requisição anterior se existir
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
+  // Efeito para buscar perfil quando userId estiver disponível
+  useEffect(() => {
+    // Se já buscou ou não tem userId, não fazer nada
     if (!userId) {
-      setLoading(false);
-      // Se não tem userId mas tem nome do metadata, usa como fallback
-      if (userMetaName) {
-        setProfile({ ...EMPTY_PROFILE, full_name: userMetaName });
-      }
       return;
     }
 
-    setLoading(true);
-    setError(null);
-    abortControllerRef.current = new AbortController();
+    // Evitar múltiplas buscas para o mesmo userId
+    if (hasFetched) {
+      return;
+    }
 
-    // Timeout de segurança
-    const timeoutId = setTimeout(() => {
-      console.warn('[useProfile] Timeout atingido, usando fallback');
-      setLoading(false);
-      setProfile({
-        full_name: userMetaName || '',
-        phone: '',
-        cpf: '',
-      });
-    }, FETCH_TIMEOUT);
+    const fetchProfile = async () => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      console.log('[useProfile] Buscando perfil para:', userId);
-      
-      const { data, error: fetchError } = await supabase
-        .from('profiles')
-        .select('full_name, phone, cpf')
-        .eq('user_id', userId)
-        .maybeSingle();
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('profiles')
+          .select('full_name, phone, cpf')
+          .eq('user_id', userId)
+          .maybeSingle();
 
-      clearTimeout(timeoutId);
-
-      console.log('[useProfile] Dados recebidos:', data, 'Erro:', fetchError);
-
-      if (fetchError) {
-        if (fetchError.message?.includes('abort')) {
-          return;
+        if (fetchError) {
+          console.error('[useProfile] Erro:', fetchError);
+          setError(fetchError.message);
+          // Fallback para metadata
+          setProfile({
+            full_name: userMetaName || '',
+            phone: '',
+            cpf: '',
+          });
+        } else if (data) {
+          setProfile({
+            full_name: data.full_name ?? '',
+            phone: data.phone ?? '',
+            cpf: data.cpf ?? '',
+          });
+        } else {
+          // Perfil não existe, usar metadata
+          setProfile({
+            full_name: userMetaName || '',
+            phone: '',
+            cpf: '',
+          });
         }
-        setError(fetchError.message || 'Erro ao carregar perfil');
+      } catch (err) {
+        console.error('[useProfile] Erro inesperado:', err);
+        setError(err instanceof Error ? err.message : 'Erro desconhecido');
         setProfile({
           full_name: userMetaName || '',
           phone: '',
           cpf: '',
         });
+      } finally {
         setLoading(false);
-        return;
+        setHasFetched(true);
       }
+    };
 
-      // Sempre usar os dados do banco quando disponíveis
-      setProfile({
-        full_name: data?.full_name ?? userMetaName ?? '',
-        phone: data?.phone ?? '',
-        cpf: data?.cpf ?? '',
-      });
-      setLoading(false);
-    } catch (err) {
-      clearTimeout(timeoutId);
-      if (err instanceof Error && err.name === 'AbortError') {
-        return;
-      }
-      const message = err instanceof Error ? err.message : 'Erro desconhecido';
-      console.error('[useProfile] Erro:', message);
-      setError(message);
-      setProfile({
-        full_name: userMetaName || '',
-        phone: '',
-        cpf: '',
-      });
-      setLoading(false);
-    }
-  }, [userId, userMetaName]);
+    fetchProfile();
+  }, [userId, userMetaName, hasFetched]);
 
   const saveProfile = useCallback(async (newProfile: Profile): Promise<boolean> => {
     if (!userId) {
@@ -109,7 +90,7 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
     setError(null);
 
     try {
-      // Verificar se perfil existe primeiro
+      // Verificar se perfil existe
       const { data: existing } = await supabase
         .from('profiles')
         .select('id')
@@ -119,7 +100,6 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
       let saveError;
 
       if (existing) {
-        // Update
         const result = await supabase
           .from('profiles')
           .update({
@@ -130,7 +110,6 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
           .eq('user_id', userId);
         saveError = result.error;
       } else {
-        // Insert
         const result = await supabase
           .from('profiles')
           .insert({
@@ -143,18 +122,18 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
       }
 
       if (saveError) {
-        throw new Error(saveError.message || 'Erro ao salvar perfil');
+        throw new Error(saveError.message);
       }
 
       setProfile(newProfile);
       toast.success('Perfil atualizado com sucesso!');
-
-      // Auth metadata em background
+      
+      // Atualizar metadata em background
       supabase.auth.updateUser({ data: { full_name: newProfile.full_name } }).catch(() => {});
 
       return true;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro desconhecido';
+      const message = err instanceof Error ? err.message : 'Erro ao salvar';
       setError(message);
       toast.error(message);
       return false;
@@ -163,16 +142,9 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
     }
   }, [userId]);
 
-  useEffect(() => {
-    fetchProfile();
-    
-    // Cleanup: abortar requisição ao desmontar
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [fetchProfile]);
+  const refetch = useCallback(() => {
+    setHasFetched(false);
+  }, []);
 
   return {
     profile,
@@ -181,6 +153,6 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
     saving,
     error,
     saveProfile,
-    refetch: fetchProfile,
+    refetch,
   };
 }
