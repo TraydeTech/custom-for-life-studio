@@ -38,33 +38,44 @@ export default function AdminLogin() {
         return;
       }
 
-      // Verificar se é admin com timeout
-      const checkAdminWithTimeout = async (): Promise<boolean> => {
-        return new Promise((resolve) => {
-          const timeout = setTimeout(() => {
-            console.log('Admin check timeout');
-            resolve(false);
-          }, 5000);
-
-          supabase.rpc('has_role', {
+      // Verificação com retry (3 tentativas)
+      let isAdminUser: boolean | null = null;
+      
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const { data: isAdminResult, error: roleError } = await supabase.rpc('has_role', {
             _user_id: data.user.id,
             _role: 'admin'
-          }).then(({ data: isAdminResult, error: roleError }) => {
-            clearTimeout(timeout);
-            if (roleError) {
-              console.error('Role check error:', roleError);
-              resolve(false);
-            } else {
-              resolve(!!isAdminResult);
-            }
           });
-        });
-      };
+          
+          if (!roleError) {
+            isAdminUser = !!isAdminResult;
+            break;
+          }
+          
+          console.log(`Tentativa ${attempt + 1} falhou:`, roleError);
+          
+          // Esperar antes de tentar novamente
+          if (attempt < 2) {
+            await new Promise(r => setTimeout(r, 1500));
+          }
+        } catch (err) {
+          console.log(`Tentativa ${attempt + 1} erro:`, err);
+          if (attempt < 2) {
+            await new Promise(r => setTimeout(r, 1500));
+          }
+        }
+      }
 
-      const isAdminUser = await checkAdminWithTimeout();
+      // Se não conseguiu verificar (falha de rede) - NÃO fazer logout
+      if (isAdminUser === null) {
+        toast.error('Erro de conexão. Por favor, tente novamente.');
+        setIsLoading(false);
+        return;
+      }
 
+      // Se confirmou que não é admin - fazer logout
       if (!isAdminUser) {
-        // Não é admin - limpar e sair
         try {
           localStorage.removeItem('sb-ihkbxdayhdewqzezdrfl-auth-token');
           sessionStorage.clear();
@@ -79,8 +90,6 @@ export default function AdminLogin() {
 
       // É admin - redirecionar imediatamente
       toast.success('Bem-vindo ao painel administrativo!');
-      
-      // Usar replace para evitar voltar para login
       window.location.replace('/admin');
     } catch (err) {
       console.error('Login error:', err);
