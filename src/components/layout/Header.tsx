@@ -64,13 +64,26 @@ export function Header() {
     };
   }, [user]);
 
-  // Estados de exibição - cliente é assumido quando não é admin
+  // Quando admin acessa o site público, deslogar automaticamente
+  useEffect(() => {
+    if (isAdminUser === true && user) {
+      // Admin tentando acessar site público - deslogar
+      const logoutAdmin = async () => {
+        await signOut();
+        window.location.href = '/';
+      };
+      logoutAdmin();
+    }
+  }, [isAdminUser, user, signOut]);
+
+  // Estados de exibição - esperar verificação completa
   const isLoggedIn = !!user;
   const adminCheckComplete = isAdminUser !== null;
   const isAdmin = user && isAdminUser === true;
-  // Cliente: usuário logado E (verificação completa mostrando que não é admin OU verificação ainda em andamento)
-  // Assumimos cliente por padrão para mostrar a UI rapidamente
-  const isCustomer = user && !isAdmin;
+  // Cliente: usuário logado E verificação completa mostrando que NÃO é admin
+  const isCustomer = user && adminCheckComplete && isAdminUser === false;
+  // Enquanto verifica, não mostrar UI personalizada
+  const isCheckingStatus = user && !adminCheckComplete;
   
   // Extrair o primeiro nome do usuário
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || 'Cliente';
@@ -121,7 +134,12 @@ export function Header() {
             <Button variant="ghost">Produtos</Button>
           </Link>
 
-          {isCustomer ? (
+          {isCheckingStatus ? (
+            // Verificando status do usuário - mostrar loading discreto
+            <div className="flex items-center gap-2">
+              <div className="animate-pulse h-8 w-20 bg-muted rounded"></div>
+            </div>
+          ) : isCustomer ? (
             // UI para CLIENTES logados
             <>
               <Link to="/carrinho" className="relative">
@@ -177,22 +195,8 @@ export function Header() {
               </DropdownMenu>
             </>
           ) : isAdmin ? (
-            // UI para ADMIN logado - apenas acesso ao painel e sair
-            <div className="flex items-center gap-2">
-              <Link to="/admin">
-                <Button variant="ghost" size="icon" title="Painel Administrativo">
-                  <Settings className="h-5 w-5" />
-                </Button>
-              </Link>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={handleSignOut}
-                title="Sair"
-              >
-                <LogOut className="h-5 w-5" />
-              </Button>
-            </div>
+            // Admin não deve ver esta UI - será deslogado automaticamente
+            null
           ) : (
             // UI para visitantes NÃO logados
             <div className="flex items-center gap-2">
@@ -245,7 +249,12 @@ export function Header() {
               <Button variant="ghost" className="w-full justify-start">Produtos</Button>
             </Link>
             
-            {isCustomer ? (
+            {isCheckingStatus ? (
+              // Verificando status
+              <div className="px-4 py-2">
+                <div className="animate-pulse h-8 w-32 bg-muted rounded"></div>
+              </div>
+            ) : isCustomer ? (
               // Menu mobile para CLIENTES
               <>
                 <div className="px-4 py-2 text-sm font-medium text-primary">
@@ -282,27 +291,9 @@ export function Header() {
                 </Button>
               </>
             ) : isAdmin ? (
-              // Menu mobile para ADMIN
-              <>
-                <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Painel Admin
-                  </Button>
-                </Link>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-destructive"
-                  onClick={() => {
-                    handleSignOut();
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sair
-                </Button>
-              </>
-            ) : !isLoggedIn && (
+              // Admin será deslogado automaticamente - não mostrar UI
+              null
+            ) : (
               // Menu mobile para VISITANTES
               <>
                 <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
