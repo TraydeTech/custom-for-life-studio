@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -9,11 +9,17 @@ interface ProtectedAdminRouteProps {
 export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const hasChecked = useRef(false);
 
   useEffect(() => {
+    // Evitar verificações duplicadas
+    if (hasChecked.current) return;
+    
     let isMounted = true;
 
     const checkAdminAccess = async () => {
+      hasChecked.current = true;
+      
       try {
         // Verificar sessão atual
         const { data: { session } } = await supabase.auth.getSession();
@@ -71,7 +77,7 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, [navigate, isAuthorized]);
+  }, [navigate]);
 
   if (isAuthorized === null) {
     return (
