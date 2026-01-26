@@ -167,7 +167,10 @@ export function Header() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
-                    onClick={handleSignOut}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      handleSignOut();
+                    }}
                     className="text-destructive cursor-pointer"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
