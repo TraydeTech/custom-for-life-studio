@@ -197,7 +197,10 @@ export function Header() {
               </Button>
             </div>
           ) : (
-            // UI para visitantes NÃO logados
+            // ⚠️ ATENÇÃO: ESTA SEÇÃO NÃO PODE SER ALTERADA ⚠️
+            // UI para visitantes NÃO logados - Menu padrão obrigatório:
+            // Produtos | Entrar | Criar Conta | Ícone Admin
+            // Esta estrutura é FIXA e não pode ser modificada por nenhuma alteração futura
             <div className="flex items-center gap-2">
               <Link to="/login">
                 <Button variant="ghost">Entrar</Button>
@@ -306,7 +309,8 @@ export function Header() {
                 </Button>
               </>
             ) : !isLoggedIn && (
-              // Menu mobile para VISITANTES
+              // ⚠️ ATENÇÃO: ESTA SEÇÃO NÃO PODE SER ALTERADA ⚠️
+              // Menu mobile para VISITANTES - Menu padrão obrigatório
               <>
                 <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start">Entrar</Button>
