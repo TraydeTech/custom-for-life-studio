@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -9,21 +9,49 @@ interface Profile {
 }
 
 const EMPTY_PROFILE: Profile = { full_name: '', phone: '', cpf: '' };
+const FETCH_TIMEOUT = 3000; // 3 segundos de timeout
 
 export function useProfile(userId: string | undefined, userMetaName?: string | null) {
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchProfile = useCallback(async () => {
+    // Cancelar requisição anterior se existir
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
     if (!userId) {
       setLoading(false);
+      // Se não tem userId mas tem nome do metadata, usa como fallback
+      if (userMetaName) {
+        setProfile({ ...EMPTY_PROFILE, full_name: userMetaName });
+      }
       return;
     }
 
     setLoading(true);
     setError(null);
+
+    // Criar novo AbortController
+    abortControllerRef.current = new AbortController();
+
+    // Timeout de segurança
+    const timeoutId = setTimeout(() => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      setLoading(false);
+      // Usar dados do metadata como fallback
+      setProfile({
+        full_name: userMetaName || '',
+        phone: '',
+        cpf: '',
+      });
+    }, FETCH_TIMEOUT);
 
     try {
       const { data, error: fetchError } = await supabase
@@ -32,8 +60,20 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
         .eq('user_id', userId)
         .maybeSingle();
 
+      clearTimeout(timeoutId);
+
       if (fetchError) {
+        // Ignorar erros de abort
+        if (fetchError.message?.includes('abort')) {
+          return;
+        }
         setError(fetchError.message || 'Erro ao carregar perfil');
+        // Usar metadata como fallback
+        setProfile({
+          full_name: userMetaName || '',
+          phone: '',
+          cpf: '',
+        });
         setLoading(false);
         return;
       }
@@ -44,8 +84,19 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
         cpf: data?.cpf || '',
       });
     } catch (err) {
+      clearTimeout(timeoutId);
+      // Ignorar erros de abort
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
       const message = err instanceof Error ? err.message : 'Erro desconhecido';
       setError(message);
+      // Usar metadata como fallback
+      setProfile({
+        full_name: userMetaName || '',
+        phone: '',
+        cpf: '',
+      });
     } finally {
       setLoading(false);
     }
@@ -61,15 +112,38 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
     setError(null);
 
     try {
-      // Usar upsert para simplificar - mais rápido que check + update/insert
-      const { error: saveError } = await supabase
+      // Verificar se perfil existe primeiro
+      const { data: existing } = await supabase
         .from('profiles')
-        .upsert({
-          user_id: userId,
-          full_name: newProfile.full_name,
-          phone: newProfile.phone,
-          cpf: newProfile.cpf,
-        }, { onConflict: 'user_id' });
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      let saveError;
+
+      if (existing) {
+        // Update
+        const result = await supabase
+          .from('profiles')
+          .update({
+            full_name: newProfile.full_name,
+            phone: newProfile.phone,
+            cpf: newProfile.cpf,
+          })
+          .eq('user_id', userId);
+        saveError = result.error;
+      } else {
+        // Insert
+        const result = await supabase
+          .from('profiles')
+          .insert({
+            user_id: userId,
+            full_name: newProfile.full_name,
+            phone: newProfile.phone,
+            cpf: newProfile.cpf,
+          });
+        saveError = result.error;
+      }
 
       if (saveError) {
         throw new Error(saveError.message || 'Erro ao salvar perfil');
@@ -94,6 +168,13 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
 
   useEffect(() => {
     fetchProfile();
+    
+    // Cleanup: abortar requisição ao desmontar
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [fetchProfile]);
 
   return {

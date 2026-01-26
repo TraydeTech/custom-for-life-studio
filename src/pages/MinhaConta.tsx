@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function MinhaConta() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [showTimeout, setShowTimeout] = useState(false);
   
   // Passar o nome do user_metadata como fallback
   const userMetaName = user?.user_metadata?.full_name as string | undefined;
@@ -25,6 +26,15 @@ export default function MinhaConta() {
     saveProfile,
     refetch 
   } = useProfile(user?.id, userMetaName);
+
+  // Timeout de segurança para auth - máximo 2 segundos
+  useEffect(() => {
+    if (authLoading) {
+      const timer = setTimeout(() => setShowTimeout(true), 2000);
+      return () => clearTimeout(timer);
+    }
+    setShowTimeout(false);
+  }, [authLoading]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -53,7 +63,8 @@ export default function MinhaConta() {
     return value;
   };
 
-  if (authLoading) {
+  // Se auth ainda está carregando mas passou do timeout, mostrar formulário
+  if (authLoading && !showTimeout) {
     return (
       <AccountLayout title="Minha Conta">
         <div className="flex items-center justify-center h-64">
