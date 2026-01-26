@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { AccountLayout } from '@/components/account/AccountLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2 } from 'lucide-react';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { User } from '@supabase/supabase-js';
 
 interface Profile {
   full_name: string;
@@ -18,26 +18,34 @@ interface Profile {
 }
 
 export default function MinhaConta() {
-  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   
+  const [user, setUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<Profile>({ full_name: '', phone: '', cpf: '' });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const fetchedRef = useRef(false);
 
-  // Buscar perfil uma única vez quando user.id estiver disponível
-  const loadProfile = useCallback(async (userId: string) => {
+  // Buscar perfil diretamente do banco
+  const fetchProfile = async (userId: string) => {
+    console.log('[MinhaConta] Buscando perfil para userId:', userId);
+    
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('full_name, phone, cpf')
         .eq('user_id', userId)
-        .maybeSingle();
+        .single();
 
-      if (error) throw error;
+      console.log('[MinhaConta] Resposta do banco:', { data, error });
+
+      if (error) {
+        console.error('[MinhaConta] Erro ao buscar perfil:', error);
+        return;
+      }
 
       if (data) {
+        console.log('[MinhaConta] Dados encontrados:', data);
         setFormData({
           full_name: data.full_name || '',
           phone: data.phone || '',
@@ -45,21 +53,65 @@ export default function MinhaConta() {
         });
       }
     } catch (err) {
-      console.error('Erro ao carregar perfil:', err);
+      console.error('[MinhaConta] Erro inesperado:', err);
     } finally {
       setIsLoading(false);
-      setHasLoaded(true);
     }
-  }, []);
+  };
 
-  // Efeito para carregar perfil
+  // Inicialização - pegar sessão atual e escutar mudanças
   useEffect(() => {
-    if (user?.id && !hasLoaded) {
-      loadProfile(user.id);
-    } else if (!authLoading && !user) {
-      navigate('/login');
-    }
-  }, [user?.id, hasLoaded, authLoading, navigate, loadProfile]);
+    let isMounted = true;
+
+    const initialize = async () => {
+      // Pegar sessão atual
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      console.log('[MinhaConta] Sessão obtida:', session?.user?.id);
+      
+      if (!isMounted) return;
+
+      if (session?.user) {
+        setUser(session.user);
+        
+        // Buscar perfil apenas uma vez
+        if (!fetchedRef.current) {
+          fetchedRef.current = true;
+          await fetchProfile(session.user.id);
+        }
+      } else {
+        navigate('/login');
+      }
+    };
+
+    initialize();
+
+    // Escutar mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('[MinhaConta] Auth state changed:', event, session?.user?.id);
+        
+        if (!isMounted) return;
+
+        if (session?.user) {
+          setUser(session.user);
+          
+          // Buscar perfil se ainda não buscou
+          if (!fetchedRef.current) {
+            fetchedRef.current = true;
+            await fetchProfile(session.user.id);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          navigate('/login');
+        }
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   // Salvar perfil
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,19 +127,19 @@ export default function MinhaConta() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .upsert({
-          user_id: user.id,
+        .update({
           full_name: formData.full_name,
           phone: formData.phone,
           cpf: formData.cpf,
-        }, { onConflict: 'user_id' });
+        })
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
       toast.success('Perfil atualizado com sucesso!');
     } catch (err) {
+      console.error('[MinhaConta] Erro ao salvar:', err);
       toast.error('Erro ao salvar perfil');
-      console.error(err);
     } finally {
       setIsSaving(false);
     }
@@ -108,28 +160,6 @@ export default function MinhaConta() {
     }
     return value;
   };
-
-  // Loading do auth
-  if (authLoading) {
-    return (
-      <AccountLayout title="Minha Conta">
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-4 w-48 mt-2" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <div className="grid grid-cols-2 gap-4">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          </CardContent>
-        </Card>
-      </AccountLayout>
-    );
-  }
 
   return (
     <AccountLayout title="Minha Conta">
