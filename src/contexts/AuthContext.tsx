@@ -163,9 +163,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    // Limpar estado local primeiro
     setIsAdmin(false);
     setAdminChecked(false);
-    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    
+    // Forçar limpeza do localStorage
+    try {
+      localStorage.removeItem('sb-ihkbxdayhdewqzezdrfl-auth-token');
+      sessionStorage.clear();
+    } catch (e) {
+      console.error('Error clearing storage:', e);
+    }
+    
+    // Fazer signOut no Supabase
+    await supabase.auth.signOut({ scope: 'global' });
   };
 
   return (

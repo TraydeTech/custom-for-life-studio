@@ -45,7 +45,10 @@ export default function AdminLogin() {
       });
 
       if (roleError || !isAdmin) {
-        await supabase.auth.signOut();
+        // Limpar sessão completamente
+        localStorage.removeItem('sb-ihkbxdayhdewqzezdrfl-auth-token');
+        sessionStorage.clear();
+        await supabase.auth.signOut({ scope: 'global' });
         toast.error('Esta conta não tem permissão de administrador');
         setIsLoading(false);
         return;
