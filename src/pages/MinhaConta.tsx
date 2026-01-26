@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Profile {
   full_name: string;
@@ -16,70 +18,95 @@ interface Profile {
   cpf: string;
 }
 
+const EMPTY_PROFILE: Profile = { full_name: '', phone: '', cpf: '' };
+
+// Função para buscar perfil
+const fetchProfile = async (userId: string): Promise<Profile> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('full_name, phone, cpf')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return {
+    full_name: data?.full_name || '',
+    phone: data?.phone || '',
+    cpf: data?.cpf || '',
+  };
+};
+
+// Função para salvar perfil
+const saveProfile = async ({ userId, profile }: { userId: string; profile: Profile }) => {
+  const { error } = await supabase
+    .from('profiles')
+    .upsert({
+      user_id: userId,
+      full_name: profile.full_name,
+      phone: profile.phone,
+      cpf: profile.cpf,
+    }, { onConflict: 'user_id' });
+
+  if (error) throw error;
+  return profile;
+};
+
 export default function MinhaConta() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
-  const [profile, setProfile] = useState<Profile>({ full_name: '', phone: '', cpf: '' });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Profile>(EMPTY_PROFILE);
 
-  // Buscar perfil diretamente quando user estiver disponível
-  const fetchProfile = useCallback(async () => {
-    if (!user?.id) return;
-    
-    setLoading(true);
-    setError(null);
+  // Query para buscar perfil com cache
+  const { 
+    data: profile, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: () => fetchProfile(user!.id),
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 5, // 5 minutos de cache
+    retry: 2,
+    retryDelay: 500,
+  });
 
-    try {
-      const { data, error: fetchError } = await supabase
-        .from('profiles')
-        .select('full_name, phone, cpf')
-        .eq('user_id', user.id)
-        .maybeSingle();
+  // Mutation para salvar
+  const mutation = useMutation({
+    mutationFn: saveProfile,
+    onSuccess: (savedProfile) => {
+      queryClient.setQueryData(['profile', user?.id], savedProfile);
+      toast.success('Perfil atualizado com sucesso!');
+      // Atualizar metadata em background
+      supabase.auth.updateUser({ data: { full_name: savedProfile.full_name } }).catch(() => {});
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Erro ao salvar perfil');
+    },
+  });
 
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      if (data) {
-        setProfile({
-          full_name: data.full_name || '',
-          phone: data.phone || '',
-          cpf: data.cpf || '',
-        });
-      } else {
-        // Usar metadata como fallback
-        setProfile({
-          full_name: (user.user_metadata?.full_name as string) || '',
-          phone: '',
-          cpf: '',
-        });
-      }
-    } catch (err) {
-      console.error('[MinhaConta] Erro ao buscar perfil:', err);
-      setError(err instanceof Error ? err.message : 'Erro ao carregar perfil');
-      // Fallback para metadata
-      setProfile({
-        full_name: (user.user_metadata?.full_name as string) || '',
-        phone: '',
-        cpf: '',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id, user?.user_metadata?.full_name]);
-
-  // Buscar perfil quando user estiver disponível
+  // Sincronizar formData com dados carregados
   useEffect(() => {
-    if (user?.id) {
-      fetchProfile();
-    } else if (!authLoading) {
-      // Se não está carregando e não tem user, redirecionar
+    if (profile) {
+      setFormData(profile);
+    } else if (user?.user_metadata?.full_name && !isLoading) {
+      // Fallback para metadata se não houver perfil
+      setFormData(prev => ({
+        ...prev,
+        full_name: (user.user_metadata.full_name as string) || prev.full_name,
+      }));
+    }
+  }, [profile, user?.user_metadata?.full_name, isLoading]);
+
+  // Redirect se não autenticado
+  useEffect(() => {
+    if (!authLoading && !user) {
       navigate('/login');
     }
-  }, [user?.id, authLoading, fetchProfile, navigate]);
+  }, [authLoading, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,56 +116,7 @@ export default function MinhaConta() {
       return;
     }
 
-    setSaving(true);
-    setError(null);
-
-    try {
-      // Verificar se perfil existe
-      const { data: existing } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      let saveError;
-
-      if (existing) {
-        const result = await supabase
-          .from('profiles')
-          .update({
-            full_name: profile.full_name,
-            phone: profile.phone,
-            cpf: profile.cpf,
-          })
-          .eq('user_id', user.id);
-        saveError = result.error;
-      } else {
-        const result = await supabase
-          .from('profiles')
-          .insert({
-            user_id: user.id,
-            full_name: profile.full_name,
-            phone: profile.phone,
-            cpf: profile.cpf,
-          });
-        saveError = result.error;
-      }
-
-      if (saveError) {
-        throw saveError;
-      }
-
-      toast.success('Perfil atualizado com sucesso!');
-      
-      // Atualizar metadata em background
-      supabase.auth.updateUser({ data: { full_name: profile.full_name } }).catch(() => {});
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao salvar perfil';
-      setError(message);
-      toast.error(message);
-    } finally {
-      setSaving(false);
-    }
+    mutation.mutate({ userId: user.id, profile: formData });
   };
 
   const formatPhone = (value: string) => {
@@ -157,16 +135,29 @@ export default function MinhaConta() {
     return value;
   };
 
-  // Mostrar loading apenas se auth está carregando E não temos user
-  if (authLoading && !user) {
+  // Loading inicial do auth
+  if (authLoading) {
     return (
       <AccountLayout title="Minha Conta">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-4 w-48 mt-2" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <div className="grid grid-cols-2 gap-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </CardContent>
+        </Card>
       </AccountLayout>
     );
   }
+
+  const showError = error && !isLoading;
 
   return (
     <AccountLayout title="Minha Conta">
@@ -178,17 +169,17 @@ export default function MinhaConta() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {error && (
+          {showError && (
             <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-3">
               <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
               <div className="flex-1">
-                <p className="text-sm text-destructive font-medium">Erro</p>
-                <p className="text-sm text-destructive/80">{error}</p>
+                <p className="text-sm text-destructive font-medium">Erro ao carregar</p>
+                <p className="text-sm text-destructive/80">{(error as Error).message}</p>
               </div>
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={fetchProfile}
+                onClick={() => refetch()}
                 className="flex-shrink-0"
               >
                 <RefreshCw className="h-4 w-4 mr-1" />
@@ -197,10 +188,26 @@ export default function MinhaConta() {
             </div>
           )}
 
-          {loading ? (
-            <div className="flex items-center justify-center h-32">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <span className="ml-2 text-muted-foreground">Carregando...</span>
+          {isLoading ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -222,10 +229,10 @@ export default function MinhaConta() {
                 <Label htmlFor="name">Nome Completo</Label>
                 <Input
                   id="name"
-                  value={profile.full_name}
-                  onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                   placeholder="Seu nome completo"
-                  disabled={saving}
+                  disabled={mutation.isPending}
                 />
               </div>
 
@@ -234,11 +241,11 @@ export default function MinhaConta() {
                   <Label htmlFor="phone">Telefone</Label>
                   <Input
                     id="phone"
-                    value={profile.phone}
-                    onChange={(e) => setProfile({ ...profile, phone: formatPhone(e.target.value) })}
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
                     placeholder="(00) 00000-0000"
                     maxLength={15}
-                    disabled={saving}
+                    disabled={mutation.isPending}
                   />
                 </div>
 
@@ -246,17 +253,17 @@ export default function MinhaConta() {
                   <Label htmlFor="cpf">CPF</Label>
                   <Input
                     id="cpf"
-                    value={profile.cpf}
-                    onChange={(e) => setProfile({ ...profile, cpf: formatCPF(e.target.value) })}
+                    value={formData.cpf}
+                    onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
                     placeholder="000.000.000-00"
                     maxLength={14}
-                    disabled={saving}
+                    disabled={mutation.isPending}
                   />
                 </div>
               </div>
 
-              <Button type="submit" disabled={saving}>
-                {saving ? (
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Salvando...
