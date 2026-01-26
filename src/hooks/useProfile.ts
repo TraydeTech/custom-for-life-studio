@@ -9,7 +9,7 @@ interface Profile {
 }
 
 const EMPTY_PROFILE: Profile = { full_name: '', phone: '', cpf: '' };
-const FETCH_TIMEOUT = 3000; // 3 segundos de timeout
+const FETCH_TIMEOUT = 8000; // 8 segundos de timeout (aumentado)
 
 export function useProfile(userId: string | undefined, userMetaName?: string | null) {
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
@@ -35,17 +35,12 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
 
     setLoading(true);
     setError(null);
-
-    // Criar novo AbortController
     abortControllerRef.current = new AbortController();
 
     // Timeout de segurança
     const timeoutId = setTimeout(() => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      console.warn('[useProfile] Timeout atingido, usando fallback');
       setLoading(false);
-      // Usar dados do metadata como fallback
       setProfile({
         full_name: userMetaName || '',
         phone: '',
@@ -54,6 +49,8 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
     }, FETCH_TIMEOUT);
 
     try {
+      console.log('[useProfile] Buscando perfil para:', userId);
+      
       const { data, error: fetchError } = await supabase
         .from('profiles')
         .select('full_name, phone, cpf')
@@ -62,13 +59,13 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
 
       clearTimeout(timeoutId);
 
+      console.log('[useProfile] Dados recebidos:', data, 'Erro:', fetchError);
+
       if (fetchError) {
-        // Ignorar erros de abort
         if (fetchError.message?.includes('abort')) {
           return;
         }
         setError(fetchError.message || 'Erro ao carregar perfil');
-        // Usar metadata como fallback
         setProfile({
           full_name: userMetaName || '',
           phone: '',
@@ -78,26 +75,26 @@ export function useProfile(userId: string | undefined, userMetaName?: string | n
         return;
       }
 
+      // Sempre usar os dados do banco quando disponíveis
       setProfile({
-        full_name: data?.full_name || userMetaName || '',
-        phone: data?.phone || '',
-        cpf: data?.cpf || '',
+        full_name: data?.full_name ?? userMetaName ?? '',
+        phone: data?.phone ?? '',
+        cpf: data?.cpf ?? '',
       });
+      setLoading(false);
     } catch (err) {
       clearTimeout(timeoutId);
-      // Ignorar erros de abort
       if (err instanceof Error && err.name === 'AbortError') {
         return;
       }
       const message = err instanceof Error ? err.message : 'Erro desconhecido';
+      console.error('[useProfile] Erro:', message);
       setError(message);
-      // Usar metadata como fallback
       setProfile({
         full_name: userMetaName || '',
         phone: '',
         cpf: '',
       });
-    } finally {
       setLoading(false);
     }
   }, [userId, userMetaName]);
