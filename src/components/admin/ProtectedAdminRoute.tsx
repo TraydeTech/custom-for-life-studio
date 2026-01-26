@@ -9,18 +9,21 @@ interface ProtectedAdminRouteProps {
 export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const hasRedirected = useRef(false);
+  const hasChecked = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
 
     const checkAdminAccess = async () => {
+      // Evita verificação duplicada
+      if (hasChecked.current) return;
+      hasChecked.current = true;
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session?.user) {
-          if (isMounted && !hasRedirected.current) {
-            hasRedirected.current = true;
+          if (isMounted) {
             navigate('/admin/login', { replace: true });
           }
           return;
@@ -33,8 +36,7 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
 
         if (error || !isAdmin) {
           await supabase.auth.signOut();
-          if (isMounted && !hasRedirected.current) {
-            hasRedirected.current = true;
+          if (isMounted) {
             navigate('/admin/login', { replace: true });
           }
           return;
@@ -44,8 +46,7 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
           setIsAuthorized(true);
         }
       } catch {
-        if (isMounted && !hasRedirected.current) {
-          hasRedirected.current = true;
+        if (isMounted) {
           navigate('/admin/login', { replace: true });
         }
       }
@@ -54,23 +55,14 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
     checkAdminAccess();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT' && !hasRedirected.current) {
-        hasRedirected.current = true;
+      if (event === 'SIGNED_OUT') {
         navigate('/admin/login', { replace: true });
       }
     });
 
-    const timeout = setTimeout(() => {
-      if (isMounted && isAuthorized === null && !hasRedirected.current) {
-        hasRedirected.current = true;
-        navigate('/admin/login', { replace: true });
-      }
-    }, 5000);
-
     return () => {
       isMounted = false;
       subscription.unsubscribe();
-      clearTimeout(timeout);
     };
   }, [navigate]);
 
