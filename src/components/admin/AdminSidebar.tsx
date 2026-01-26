@@ -6,12 +6,9 @@ import {
   Users, 
   Tags,
   LogOut,
-  Store,
-  Wallet,
-  ChevronDown
+  Home,
+  Store
 } from 'lucide-react';
-import { useState } from 'react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -26,17 +23,9 @@ const menuItems = [
   { icon: Users, label: 'Clientes', path: '/admin/clientes' },
 ];
 
-const financeItems = [
-  { label: 'Contas a Receber', path: '/admin/financeiro/receber' },
-  { label: 'Contas a Pagar', path: '/admin/financeiro/pagar' },
-];
-
 export function AdminSidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
-  const [financeOpen, setFinanceOpen] = useState(
-    location.pathname.startsWith('/admin/financeiro')
-  );
 
   const handleLogout = async () => {
     await signOut();
@@ -75,46 +64,6 @@ export function AdminSidebar() {
               </li>
             );
           })}
-          
-          {/* Menu Financeiro com submenu */}
-          <li>
-            <Collapsible open={financeOpen} onOpenChange={setFinanceOpen}>
-              <CollapsibleTrigger className={cn(
-                "flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors",
-                location.pathname.startsWith('/admin/financeiro')
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}>
-                <div className="flex items-center gap-3">
-                  <Wallet className="h-5 w-5" />
-                  <span className="font-medium">Financeiro</span>
-                </div>
-                <ChevronDown className={cn(
-                  "h-4 w-4 transition-transform",
-                  financeOpen && "rotate-180"
-                )} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pl-4 mt-1 space-y-1">
-                {financeItems.map((item) => {
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-sm",
-                        isActive
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </CollapsibleContent>
-            </Collapsible>
-          </li>
         </ul>
       </nav>
 

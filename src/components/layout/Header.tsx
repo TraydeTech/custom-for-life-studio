@@ -64,16 +64,13 @@ export function Header() {
     };
   }, [user]);
 
-  // Estados de exibição
+  // Estados de exibição - cliente é assumido quando não é admin
   const isLoggedIn = !!user;
   const adminCheckComplete = isAdminUser !== null;
   const isAdmin = user && isAdminUser === true;
-  // Cliente: usuário logado E verificação completa mostrando que NÃO é admin
-  const isCustomer = user && adminCheckComplete && isAdminUser === false;
-  // Enquanto verifica (APENAS se tiver usuário logado)
-  const isCheckingStatus = user && !adminCheckComplete;
-  // Visitante: não tem usuário logado
-  const isVisitor = !user;
+  // Cliente: usuário logado E (verificação completa mostrando que não é admin OU verificação ainda em andamento)
+  // Assumimos cliente por padrão para mostrar a UI rapidamente
+  const isCustomer = user && !isAdmin;
   
   // Extrair o primeiro nome do usuário
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || 'Cliente';
@@ -124,29 +121,7 @@ export function Header() {
             <Button variant="ghost">Produtos</Button>
           </Link>
 
-          {isVisitor ? (
-            // UI para visitantes NÃO logados
-            <div className="flex items-center gap-2">
-              <Link to="/login">
-                <Button variant="ghost">Entrar</Button>
-              </Link>
-              <Link to="/cadastro">
-                <Button>Criar Conta</Button>
-              </Link>
-              <Link 
-                to="/admin/login" 
-                className="p-2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                title="Acesso Administrativo"
-              >
-                <Settings className="h-4 w-4" />
-              </Link>
-            </div>
-          ) : isCheckingStatus ? (
-            // Verificando status do usuário logado - mostrar loading discreto
-            <div className="flex items-center gap-2">
-              <div className="animate-pulse h-8 w-20 bg-muted rounded"></div>
-            </div>
-          ) : isCustomer ? (
+          {isCustomer ? (
             // UI para CLIENTES logados
             <>
               <Link to="/carrinho" className="relative">
@@ -202,7 +177,7 @@ export function Header() {
               </DropdownMenu>
             </>
           ) : isAdmin ? (
-            // UI para ADMIN no site público - mostrar apenas acesso ao painel e sair
+            // UI para ADMIN logado - apenas acesso ao painel e sair
             <div className="flex items-center gap-2">
               <Link to="/admin">
                 <Button variant="ghost" size="icon" title="Painel Administrativo">
@@ -218,7 +193,24 @@ export function Header() {
                 <LogOut className="h-5 w-5" />
               </Button>
             </div>
-          ) : null}
+          ) : (
+            // UI para visitantes NÃO logados
+            <div className="flex items-center gap-2">
+              <Link to="/login">
+                <Button variant="ghost">Entrar</Button>
+              </Link>
+              <Link to="/cadastro">
+                <Button>Criar Conta</Button>
+              </Link>
+              <Link 
+                to="/admin/login" 
+                className="p-2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                title="Acesso Administrativo"
+              >
+                <Settings className="h-4 w-4" />
+              </Link>
+            </div>
+          )}
         </nav>
 
         {/* Mobile Menu Button */}
@@ -253,22 +245,7 @@ export function Header() {
               <Button variant="ghost" className="w-full justify-start">Produtos</Button>
             </Link>
             
-            {isVisitor ? (
-              // Menu mobile para VISITANTES
-              <>
-                <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">Entrar</Button>
-                </Link>
-                <Link to="/cadastro" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full">Criar Conta</Button>
-                </Link>
-              </>
-            ) : isCheckingStatus ? (
-              // Verificando status
-              <div className="px-4 py-2">
-                <div className="animate-pulse h-8 w-32 bg-muted rounded"></div>
-              </div>
-            ) : isCustomer ? (
+            {isCustomer ? (
               // Menu mobile para CLIENTES
               <>
                 <div className="px-4 py-2 text-sm font-medium text-primary">
@@ -325,7 +302,17 @@ export function Header() {
                   Sair
                 </Button>
               </>
-            ) : null}
+            ) : !isLoggedIn && (
+              // Menu mobile para VISITANTES
+              <>
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start">Entrar</Button>
+                </Link>
+                <Link to="/cadastro" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full">Criar Conta</Button>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       )}
