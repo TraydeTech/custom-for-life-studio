@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState, useRef } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -9,13 +9,8 @@ interface ProtectedAdminRouteProps {
 export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const hasChecked = useRef(false);
 
   useEffect(() => {
-    // Evitar verificações duplicadas
-    if (hasChecked.current) return;
-    hasChecked.current = true;
-
     let isMounted = true;
 
     const checkAdminAccess = async () => {
@@ -29,30 +24,40 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
           return;
         }
 
-        // Autoriza imediatamente se tem sessão válida
-        // A verificação de role é apenas para segurança adicional
-        if (isMounted) {
-          setIsAuthorized(true);
-        }
-
-        // Verificar admin em segundo plano (não bloqueia UI)
+        // Verificar admin com timeout de 5s
+        // Se falhar por timeout/rede, assume autorizado (login já validou)
         try {
-          const { data: isAdmin } = await supabase.rpc('has_role', {
-            _user_id: session.user.id,
-            _role: 'admin'
-          });
+          const raceResult = await Promise.race([
+            supabase.rpc('has_role', {
+              _user_id: session.user.id,
+              _role: 'admin'
+            }),
+            new Promise<{ data: null; error: { message: string } }>((resolve) => 
+              setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 5000)
+            )
+          ]);
 
-          // Se explicitamente NÃO é admin, faz logout
-          if (isAdmin === false && isMounted) {
-            console.log('ProtectedRoute: usuário não é admin, fazendo logout');
+          if (!isMounted) return;
+
+          // Se a verificação retornou false explicitamente, não é admin
+          if (raceResult.data === false) {
+            console.log('ProtectedRoute: usuário não é admin');
             await supabase.auth.signOut();
             navigate('/admin/login', { replace: true });
+            return;
           }
+
+          // Se retornou true, null (timeout) ou undefined, assume autorizado
+          setIsAuthorized(true);
         } catch {
-          // Erro de rede - mantém autorizado (já tem sessão)
-          console.log('ProtectedRoute: erro na verificação de role, mantendo acesso');
+          // Erro de rede - assume autorizado se tem sessão
+          if (isMounted) {
+            console.log('ProtectedRoute: erro de verificação, assumindo autorizado');
+            setIsAuthorized(true);
+          }
         }
       } catch {
+        // Erro ao obter sessão
         if (isMounted) {
           navigate('/admin/login', { replace: true });
         }
@@ -60,6 +65,14 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
     };
 
     checkAdminAccess();
+
+    // Timeout de segurança absoluto - 8 segundos
+    const safetyTimeout = setTimeout(() => {
+      if (isMounted && isAuthorized === null) {
+        console.log('ProtectedRoute: timeout de segurança, assumindo autorizado');
+        setIsAuthorized(true);
+      }
+    }, 8000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
@@ -69,17 +82,21 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
 
     return () => {
       isMounted = false;
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
   }, [navigate]);
 
-  // Mostra loading apenas por brevíssimo momento enquanto verifica sessão inicial
   if (isAuthorized === null) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
+  }
+
+  if (!isAuthorized) {
+    return null;
   }
 
   return <>{children}</>;
