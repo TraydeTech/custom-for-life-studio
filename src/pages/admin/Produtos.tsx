@@ -53,6 +53,7 @@ export default function AdminProdutos() {
     description: '',
     short_description: '',
     price: '',
+    cost_price: '',
     compare_price: '',
     stock: '',
     min_quantity: '1',
@@ -152,6 +153,7 @@ export default function AdminProdutos() {
       description: '',
       short_description: '',
       price: '',
+      cost_price: '',
       compare_price: '',
       stock: '',
       min_quantity: '1',
@@ -171,6 +173,7 @@ export default function AdminProdutos() {
       description: product.description || '',
       short_description: product.short_description || '',
       price: String(product.price),
+      cost_price: (product as any).cost_price ? String((product as any).cost_price) : '',
       compare_price: product.compare_price ? String(product.compare_price) : '',
       stock: product.stock ? String(product.stock) : '',
       min_quantity: product.min_quantity ? String(product.min_quantity) : '1',
@@ -190,6 +193,7 @@ export default function AdminProdutos() {
       description: formData.description || null,
       short_description: formData.short_description || null,
       price: parseFloat(formData.price),
+      cost_price: formData.cost_price ? parseFloat(formData.cost_price) : 0,
       compare_price: formData.compare_price ? parseFloat(formData.compare_price) : null,
       stock: formData.stock ? parseInt(formData.stock) : 0,
       min_quantity: parseInt(formData.min_quantity) || 1,
@@ -279,9 +283,20 @@ export default function AdminProdutos() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="price">Preço *</Label>
+                      <Label htmlFor="cost_price">Preço de Custo</Label>
+                      <Input
+                        id="cost_price"
+                        type="number"
+                        step="0.01"
+                        value={formData.cost_price}
+                        onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="price">Preço de Venda *</Label>
                       <Input
                         id="price"
                         type="number"
