@@ -21,8 +21,9 @@ export interface PeriodComparison {
 export function useAdminStats() {
   return useQuery({
     queryKey: ['admin-stats'],
-    staleTime: 1000 * 60 * 2, // Cache por 2 minutos
+    staleTime: 1000 * 60 * 5, // Cache por 5 minutos (aumentado)
     refetchOnWindowFocus: false,
+    refetchOnMount: false, // Não recarregar ao montar se já tem cache
     queryFn: async () => {
       // Buscar total de pedidos e faturamento
       const { data: orders, error: ordersError } = await supabase
