@@ -78,14 +78,41 @@ export default function AdminPedidos() {
   const { data: orders, isLoading } = useQuery({
     queryKey: ['admin-orders'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch orders
+      const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data as Order[];
+      if (ordersError) throw ordersError;
+
+      // Get unique user IDs
+      const userIds = [...new Set(ordersData.filter(o => o.user_id).map(o => o.user_id as string))];
+      
+      // Fetch profiles for those users
+      let profilesMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', userIds);
+        
+        if (profilesData) {
+          profilesMap = profilesData.reduce((acc, p) => {
+            acc[p.user_id] = p.full_name || '';
+            return acc;
+          }, {} as Record<string, string>);
+        }
+      }
+
+      // Merge orders with customer names
+      return ordersData.map(order => ({
+        ...order,
+        customer_name: order.user_id && profilesMap[order.user_id] 
+          ? profilesMap[order.user_id]
+          : (order.shipping_address as any)?.name || 'Cliente PDV'
+      }));
     },
-    staleTime: 1000 * 60, // Cache por 1 minuto
+    staleTime: 1000 * 60,
     refetchOnWindowFocus: false,
   });
 
@@ -366,6 +393,7 @@ export default function AdminPedidos() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Pedido</TableHead>
+                  <TableHead>Cliente</TableHead>
                   <TableHead>Origem</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Total</TableHead>
@@ -377,13 +405,13 @@ export default function AdminPedidos() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                    <TableCell colSpan={8} className="text-center py-8">
                       Carregando...
                     </TableCell>
                   </TableRow>
                 ) : paginatedOrders?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Nenhum pedido encontrado
                     </TableCell>
                   </TableRow>
@@ -391,6 +419,9 @@ export default function AdminPedidos() {
                   paginatedOrders?.map((order) => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium">{order.order_number}</TableCell>
+                      <TableCell className="max-w-[150px] truncate" title={(order as any).customer_name}>
+                        {(order as any).customer_name}
+                      </TableCell>
                       <TableCell>
                         {order.source === 'pdv' ? (
                           <Badge className="bg-orange-500/20 text-orange-500 flex items-center gap-1 w-fit">
