@@ -62,20 +62,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(initialSession?.user ?? null);
         
         if (initialSession?.user) {
-          const adminStatus = await checkIsAdmin(initialSession.user.id);
+          // Usar Promise.race com timeout curto para não travar a UI
+          const adminCheck = Promise.race([
+            checkIsAdmin(initialSession.user.id),
+            new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 1500))
+          ]);
+          
+          const adminStatus = await adminCheck;
           if (isMounted) {
             setIsAdmin(adminStatus);
             setAdminChecked(true);
+            setLoading(false);
           }
         } else {
           if (isMounted) {
             setIsAdmin(false);
             setAdminChecked(true);
+            setLoading(false);
           }
-        }
-        
-        if (isMounted) {
-          setLoading(false);
         }
       } catch {
         if (isMounted) {
@@ -85,48 +89,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
+    // Subscrição para mudanças de auth (login/logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         if (!isMounted) return;
         
+        // Atualizar sessão imediatamente
         setSession(newSession);
         setUser(newSession?.user ?? null);
         
-        if (newSession?.user) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          const adminStatus = await checkIsAdmin(newSession.user.id);
+        // Se é um evento de logout, limpar estado imediatamente
+        if (event === 'SIGNED_OUT' || !newSession?.user) {
+          setIsAdmin(false);
+          setAdminChecked(true);
+          setLoading(false);
+          return;
+        }
+        
+        // Se é login, verificar admin rapidamente
+        if (event === 'SIGNED_IN' && newSession?.user) {
+          const adminCheck = Promise.race([
+            checkIsAdmin(newSession.user.id),
+            new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 1500))
+          ]);
+          
+          const adminStatus = await adminCheck;
           if (isMounted) {
             setIsAdmin(adminStatus);
             setAdminChecked(true);
+            setLoading(false);
           }
-        } else {
-          if (isMounted) {
-            setIsAdmin(false);
-            setAdminChecked(true);
-          }
-        }
-        
-        if (isMounted) {
-          setLoading(false);
         }
       }
     );
 
     initializeAuth();
 
+    // Timeout de segurança mais agressivo - 2 segundos
     const safetyTimeout = setTimeout(() => {
       if (isMounted && loading) {
         setLoading(false);
         setAdminChecked(true);
       }
-    }, 5000);
+    }, 2000);
 
     return () => {
       isMounted = false;
       clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
-  }, [checkIsAdmin]);
+  }, [checkIsAdmin, loading]);
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const { error } = await supabase.auth.signUp({

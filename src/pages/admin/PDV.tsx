@@ -58,12 +58,15 @@ export default function AdminPDV() {
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['pdv-products'],
+    staleTime: 1000 * 60 * 2, // Cache por 2 minutos
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('is_active', true)
-        .gt('stock', 0) // Só mostra produtos com estoque disponível
+        .gt('stock', 0)
         .order('name');
       if (error) throw error;
       return data as Product[];
