@@ -15,6 +15,8 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { usePendingOrdersCount } from '@/hooks/usePendingOrdersCount';
 import logo from '@/assets/logo-custom-forlife.png';
 
 const menuItems = [
@@ -22,7 +24,7 @@ const menuItems = [
   { icon: Store, label: 'PDV', path: '/admin/pdv' },
   { icon: Package, label: 'Produtos', path: '/admin/produtos' },
   { icon: Tags, label: 'Categorias', path: '/admin/categorias' },
-  { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos' },
+  { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos', showBadge: true },
   { icon: Truck, label: 'Fornecedores', path: '/admin/fornecedores' },
   { icon: Wallet, label: 'Financeiro', path: '/admin/financeiro' },
   { icon: BarChart3, label: 'Relatórios', path: '/admin/relatorios' },
@@ -32,6 +34,7 @@ const menuItems = [
 export function AdminSidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
+  const { data: pendingCount } = usePendingOrdersCount();
 
   const handleLogout = async () => {
     await signOut();
@@ -65,7 +68,20 @@ export function AdminSidebar() {
                   )}
                 >
                   <item.icon className="h-5 w-5" />
-                  <span className="font-medium">{item.label}</span>
+                  <span className="font-medium flex-1">{item.label}</span>
+                  {item.showBadge && pendingCount !== undefined && pendingCount > 0 && (
+                    <Badge 
+                      variant="secondary" 
+                      className={cn(
+                        "ml-auto h-5 min-w-5 flex items-center justify-center text-xs font-bold",
+                        isActive 
+                          ? "bg-primary-foreground/20 text-primary-foreground" 
+                          : "bg-destructive text-destructive-foreground"
+                      )}
+                    >
+                      {pendingCount > 99 ? '99+' : pendingCount}
+                    </Badge>
+                  )}
                 </Link>
               </li>
             );
