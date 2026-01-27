@@ -9,7 +9,11 @@ import {
   Users, 
   Package,
   TrendingUp,
-  Clock
+  TrendingDown,
+  Clock,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus
 } from 'lucide-react';
 import {
   AreaChart,
@@ -22,6 +26,9 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
+import { format, subMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 export default function AdminDashboard() {
   const { data: stats, isLoading } = useAdminStats();
@@ -32,6 +39,27 @@ export default function AdminDashboard() {
       currency: 'BRL',
     }).format(value);
   };
+
+  const formatPercent = (value: number) => {
+    const sign = value > 0 ? '+' : '';
+    return `${sign}${value.toFixed(1)}%`;
+  };
+
+  const getChangeIcon = (value: number) => {
+    if (value > 0) return <ArrowUpRight className="h-4 w-4" />;
+    if (value < 0) return <ArrowDownRight className="h-4 w-4" />;
+    return <Minus className="h-4 w-4" />;
+  };
+
+  const getChangeColor = (value: number) => {
+    if (value > 0) return 'text-green-500';
+    if (value < 0) return 'text-red-500';
+    return 'text-muted-foreground';
+  };
+
+  const comparison = stats?.periodComparison;
+  const currentMonthName = format(new Date(), 'MMMM', { locale: ptBR });
+  const previousMonthName = format(subMonths(new Date(), 1), 'MMMM', { locale: ptBR });
 
   return (
     <ProtectedAdminRoute>
@@ -56,7 +84,85 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <>
-              {/* Cards de Métricas */}
+              {/* Period Comparison Cards */}
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card className="border-t-4 border-t-primary">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Faturamento do Mês
+                      </CardTitle>
+                      <div className={cn(
+                        "flex items-center gap-1 text-sm font-medium",
+                        getChangeColor(comparison?.revenueChange || 0)
+                      )}>
+                        {getChangeIcon(comparison?.revenueChange || 0)}
+                        {formatPercent(comparison?.revenueChange || 0)}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {formatCurrency(comparison?.currentMonth.revenue || 0)}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 capitalize">
+                      {previousMonthName}: {formatCurrency(comparison?.previousMonth.revenue || 0)}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-t-4 border-t-secondary">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Pedidos do Mês
+                      </CardTitle>
+                      <div className={cn(
+                        "flex items-center gap-1 text-sm font-medium",
+                        getChangeColor(comparison?.ordersChange || 0)
+                      )}>
+                        {getChangeIcon(comparison?.ordersChange || 0)}
+                        {formatPercent(comparison?.ordersChange || 0)}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {comparison?.currentMonth.orders || 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 capitalize">
+                      {previousMonthName}: {comparison?.previousMonth.orders || 0} pedidos
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-t-4 border-t-accent">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Ticket Médio
+                      </CardTitle>
+                      <div className={cn(
+                        "flex items-center gap-1 text-sm font-medium",
+                        getChangeColor(comparison?.avgTicketChange || 0)
+                      )}>
+                        {getChangeIcon(comparison?.avgTicketChange || 0)}
+                        {formatPercent(comparison?.avgTicketChange || 0)}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {formatCurrency(comparison?.currentMonth.avgTicket || 0)}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 capitalize">
+                      {previousMonthName}: {formatCurrency(comparison?.previousMonth.avgTicket || 0)}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* General Stats Cards */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="border-l-4 border-l-primary">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
