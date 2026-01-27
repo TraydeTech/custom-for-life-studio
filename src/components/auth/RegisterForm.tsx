@@ -13,6 +13,42 @@ import { parse, isValid, format } from 'date-fns';
 
 type PersonType = 'fisica' | 'juridica';
 
+// Função de validação completa do CPF com verificação dos dígitos verificadores
+const validateCpf = (cpf: string): boolean => {
+  // Remove caracteres não numéricos
+  const cleanCpf = cpf.replace(/\D/g, '');
+  
+  // Verifica se tem 11 dígitos
+  if (cleanCpf.length !== 11) return false;
+  
+  // Rejeita CPFs com todos os dígitos iguais (ex: 111.111.111-11)
+  if (/^(\d)\1{10}$/.test(cleanCpf)) return false;
+  
+  // Calcula o primeiro dígito verificador
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(cleanCpf[i]) * (10 - i);
+  }
+  let remainder = sum % 11;
+  const digit1 = remainder < 2 ? 0 : 11 - remainder;
+  
+  // Verifica o primeiro dígito
+  if (parseInt(cleanCpf[9]) !== digit1) return false;
+  
+  // Calcula o segundo dígito verificador
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(cleanCpf[i]) * (11 - i);
+  }
+  remainder = sum % 11;
+  const digit2 = remainder < 2 ? 0 : 11 - remainder;
+  
+  // Verifica o segundo dígito
+  if (parseInt(cleanCpf[10]) !== digit2) return false;
+  
+  return true;
+};
+
 const baseSchema = {
   fullName: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres').max(100),
   email: z.string().email('Email inválido').max(255),
@@ -30,7 +66,9 @@ const baseSchema = {
 
 const fisicaSchema = z.object({
   ...baseSchema,
-  cpf: z.string().min(11, 'CPF inválido').max(14),
+  cpf: z.string().min(11, 'CPF inválido').max(14).refine(validateCpf, {
+    message: 'CPF inválido. Verifique os números digitados.',
+  }),
   birthDate: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'As senhas não coincidem',
