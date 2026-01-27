@@ -1,5 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
+
+export interface PeriodComparison {
+  currentMonth: {
+    revenue: number;
+    orders: number;
+    avgTicket: number;
+  };
+  previousMonth: {
+    revenue: number;
+    orders: number;
+    avgTicket: number;
+  };
+  revenueChange: number;
+  ordersChange: number;
+  avgTicketChange: number;
+}
 
 export function useAdminStats() {
   return useQuery({
@@ -10,7 +27,7 @@ export function useAdminStats() {
       // Buscar total de pedidos e faturamento
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select('id, total, status, created_at');
+        .select('id, total, status, created_at, payment_status');
 
       if (ordersError) throw ordersError;
 
@@ -55,6 +72,59 @@ export function useAdminStats() {
         });
       }
 
+      // Comparação mês atual vs mês anterior
+      const currentMonthStart = startOfMonth(now);
+      const currentMonthEnd = endOfMonth(now);
+      const previousMonthStart = startOfMonth(subMonths(now, 1));
+      const previousMonthEnd = endOfMonth(subMonths(now, 1));
+
+      const currentMonthOrders = orders?.filter(o => {
+        const orderDate = new Date(o.created_at);
+        return orderDate >= currentMonthStart && orderDate <= currentMonthEnd;
+      }) || [];
+
+      const previousMonthOrders = orders?.filter(o => {
+        const orderDate = new Date(o.created_at);
+        return orderDate >= previousMonthStart && orderDate <= previousMonthEnd;
+      }) || [];
+
+      // Calculate paid orders only for accurate revenue
+      const currentPaidOrders = currentMonthOrders.filter(o => 
+        o.payment_status === 'paid' || o.status === 'delivered'
+      );
+      const previousPaidOrders = previousMonthOrders.filter(o => 
+        o.payment_status === 'paid' || o.status === 'delivered'
+      );
+
+      const currentRevenue = currentPaidOrders.reduce((sum, o) => sum + Number(o.total), 0);
+      const previousRevenue = previousPaidOrders.reduce((sum, o) => sum + Number(o.total), 0);
+      const currentOrderCount = currentMonthOrders.length;
+      const previousOrderCount = previousMonthOrders.length;
+      const currentAvgTicket = currentPaidOrders.length > 0 ? currentRevenue / currentPaidOrders.length : 0;
+      const previousAvgTicket = previousPaidOrders.length > 0 ? previousRevenue / previousPaidOrders.length : 0;
+
+      // Calculate percentage changes
+      const calculateChange = (current: number, previous: number): number => {
+        if (previous === 0) return current > 0 ? 100 : 0;
+        return ((current - previous) / previous) * 100;
+      };
+
+      const periodComparison: PeriodComparison = {
+        currentMonth: {
+          revenue: currentRevenue,
+          orders: currentOrderCount,
+          avgTicket: currentAvgTicket,
+        },
+        previousMonth: {
+          revenue: previousRevenue,
+          orders: previousOrderCount,
+          avgTicket: previousAvgTicket,
+        },
+        revenueChange: calculateChange(currentRevenue, previousRevenue),
+        ordersChange: calculateChange(currentOrderCount, previousOrderCount),
+        avgTicketChange: calculateChange(currentAvgTicket, previousAvgTicket),
+      };
+
       return {
         totalOrders,
         totalRevenue,
@@ -63,6 +133,7 @@ export function useAdminStats() {
         pendingOrders,
         paidOrders,
         monthlyRevenue,
+        periodComparison,
       };
     },
   });
