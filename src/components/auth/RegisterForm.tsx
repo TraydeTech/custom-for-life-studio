@@ -6,21 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, Phone, MapPin, Home, Building, CalendarIcon } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Phone, MapPin, Home, Building, Calendar } from 'lucide-react';
 import { z } from 'zod';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { parse, isValid, format } from 'date-fns';
 
 const registerSchema = z.object({
   fullName: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres').max(100),
   email: z.string().email('Email inválido').max(255),
   phone: z.string().min(10, 'Telefone inválido').max(15),
   cpf: z.string().min(11, 'CPF inválido').max(14),
-  birthDate: z.date().optional(),
+  birthDate: z.string().optional(),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   confirmPassword: z.string(),
   zipCode: z.string().min(8, 'CEP inválido').max(9),
@@ -40,7 +36,7 @@ export function RegisterForm() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [cpf, setCpf] = useState('');
-  const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
+  const [birthDate, setBirthDate] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [zipCode, setZipCode] = useState('');
@@ -73,6 +69,22 @@ export function RegisterForm() {
   const formatCep = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     return numbers.replace(/(\d{5})(\d{0,3})/, '$1-$2').trim();
+  };
+
+  const formatBirthDate = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 4) return numbers.replace(/(\d{2})(\d{0,2})/, '$1/$2');
+    return numbers.replace(/(\d{2})(\d{2})(\d{0,4})/, '$1/$2/$3');
+  };
+
+  const parseBirthDateToISO = (dateStr: string): string | null => {
+    if (!dateStr || dateStr.length < 10) return null;
+    const parsed = parse(dateStr, 'dd/MM/yyyy', new Date());
+    if (isValid(parsed) && parsed <= new Date() && parsed >= new Date('1900-01-01')) {
+      return format(parsed, 'yyyy-MM-dd');
+    }
+    return null;
   };
 
   const fetchAddressByCep = async (cep: string) => {
@@ -154,7 +166,7 @@ export function RegisterForm() {
         .update({
           phone: phone.replace(/\D/g, ''),
           cpf: cpf.replace(/\D/g, ''),
-          birth_date: birthDate ? format(birthDate, 'yyyy-MM-dd') : null,
+          birth_date: parseBirthDateToISO(birthDate),
         })
         .eq('user_id', user.id);
 
@@ -259,37 +271,19 @@ export function RegisterForm() {
                 {errors.cpf && <p className="text-sm text-destructive">{errors.cpf}</p>}
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label>Data de Nascimento</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !birthDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {birthDate ? format(birthDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione sua data de nascimento"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={birthDate}
-                      onSelect={setBirthDate}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date("1900-01-01")
-                      }
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                      locale={ptBR}
-                      captionLayout="dropdown-buttons"
-                      fromYear={1920}
-                      toYear={new Date().getFullYear()}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <Label htmlFor="birthDate">Data de Nascimento</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="birthDate"
+                    type="text"
+                    placeholder="29/11/1976"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(formatBirthDate(e.target.value))}
+                    className="pl-10"
+                    maxLength={10}
+                  />
+                </div>
               </div>
             </div>
           </div>
