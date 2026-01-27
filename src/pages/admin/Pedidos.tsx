@@ -57,10 +57,11 @@ const statusLabels: Record<string, string> = {
 export default function AdminPedidos() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-
   const { data: orders, isLoading } = useQuery({
     queryKey: ['admin-orders'],
     queryFn: async () => {
@@ -115,10 +116,12 @@ export default function AdminPedidos() {
     setIsDetailsOpen(true);
   };
 
-  const filteredOrders = orders?.filter((o) =>
-    o.order_number.toLowerCase().includes(search.toLowerCase())
-  );
-
+  const filteredOrders = orders?.filter((o) => {
+    const matchesSearch = o.order_number.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || o.status === statusFilter;
+    const matchesSource = sourceFilter === 'all' || o.source === sourceFilter;
+    return matchesSearch && matchesStatus && matchesSource;
+  });
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
@@ -136,14 +139,41 @@ export default function AdminPedidos() {
             <p className="text-muted-foreground">Gerencie e acompanhe todos os pedidos</p>
           </div>
 
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por número do pedido..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex flex-wrap gap-4">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por número do pedido..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Status</SelectItem>
+                {Constants.public.Enums.order_status.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {statusLabels[status]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Origem" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Origens</SelectItem>
+                <SelectItem value="pdv">Loja (PDV)</SelectItem>
+                <SelectItem value="site">Site</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="border rounded-lg">
