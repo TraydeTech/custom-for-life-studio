@@ -58,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (!isMounted) return;
         
+        // Definir sessão e usuário ANTES de qualquer verificação
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
         
@@ -75,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setLoading(false);
           }
         } else {
+          // Sem usuário - marcar como verificado IMEDIATAMENTE
           if (isMounted) {
             setIsAdmin(false);
             setAdminChecked(true);
@@ -83,8 +85,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch {
         if (isMounted) {
-          setLoading(false);
+          setIsAdmin(false);
           setAdminChecked(true);
+          setLoading(false);
         }
       }
     };
