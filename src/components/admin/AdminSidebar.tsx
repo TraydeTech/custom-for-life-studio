@@ -9,7 +9,8 @@ import {
   Home,
   Store,
   Wallet,
-  Truck
+  Truck,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,6 +25,7 @@ const menuItems = [
   { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos' },
   { icon: Truck, label: 'Fornecedores', path: '/admin/fornecedores' },
   { icon: Wallet, label: 'Financeiro', path: '/admin/financeiro' },
+  { icon: BarChart3, label: 'Relatórios', path: '/admin/relatorios' },
   { icon: Users, label: 'Clientes', path: '/admin/clientes' },
 ];
 
