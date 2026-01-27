@@ -13,7 +13,8 @@ export function usePendingOrdersCount() {
       if (error) throw error;
       return count || 0;
     },
-    staleTime: 1000 * 30, // Cache por 30 segundos
-    refetchInterval: 1000 * 60, // Refetch a cada minuto
+    staleTime: 1000 * 60 * 2, // Cache por 2 minutos (aumentado)
+    refetchInterval: 1000 * 60 * 3, // Refetch a cada 3 minutos
+    refetchOnWindowFocus: false,
   });
 }

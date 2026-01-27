@@ -31,8 +31,9 @@ export function useLowStockProducts() {
       
       return productsWithLevel;
     },
-    staleTime: 1000 * 60 * 2, // Cache por 2 minutos
-    refetchInterval: 1000 * 60 * 5, // Refetch a cada 5 minutos
+    staleTime: 1000 * 60 * 5, // Cache por 5 minutos
+    refetchInterval: 1000 * 60 * 10, // Refetch a cada 10 minutos
+    refetchOnWindowFocus: false,
   });
 }
 
