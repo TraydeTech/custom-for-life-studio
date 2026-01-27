@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -23,7 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Search, Plus, Pencil, Trash2, Truck, Eye, Loader2 } from 'lucide-react';
+import { Search, Plus, Pencil, Trash2, Truck, Eye, Loader2, DollarSign, TrendingUp, Package } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Supplier {
@@ -203,6 +204,55 @@ export default function AdminFornecedores() {
     },
   });
 
+  // Fetch products with supplier info for dashboard
+  const { data: products } = useQuery({
+    queryKey: ['products-for-suppliers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, price, stock, supplier_id, cost_price');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Calculate totals per supplier
+  const supplierStats = useMemo(() => {
+    if (!products || !suppliers) return {};
+    
+    const stats: Record<string, { totalCost: number; totalSale: number; productCount: number }> = {};
+    
+    suppliers.forEach(supplier => {
+      const supplierProducts = products.filter(p => (p as any).supplier_id === supplier.id);
+      const totalCost = supplierProducts.reduce((sum, p) => sum + ((p as any).cost_price || 0) * (p.stock || 0), 0);
+      const totalSale = supplierProducts.reduce((sum, p) => sum + (p.price || 0) * (p.stock || 0), 0);
+      stats[supplier.id] = {
+        totalCost,
+        totalSale,
+        productCount: supplierProducts.length,
+      };
+    });
+    
+    return stats;
+  }, [products, suppliers]);
+
+  // Global totals
+  const globalTotals = useMemo(() => {
+    if (!products) return { totalCost: 0, totalSale: 0, profit: 0 };
+    
+    const totalCost = products.reduce((sum, p) => sum + ((p as any).cost_price || 0) * (p.stock || 0), 0);
+    const totalSale = products.reduce((sum, p) => sum + (p.price || 0) * (p.stock || 0), 0);
+    
+    return {
+      totalCost,
+      totalSale,
+      profit: totalSale - totalCost,
+    };
+  }, [products]);
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const { error } = await supabase.from('suppliers' as any).insert({
@@ -356,6 +406,44 @@ export default function AdminFornecedores() {
               <h1 className="text-3xl font-heading font-bold">Fornecedores</h1>
               <p className="text-muted-foreground">Gerencie seus fornecedores</p>
             </div>
+
+          {/* Dashboard de Valores */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total em Custo</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(globalTotals.totalCost)}</div>
+                <p className="text-xs text-muted-foreground">Valor total de compra do estoque</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total em Venda</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(globalTotals.totalSale)}</div>
+                <p className="text-xs text-muted-foreground">Valor total de venda do estoque</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Lucro Potencial</CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${globalTotals.profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {formatCurrency(globalTotals.profit)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Margem: {globalTotals.totalCost > 0 ? ((globalTotals.profit / globalTotals.totalCost) * 100).toFixed(1) : 0}%
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -575,38 +663,44 @@ export default function AdminFornecedores() {
                   <TableHead>Fornecedor</TableHead>
                   <TableHead>CNPJ/CPF</TableHead>
                   <TableHead>Contato</TableHead>
-                  <TableHead>Telefone</TableHead>
+                  <TableHead>Produtos</TableHead>
+                  <TableHead className="text-right">Valor Custo</TableHead>
+                  <TableHead className="text-right">Valor Venda</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       Carregando...
                     </TableCell>
                   </TableRow>
                 ) : filteredSuppliers?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       <Truck className="h-12 w-12 mx-auto mb-2 opacity-50" />
                       <p>Nenhum fornecedor cadastrado</p>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredSuppliers?.map((supplier) => (
-                    <TableRow key={supplier.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{supplier.name}</p>
-                          {supplier.email && (
-                            <p className="text-sm text-muted-foreground">{supplier.email}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{supplier.cnpj || supplier.cpf || '-'}</TableCell>
-                      <TableCell>{supplier.contact_name || '-'}</TableCell>
-                      <TableCell>{supplier.phone || '-'}</TableCell>
+                  filteredSuppliers?.map((supplier) => {
+                    const stats = supplierStats[supplier.id] || { totalCost: 0, totalSale: 0, productCount: 0 };
+                    return (
+                      <TableRow key={supplier.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{supplier.name}</p>
+                            {supplier.email && (
+                              <p className="text-sm text-muted-foreground">{supplier.email}</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{supplier.cnpj || supplier.cpf || '-'}</TableCell>
+                        <TableCell>{supplier.contact_name || '-'}</TableCell>
+                        <TableCell>{stats.productCount}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(stats.totalCost)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(stats.totalSale)}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
@@ -639,7 +733,8 @@ export default function AdminFornecedores() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
