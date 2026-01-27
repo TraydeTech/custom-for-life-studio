@@ -22,9 +22,9 @@ const menuItems = [
   { icon: Package, label: 'Produtos', path: '/admin/produtos' },
   { icon: Tags, label: 'Categorias', path: '/admin/categorias' },
   { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos' },
+  { icon: Truck, label: 'Fornecedores', path: '/admin/fornecedores' },
   { icon: Wallet, label: 'Financeiro', path: '/admin/financeiro' },
   { icon: Users, label: 'Clientes', path: '/admin/clientes' },
-  { icon: Truck, label: 'Fornecedores', path: '/admin/fornecedores' },
 ];
 
 export function AdminSidebar() {
