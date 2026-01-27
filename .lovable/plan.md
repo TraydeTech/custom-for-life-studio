@@ -1,176 +1,130 @@
 
-# Plano de Correção: Login Administrativo
+# Plano: Otimização do Sistema de Gestão de Estoque e Custos
 
-## Problema Identificado
+## Resumo Executivo
 
-O sistema está tratando **falhas de rede** como **"usuário não é admin"**, causando logout automático mesmo quando o usuário tem permissão de administrador.
+Após analisar o sistema atual, proponho uma estrutura otimizada onde cada página tem seu foco específico, evitando duplicação de informações e criando uma experiência mais organizada.
 
-Os logs mostram:
-- Login funciona corretamente (autenticação OK)
-- A chamada `has_role` falha com "Load failed" (erro de rede)
-- O timeout de 5 segundos dispara e retorna `false`
-- Sistema faz logout do usuário admin
+## Estrutura Proposta
 
-## Solução Proposta
-
-### 1. AdminLogin.tsx - Corrigir verificação de admin
-
-**Mudanças:**
-- Adicionar retry automático (3 tentativas) na verificação de admin
-- Em caso de falha de rede após retries, **não fazer logout** - apenas mostrar erro e permitir tentar novamente
-- Separar "falha de rede" de "não é admin"
-
-```
-Fluxo corrigido:
-1. Fazer login (OK)
-2. Verificar admin com 3 tentativas
-3. Se verificação retornar TRUE -> redirecionar para /admin
-4. Se verificação retornar FALSE (confirmado) -> logout + erro
-5. Se verificação falhar por rede -> mostrar erro + permitir retry (SEM logout)
+```text
++----------------------------------+----------------------------------+
+|           PRODUTOS               |          FORNECEDORES            |
+|  (Visão Geral do Inventário)     |    (Análise por Parceiro)        |
++----------------------------------+----------------------------------+
+| - Dashboard geral do estoque     | - Dados cadastrais               |
+| - Total Custo (todo estoque)     | - Custo/Venda POR fornecedor     |
+| - Total Venda (todo estoque)     | - Qtd produtos por fornecedor    |
+| - Lucro Potencial TOTAL          | - Análise de investimento        |
+| - Produtos sem fornecedor        |   em cada parceiro               |
+| - Margem por produto             |                                  |
++----------------------------------+----------------------------------+
 ```
 
-### 2. ProtectedAdminRoute.tsx - Corrigir proteção de rotas
+## Mudancas em Produtos
 
-**Mudanças:**
-- Aumentar número de retries para 5
-- Aumentar delay entre retries para 2 segundos
-- **Não redirecionar se já existe sessão válida** - assumir que se chegou até aqui com sessão, o login já validou
+### 1. Dashboard de Inventario Geral (novo)
+Adicionar cards no topo da pagina de Produtos com:
 
----
+- **Valor Total em Custo**: Soma de (custo x estoque) de TODOS os produtos
+- **Valor Total em Venda**: Soma de (preco x estoque) de TODOS os produtos  
+- **Lucro Potencial**: Diferenca entre venda e custo com percentual de margem
+- **Produtos sem Fornecedor**: Alerta mostrando quantos produtos nao estao vinculados
 
-## Seção Técnica
+### 2. Coluna de Margem na Tabela de Produtos
+Adicionar coluna "Margem" na listagem mostrando:
+- Percentual de lucro de cada produto: ((preco - custo) / custo) x 100
+- Cor verde para margem maior que 30%
+- Cor amarela para margem entre 15% e 30%
+- Cor vermelha para margem menor que 15%
 
-### AdminLogin.tsx - Modificações
+### 3. Indicador Visual de Preco de Custo
+Na tabela de produtos, mostrar o preco de custo junto ao preco de venda em texto menor
 
+## Mudancas em Fornecedores
+
+### 1. Manter Dashboard Atual (sem alteracao)
+O dashboard de fornecedores continua focado na analise por parceiro comercial:
+- Total investido com cada fornecedor
+- Valor potencial de venda por fornecedor
+- Quantidade de produtos por fornecedor
+
+### 2. Pequena Melhoria: Link para Produtos
+Ao clicar na quantidade de produtos de um fornecedor, filtrar a pagina de produtos para mostrar apenas os itens daquele fornecedor
+
+## Detalhes Tecnicos
+
+### Arquivo: src/pages/admin/Produtos.tsx
+
+**Novas dependencias**:
+- Importar Card, CardContent, CardHeader, CardTitle de @/components/ui/card
+- Importar icones: DollarSign, TrendingUp, Package, AlertTriangle
+- Importar useMemo de react
+
+**Nova query para calculos**:
 ```typescript
-const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
-
-  try {
-    // Login
-    const { data, error } = await supabase.auth.signInWithPassword({...});
-    
-    if (error || !data.user) {
-      toast.error('Email ou senha incorretos');
-      setIsLoading(false);
-      return;
-    }
-
-    // Verificação com retry
-    let isAdminUser: boolean | null = null;
-    
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const { data: isAdminResult, error: roleError } = await supabase.rpc('has_role', {
-          _user_id: data.user.id,
-          _role: 'admin'
-        });
-        
-        if (!roleError) {
-          isAdminUser = !!isAdminResult;
-          break;
-        }
-        
-        // Esperar antes de tentar novamente
-        if (attempt < 2) {
-          await new Promise(r => setTimeout(r, 1500));
-        }
-      } catch {
-        if (attempt < 2) {
-          await new Promise(r => setTimeout(r, 1500));
-        }
-      }
-    }
-
-    // Se não conseguiu verificar (falha de rede)
-    if (isAdminUser === null) {
-      toast.error('Erro de conexão. Por favor, tente novamente.');
-      setIsLoading(false);
-      return; // NÃO fazer logout
-    }
-
-    // Se confirmou que não é admin
-    if (!isAdminUser) {
-      await supabase.auth.signOut();
-      toast.error('Esta conta não tem permissão de administrador');
-      setIsLoading(false);
-      return;
-    }
-
-    // É admin - redirecionar
-    toast.success('Bem-vindo ao painel administrativo!');
-    window.location.replace('/admin');
-  } catch {
-    toast.error('Erro ao fazer login');
-    setIsLoading(false);
-  }
-};
+const inventoryStats = useMemo(() => {
+  if (!products) return { totalCost: 0, totalSale: 0, profit: 0, noSupplier: 0 };
+  
+  const totalCost = products.reduce((sum, p) => 
+    sum + ((p.cost_price || 0) * (p.stock || 0)), 0);
+  const totalSale = products.reduce((sum, p) => 
+    sum + ((p.price || 0) * (p.stock || 0)), 0);
+  const noSupplier = products.filter(p => !p.supplier_id).length;
+  
+  return {
+    totalCost,
+    totalSale,
+    profit: totalSale - totalCost,
+    noSupplier,
+  };
+}, [products]);
 ```
 
-### ProtectedAdminRoute.tsx - Modificações
+**Dashboard (4 cards)**:
+- Total em Custo (valor de compra do estoque)
+- Total em Venda (valor potencial de venda)
+- Lucro Potencial (com percentual de margem)
+- Sem Fornecedor (alerta se houver produtos sem vinculo)
 
-```typescript
-const checkAdminAccess = async (retryCount = 0): Promise<void> => {
-  if (hasChecked.current) return;
+**Nova coluna na tabela**:
+- Adicionar "Custo" e "Margem" entre "Preco" e "Estoque"
+- Calcular margem: ((preco - custo) / custo) * 100
+- Aplicar cores condicionais baseadas no percentual
 
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session?.user) {
-      hasChecked.current = true;
-      navigate('/admin/login', { replace: true });
-      return;
-    }
+### Arquivo: src/pages/admin/Fornecedores.tsx
 
-    const { data: isAdmin, error } = await supabase.rpc('has_role', {...});
+**Pequeno ajuste**:
+- Remover o dashboard global (Total em Custo, Total em Venda, Lucro Potencial)
+- Manter apenas os dados por fornecedor na tabela
+- Adicionar link na coluna "Produtos" para filtrar por fornecedor
 
-    if (error) {
-      // Mais tentativas com mais tempo
-      if (retryCount < 5) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        return checkAdminAccess(retryCount + 1);
-      }
-      // Após 5 tentativas, assumir que está OK se tem sessão válida
-      // (o AdminLogin já validou)
-      hasChecked.current = true;
-      setIsAuthorized(true);
-      return;
-    }
+Alternativa: Manter como esta se preferir ter a visao duplicada em ambos os lugares
 
-    hasChecked.current = true;
+## Resumo Visual
 
-    if (isAdmin) {
-      setIsAuthorized(true);
-    } else {
-      await supabase.auth.signOut();
-      navigate('/admin/login', { replace: true });
-    }
-  } catch {
-    if (retryCount < 5) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return checkAdminAccess(retryCount + 1);
-    }
-    // Em caso de falha total, assumir OK se tem sessão
-    hasChecked.current = true;
-    setIsAuthorized(true);
-  }
-};
+```text
+ANTES (atual):
+- Fornecedores: Dashboard geral + dados por fornecedor
+- Produtos: Apenas lista de produtos
+
+DEPOIS (otimizado):
+- Fornecedores: Apenas dados por fornecedor (foco no parceiro)
+- Produtos: Dashboard geral + lista com margem (foco no inventario)
 ```
 
----
+## Beneficios
 
-## Resumo das Mudanças
+1. **Clareza**: Cada pagina tem seu proposito definido
+2. **Consistencia**: Dashboard de inventario fica onde faz mais sentido (Produtos)
+3. **Visibilidade**: Margem de lucro visivel diretamente na listagem
+4. **Alertas**: Identificacao rapida de produtos sem fornecedor
+5. **Navegacao**: Link direto de fornecedor para seus produtos
 
-| Arquivo | Mudança |
-|---------|---------|
-| `AdminLogin.tsx` | Retry na verificação + não fazer logout em falha de rede |
-| `ProtectedAdminRoute.tsx` | Mais retries + assumir OK se sessão válida após falhas |
+## Arquivos a Modificar
 
-## Resultado Esperado
+| Arquivo | Acao |
+|---------|------|
+| src/pages/admin/Produtos.tsx | Adicionar dashboard + colunas de custo/margem |
+| src/pages/admin/Fornecedores.tsx | Opcional: remover dashboard global duplicado |
 
-Após as correções:
-1. Login não vai mais falhar por erros de rede temporários
-2. Se a rede estiver instável, o sistema vai tentar várias vezes
-3. Usuário admin vai conseguir entrar mesmo com conexão lenta
-4. Logout só acontece quando CONFIRMADO que não é admin
