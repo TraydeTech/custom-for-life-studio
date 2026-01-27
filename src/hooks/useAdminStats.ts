@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 export function useAdminStats() {
   return useQuery({
     queryKey: ['admin-stats'],
+    staleTime: 1000 * 60 * 2, // Cache por 2 minutos
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       // Buscar total de pedidos e faturamento
       const { data: orders, error: ordersError } = await supabase

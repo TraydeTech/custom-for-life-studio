@@ -24,7 +24,7 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
           return;
         }
 
-        // Verificar admin com timeout de 5s
+        // Verificar admin com timeout de 2s (mais rápido)
         // Se falhar por timeout/rede, assume autorizado (login já validou)
         try {
           const raceResult = await Promise.race([
@@ -33,7 +33,7 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
               _role: 'admin'
             }),
             new Promise<{ data: null; error: { message: string } }>((resolve) => 
-              setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 5000)
+              setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 2000)
             )
           ]);
 
@@ -41,7 +41,6 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
 
           // Se a verificação retornou false explicitamente, não é admin
           if (raceResult.data === false) {
-            console.log('ProtectedRoute: usuário não é admin');
             await supabase.auth.signOut();
             navigate('/admin/login', { replace: true });
             return;
@@ -52,7 +51,6 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
         } catch {
           // Erro de rede - assume autorizado se tem sessão
           if (isMounted) {
-            console.log('ProtectedRoute: erro de verificação, assumindo autorizado');
             setIsAuthorized(true);
           }
         }
@@ -66,13 +64,12 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
 
     checkAdminAccess();
 
-    // Timeout de segurança absoluto - 8 segundos
+    // Timeout de segurança absoluto - 3 segundos (mais rápido)
     const safetyTimeout = setTimeout(() => {
       if (isMounted && isAuthorized === null) {
-        console.log('ProtectedRoute: timeout de segurança, assumindo autorizado');
         setIsAuthorized(true);
       }
-    }, 8000);
+    }, 3000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {

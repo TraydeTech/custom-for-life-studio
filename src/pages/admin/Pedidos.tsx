@@ -71,6 +71,8 @@ export default function AdminPedidos() {
       if (error) throw error;
       return data as Order[];
     },
+    staleTime: 1000 * 60, // Cache por 1 minuto
+    refetchOnWindowFocus: false,
   });
 
   const updateStatusMutation = useMutation({
