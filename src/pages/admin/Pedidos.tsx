@@ -29,12 +29,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Eye, Package, Store, Globe, ChevronLeft, ChevronRight, CalendarIcon, X } from 'lucide-react';
+import { Search, Eye, Package, Store, Globe, ChevronLeft, ChevronRight, CalendarIcon, X, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Tables, Constants } from '@/integrations/supabase/types';
+import * as XLSX from 'xlsx';
 
 type Order = Tables<'orders'>;
 type OrderItem = Tables<'order_items'>;
@@ -172,6 +173,7 @@ export default function AdminPedidos() {
     setDateRange({ from: undefined, to: undefined });
     setCurrentPage(1);
   };
+
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
@@ -180,13 +182,68 @@ export default function AdminPedidos() {
     return `${address.street}, ${address.number}${address.complement ? ` - ${address.complement}` : ''}, ${address.neighborhood}, ${address.city} - ${address.state}, ${address.zip_code}`;
   };
 
+  const handleExportExcel = () => {
+    if (!filteredOrders?.length) {
+      toast.error('Nenhum pedido para exportar');
+      return;
+    }
+
+    const exportData = filteredOrders.map(order => ({
+      'Número do Pedido': order.order_number,
+      'Data': format(parseISO(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+      'Origem': order.source === 'pdv' ? 'Loja (PDV)' : 'Site',
+      'Status': statusLabels[order.status] || order.status,
+      'Status Pagamento': statusLabels[order.payment_status || 'pending'] || order.payment_status,
+      'Método Pagamento': order.payment_method || '-',
+      'Subtotal': order.subtotal,
+      'Frete': order.shipping_cost || 0,
+      'Desconto': order.discount || 0,
+      'Total': order.total,
+      'Endereço de Entrega': formatAddress(order.shipping_address),
+      'Observações': order.notes || '-',
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 18 }, // Número do Pedido
+      { wch: 18 }, // Data
+      { wch: 12 }, // Origem
+      { wch: 14 }, // Status
+      { wch: 14 }, // Status Pagamento
+      { wch: 15 }, // Método Pagamento
+      { wch: 12 }, // Subtotal
+      { wch: 10 }, // Frete
+      { wch: 10 }, // Desconto
+      { wch: 12 }, // Total
+      { wch: 50 }, // Endereço
+      { wch: 30 }, // Observações
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Pedidos');
+
+    const dateStr = format(new Date(), 'dd-MM-yyyy-HHmm');
+    const fileName = `pedidos-${dateStr}.xlsx`;
+    
+    XLSX.writeFile(wb, fileName);
+    toast.success(`${filteredOrders.length} pedido(s) exportado(s) com sucesso!`);
+  };
+
   return (
     <ProtectedAdminRoute>
       <AdminLayout>
         <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-heading font-bold">Pedidos</h1>
-            <p className="text-muted-foreground">Gerencie e acompanhe todos os pedidos</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-heading font-bold">Pedidos</h1>
+              <p className="text-muted-foreground">Gerencie e acompanhe todos os pedidos</p>
+            </div>
+            <Button onClick={handleExportExcel} disabled={!filteredOrders?.length}>
+              <Download className="mr-2 h-4 w-4" />
+              Exportar Excel ({filteredOrders?.length || 0})
+            </Button>
           </div>
 
           <div className="flex flex-wrap gap-4">
