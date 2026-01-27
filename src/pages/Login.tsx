@@ -6,9 +6,11 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 
 export default function Login() {
-  const { user, loading } = useAuth();
+  const { user, loading, adminChecked } = useAuth();
 
-  if (loading) {
+  // Mostrar loading enquanto verifica autenticação OU enquanto verifica admin
+  // Isso evita que o formulário apareça brevemente antes da verificação
+  if (loading || !adminChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
