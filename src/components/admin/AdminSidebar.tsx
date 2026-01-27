@@ -8,7 +8,8 @@ import {
   LogOut,
   Home,
   Store,
-  Wallet
+  Wallet,
+  Truck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +24,7 @@ const menuItems = [
   { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos' },
   { icon: Wallet, label: 'Financeiro', path: '/admin/financeiro' },
   { icon: Users, label: 'Clientes', path: '/admin/clientes' },
+  { icon: Truck, label: 'Fornecedores', path: '/admin/fornecedores' },
 ];
 
 export function AdminSidebar() {
