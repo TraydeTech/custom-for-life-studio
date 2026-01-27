@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Search, Plus, Pencil, Trash2, Truck, Eye } from 'lucide-react';
+import { Search, Plus, Pencil, Trash2, Truck, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Supplier {
@@ -70,6 +70,8 @@ export default function AdminFornecedores() {
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [viewingSupplier, setViewingSupplier] = useState<Supplier | null>(null);
   const [formData, setFormData] = useState(initialFormData);
+  const [isLoadingCEP, setIsLoadingCEP] = useState(false);
+  const [isLoadingCNPJ, setIsLoadingCNPJ] = useState(false);
 
   // Máscaras
   const formatCPF = (value: string) => {
@@ -104,6 +106,89 @@ export default function AdminFornecedores() {
   const formatCEP = (value: string) => {
     const numbers = value.replace(/\D/g, '').slice(0, 8);
     return numbers.replace(/(\d{5})(\d)/, '$1-$2');
+  };
+
+  // Buscar endereço pelo CEP (ViaCEP)
+  const fetchAddressByCEP = async (cep: string) => {
+    const cleanCEP = cep.replace(/\D/g, '');
+    if (cleanCEP.length !== 8) return;
+
+    setIsLoadingCEP(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`);
+      const data = await response.json();
+      
+      if (data.erro) {
+        toast.error('CEP não encontrado');
+        return;
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        street: data.logradouro || prev.street,
+        neighborhood: data.bairro || prev.neighborhood,
+        city: data.localidade || prev.city,
+        state: data.uf || prev.state,
+        complement: data.complemento || prev.complement,
+      }));
+      toast.success('Endereço preenchido automaticamente');
+    } catch {
+      toast.error('Erro ao buscar CEP');
+    } finally {
+      setIsLoadingCEP(false);
+    }
+  };
+
+  // Buscar dados da empresa pelo CNPJ (BrasilAPI)
+  const fetchCompanyByCNPJ = async (cnpj: string) => {
+    const cleanCNPJ = cnpj.replace(/\D/g, '');
+    if (cleanCNPJ.length !== 14) return;
+
+    setIsLoadingCNPJ(true);
+    try {
+      const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCNPJ}`);
+      
+      if (!response.ok) {
+        toast.error('CNPJ não encontrado');
+        return;
+      }
+
+      const data = await response.json();
+
+      setFormData(prev => ({
+        ...prev,
+        name: data.razao_social || data.nome_fantasia || prev.name,
+        email: data.email || prev.email,
+        phone: data.ddd_telefone_1 ? formatPhone(data.ddd_telefone_1) : prev.phone,
+        zip_code: data.cep ? formatCEP(data.cep) : prev.zip_code,
+        street: data.logradouro || prev.street,
+        number: data.numero || prev.number,
+        complement: data.complemento || prev.complement,
+        neighborhood: data.bairro || prev.neighborhood,
+        city: data.municipio || prev.city,
+        state: data.uf || prev.state,
+      }));
+      toast.success('Dados da empresa preenchidos automaticamente');
+    } catch {
+      toast.error('Erro ao buscar CNPJ');
+    } finally {
+      setIsLoadingCNPJ(false);
+    }
+  };
+
+  // Handlers para blur dos campos
+  const handleCEPBlur = () => {
+    const cleanCEP = formData.zip_code.replace(/\D/g, '');
+    if (cleanCEP.length === 8) {
+      fetchAddressByCEP(cleanCEP);
+    }
+  };
+
+  const handleCNPJBlur = () => {
+    const cleanCNPJ = formData.cnpj.replace(/\D/g, '');
+    if (cleanCNPJ.length === 14) {
+      fetchCompanyByCNPJ(cleanCNPJ);
+    }
   };
 
   const { data: suppliers, isLoading } = useQuery({
@@ -309,14 +394,22 @@ export default function AdminFornecedores() {
                             placeholder="000.000.000-00"
                           />
                         </div>
-                        <div>
+                        <div className="relative">
                           <Label htmlFor="cnpj">CNPJ</Label>
-                          <Input
-                            id="cnpj"
-                            value={formData.cnpj}
-                            onChange={(e) => setFormData({ ...formData, cnpj: formatCNPJ(e.target.value) })}
-                            placeholder="00.000.000/0000-00"
-                          />
+                          <div className="relative">
+                            <Input
+                              id="cnpj"
+                              value={formData.cnpj}
+                              onChange={(e) => setFormData({ ...formData, cnpj: formatCNPJ(e.target.value) })}
+                              onBlur={handleCNPJBlur}
+                              placeholder="00.000.000/0000-00"
+                              disabled={isLoadingCNPJ}
+                            />
+                            {isLoadingCNPJ && (
+                              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Preenche dados automaticamente</p>
                         </div>
                       </div>
                     </div>
@@ -360,14 +453,22 @@ export default function AdminFornecedores() {
                     <div className="space-y-4">
                       <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">Endereço</h3>
                       <div className="grid grid-cols-3 gap-4">
-                        <div>
+                        <div className="relative">
                           <Label htmlFor="zip_code">CEP</Label>
-                          <Input
-                            id="zip_code"
-                            value={formData.zip_code}
-                            onChange={(e) => setFormData({ ...formData, zip_code: formatCEP(e.target.value) })}
-                            placeholder="00000-000"
-                          />
+                          <div className="relative">
+                            <Input
+                              id="zip_code"
+                              value={formData.zip_code}
+                              onChange={(e) => setFormData({ ...formData, zip_code: formatCEP(e.target.value) })}
+                              onBlur={handleCEPBlur}
+                              placeholder="00000-000"
+                              disabled={isLoadingCEP}
+                            />
+                            {isLoadingCEP && (
+                              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Preenche endereço automaticamente</p>
                         </div>
                         <div className="col-span-2">
                           <Label htmlFor="street">Rua/Logradouro</Label>
