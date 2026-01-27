@@ -458,36 +458,63 @@ export type Database = {
       suppliers: {
         Row: {
           address: string | null
+          city: string | null
+          cnpj: string | null
+          complement: string | null
           contact_name: string | null
+          cpf: string | null
           created_at: string
           email: string | null
           id: string
           name: string
+          neighborhood: string | null
           notes: string | null
+          number: string | null
           phone: string | null
+          state: string | null
+          street: string | null
           updated_at: string
+          zip_code: string | null
         }
         Insert: {
           address?: string | null
+          city?: string | null
+          cnpj?: string | null
+          complement?: string | null
           contact_name?: string | null
+          cpf?: string | null
           created_at?: string
           email?: string | null
           id?: string
           name: string
+          neighborhood?: string | null
           notes?: string | null
+          number?: string | null
           phone?: string | null
+          state?: string | null
+          street?: string | null
           updated_at?: string
+          zip_code?: string | null
         }
         Update: {
           address?: string | null
+          city?: string | null
+          cnpj?: string | null
+          complement?: string | null
           contact_name?: string | null
+          cpf?: string | null
           created_at?: string
           email?: string | null
           id?: string
           name?: string
+          neighborhood?: string | null
           notes?: string | null
+          number?: string | null
           phone?: string | null
+          state?: string | null
+          street?: string | null
           updated_at?: string
+          zip_code?: string | null
         }
         Relationships: []
       }

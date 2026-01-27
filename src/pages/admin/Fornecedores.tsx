@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -22,7 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Search, Plus, Pencil, Trash2, Truck } from 'lucide-react';
+import { Search, Plus, Pencil, Trash2, Truck, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Supplier {
@@ -31,24 +32,79 @@ interface Supplier {
   contact_name: string | null;
   email: string | null;
   phone: string | null;
-  address: string | null;
+  cpf: string | null;
+  cnpj: string | null;
+  zip_code: string | null;
+  street: string | null;
+  number: string | null;
+  complement: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
   notes: string | null;
   created_at: string;
 }
+
+const initialFormData = {
+  name: '',
+  contact_name: '',
+  email: '',
+  phone: '',
+  cpf: '',
+  cnpj: '',
+  zip_code: '',
+  street: '',
+  number: '',
+  complement: '',
+  neighborhood: '',
+  city: '',
+  state: '',
+  notes: '',
+};
 
 export default function AdminFornecedores() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    contact_name: '',
-    email: '',
-    phone: '',
-    address: '',
-    notes: '',
-  });
+  const [viewingSupplier, setViewingSupplier] = useState<Supplier | null>(null);
+  const [formData, setFormData] = useState(initialFormData);
+
+  // Máscaras
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, '').slice(0, 11);
+    return numbers
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  };
+
+  const formatCNPJ = (value: string) => {
+    const numbers = value.replace(/\D/g, '').slice(0, 14);
+    return numbers
+      .replace(/(\d{2})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1/$2')
+      .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+  };
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '').slice(0, 11);
+    if (numbers.length <= 10) {
+      return numbers
+        .replace(/(\d{2})(\d)/, '($1) $2')
+        .replace(/(\d{4})(\d)/, '$1-$2');
+    }
+    return numbers
+      .replace(/(\d{2})(\d)/, '($1) $2')
+      .replace(/(\d{5})(\d)/, '$1-$2');
+  };
+
+  const formatCEP = (value: string) => {
+    const numbers = value.replace(/\D/g, '').slice(0, 8);
+    return numbers.replace(/(\d{5})(\d)/, '$1-$2');
+  };
 
   const { data: suppliers, isLoading } = useQuery({
     queryKey: ['suppliers'],
@@ -69,7 +125,15 @@ export default function AdminFornecedores() {
         contact_name: data.contact_name || null,
         email: data.email || null,
         phone: data.phone || null,
-        address: data.address || null,
+        cpf: data.cpf || null,
+        cnpj: data.cnpj || null,
+        zip_code: data.zip_code || null,
+        street: data.street || null,
+        number: data.number || null,
+        complement: data.complement || null,
+        neighborhood: data.neighborhood || null,
+        city: data.city || null,
+        state: data.state || null,
         notes: data.notes || null,
       });
       if (error) throw error;
@@ -93,7 +157,15 @@ export default function AdminFornecedores() {
           contact_name: data.contact_name || null,
           email: data.email || null,
           phone: data.phone || null,
-          address: data.address || null,
+          cpf: data.cpf || null,
+          cnpj: data.cnpj || null,
+          zip_code: data.zip_code || null,
+          street: data.street || null,
+          number: data.number || null,
+          complement: data.complement || null,
+          neighborhood: data.neighborhood || null,
+          city: data.city || null,
+          state: data.state || null,
           notes: data.notes || null,
         })
         .eq('id', id);
@@ -126,14 +198,7 @@ export default function AdminFornecedores() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingSupplier(null);
-    setFormData({
-      name: '',
-      contact_name: '',
-      email: '',
-      phone: '',
-      address: '',
-      notes: '',
-    });
+    setFormData(initialFormData);
   };
 
   const handleEdit = (supplier: Supplier) => {
@@ -143,10 +208,23 @@ export default function AdminFornecedores() {
       contact_name: supplier.contact_name || '',
       email: supplier.email || '',
       phone: supplier.phone || '',
-      address: supplier.address || '',
+      cpf: supplier.cpf || '',
+      cnpj: supplier.cnpj || '',
+      zip_code: supplier.zip_code || '',
+      street: supplier.street || '',
+      number: supplier.number || '',
+      complement: supplier.complement || '',
+      neighborhood: supplier.neighborhood || '',
+      city: supplier.city || '',
+      state: supplier.state || '',
       notes: supplier.notes || '',
     });
     setIsDialogOpen(true);
+  };
+
+  const handleView = (supplier: Supplier) => {
+    setViewingSupplier(supplier);
+    setIsViewDialogOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -166,8 +244,23 @@ export default function AdminFornecedores() {
   const filteredSuppliers = suppliers?.filter((s) =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
     s.email?.toLowerCase().includes(search.toLowerCase()) ||
-    s.contact_name?.toLowerCase().includes(search.toLowerCase())
+    s.contact_name?.toLowerCase().includes(search.toLowerCase()) ||
+    s.cnpj?.includes(search) ||
+    s.cpf?.includes(search)
   );
+
+  const formatAddress = (supplier: Supplier) => {
+    const parts = [
+      supplier.street,
+      supplier.number,
+      supplier.complement,
+      supplier.neighborhood,
+      supplier.city,
+      supplier.state,
+      supplier.zip_code,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : '-';
+  };
 
   return (
     <ProtectedAdminRoute>
@@ -186,80 +279,180 @@ export default function AdminFornecedores() {
                   Novo Fornecedor
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-2xl max-h-[90vh]">
                 <DialogHeader>
                   <DialogTitle>
                     {editingSupplier ? 'Editar Fornecedor' : 'Novo Fornecedor'}
                   </DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Nome da Empresa *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Nome do fornecedor"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="contact_name">Nome do Contato</Label>
-                    <Input
-                      id="contact_name"
-                      value={formData.contact_name}
-                      onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                      placeholder="Pessoa de contato"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+                <ScrollArea className="max-h-[70vh] pr-4">
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Dados da Empresa */}
+                    <div className="space-y-4">
+                      <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">Dados da Empresa</h3>
+                      <div>
+                        <Label htmlFor="name">Nome/Razão Social *</Label>
+                        <Input
+                          id="name"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="Nome do fornecedor"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="cpf">CPF</Label>
+                          <Input
+                            id="cpf"
+                            value={formData.cpf}
+                            onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
+                            placeholder="000.000.000-00"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="cnpj">CNPJ</Label>
+                          <Input
+                            id="cnpj"
+                            value={formData.cnpj}
+                            onChange={(e) => setFormData({ ...formData, cnpj: formatCNPJ(e.target.value) })}
+                            placeholder="00.000.000/0000-00"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contato */}
+                    <div className="space-y-4">
+                      <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">Contato</h3>
+                      <div>
+                        <Label htmlFor="contact_name">Nome do Contato</Label>
+                        <Input
+                          id="contact_name"
+                          value={formData.contact_name}
+                          onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
+                          placeholder="Pessoa de contato"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="email">E-mail</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="email@empresa.com"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="phone">Telefone</Label>
+                          <Input
+                            id="phone"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
+                            placeholder="(00) 00000-0000"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Endereço */}
+                    <div className="space-y-4">
+                      <h3 className="font-medium text-sm text-muted-foreground border-b pb-2">Endereço</h3>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <Label htmlFor="zip_code">CEP</Label>
+                          <Input
+                            id="zip_code"
+                            value={formData.zip_code}
+                            onChange={(e) => setFormData({ ...formData, zip_code: formatCEP(e.target.value) })}
+                            placeholder="00000-000"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Label htmlFor="street">Rua/Logradouro</Label>
+                          <Input
+                            id="street"
+                            value={formData.street}
+                            onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                            placeholder="Rua, Avenida, etc."
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <Label htmlFor="number">Número</Label>
+                          <Input
+                            id="number"
+                            value={formData.number}
+                            onChange={(e) => setFormData({ ...formData, number: e.target.value })}
+                            placeholder="Nº"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Label htmlFor="complement">Complemento</Label>
+                          <Input
+                            id="complement"
+                            value={formData.complement}
+                            onChange={(e) => setFormData({ ...formData, complement: e.target.value })}
+                            placeholder="Sala, Bloco, etc."
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <Label htmlFor="neighborhood">Bairro</Label>
+                          <Input
+                            id="neighborhood"
+                            value={formData.neighborhood}
+                            onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
+                            placeholder="Bairro"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="city">Cidade</Label>
+                          <Input
+                            id="city"
+                            value={formData.city}
+                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                            placeholder="Cidade"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="state">Estado</Label>
+                          <Input
+                            id="state"
+                            value={formData.state}
+                            onChange={(e) => setFormData({ ...formData, state: e.target.value.toUpperCase().slice(0, 2) })}
+                            placeholder="UF"
+                            maxLength={2}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Observações */}
                     <div>
-                      <Label htmlFor="email">E-mail</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="email@empresa.com"
+                      <Label htmlFor="notes">Observações</Label>
+                      <Textarea
+                        id="notes"
+                        value={formData.notes}
+                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        placeholder="Anotações sobre o fornecedor"
+                        rows={3}
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="phone">Telefone</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="(00) 00000-0000"
-                      />
+
+                    <div className="flex gap-2 justify-end pt-4">
+                      <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                        Cancelar
+                      </Button>
+                      <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                        {editingSupplier ? 'Salvar' : 'Cadastrar'}
+                      </Button>
                     </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="address">Endereço</Label>
-                    <Input
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      placeholder="Endereço completo"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="notes">Observações</Label>
-                    <Textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      placeholder="Anotações sobre o fornecedor"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="flex gap-2 justify-end">
-                    <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                      {editingSupplier ? 'Salvar' : 'Cadastrar'}
-                    </Button>
-                  </div>
-                </form>
+                  </form>
+                </ScrollArea>
               </DialogContent>
             </Dialog>
           </div>
@@ -267,7 +460,7 @@ export default function AdminFornecedores() {
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar fornecedor..."
+              placeholder="Buscar por nome, e-mail, CPF ou CNPJ..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-10"
@@ -279,8 +472,8 @@ export default function AdminFornecedores() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Fornecedor</TableHead>
+                  <TableHead>CNPJ/CPF</TableHead>
                   <TableHead>Contato</TableHead>
-                  <TableHead>E-mail</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -302,15 +495,31 @@ export default function AdminFornecedores() {
                 ) : (
                   filteredSuppliers?.map((supplier) => (
                     <TableRow key={supplier.id}>
-                      <TableCell className="font-medium">{supplier.name}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{supplier.name}</p>
+                          {supplier.email && (
+                            <p className="text-sm text-muted-foreground">{supplier.email}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{supplier.cnpj || supplier.cpf || '-'}</TableCell>
                       <TableCell>{supplier.contact_name || '-'}</TableCell>
-                      <TableCell>{supplier.email || '-'}</TableCell>
                       <TableCell>{supplier.phone || '-'}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => handleView(supplier)}
+                          title="Ver detalhes"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleEdit(supplier)}
+                          title="Editar"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -323,6 +532,7 @@ export default function AdminFornecedores() {
                               deleteMutation.mutate(supplier.id);
                             }
                           }}
+                          title="Excluir"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -333,6 +543,66 @@ export default function AdminFornecedores() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Dialog de Visualização */}
+          <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Truck className="h-5 w-5" />
+                  {viewingSupplier?.name}
+                </DialogTitle>
+              </DialogHeader>
+              {viewingSupplier && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {viewingSupplier.cnpj && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">CNPJ</p>
+                        <p className="font-medium">{viewingSupplier.cnpj}</p>
+                      </div>
+                    )}
+                    {viewingSupplier.cpf && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">CPF</p>
+                        <p className="font-medium">{viewingSupplier.cpf}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium mb-2">Contato</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Nome do Contato</p>
+                        <p>{viewingSupplier.contact_name || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Telefone</p>
+                        <p>{viewingSupplier.phone || '-'}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-sm text-muted-foreground">E-mail</p>
+                        <p>{viewingSupplier.email || '-'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium mb-2">Endereço</h4>
+                    <p>{formatAddress(viewingSupplier)}</p>
+                  </div>
+
+                  {viewingSupplier.notes && (
+                    <div className="border-t pt-4">
+                      <h4 className="font-medium mb-2">Observações</h4>
+                      <p className="text-sm bg-muted p-3 rounded">{viewingSupplier.notes}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </AdminLayout>
     </ProtectedAdminRoute>
