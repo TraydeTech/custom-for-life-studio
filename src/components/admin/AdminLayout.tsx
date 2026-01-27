@@ -1,10 +1,14 @@
 import { AdminSidebar } from './AdminSidebar';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
+  // Enable real-time order notifications for admin
+  useOrderNotifications();
+
   return (
     <div className="min-h-screen bg-background flex">
       <AdminSidebar />
