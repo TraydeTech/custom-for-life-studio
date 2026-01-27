@@ -1,130 +1,65 @@
 
-# Plano: Otimização do Sistema de Gestão de Estoque e Custos
+# Plano: Adicionar Validação Completa do CPF
 
-## Resumo Executivo
+## Objetivo
+Implementar validação completa do CPF com verificação dos dígitos verificadores para garantir que apenas números válidos estruturalmente sejam aceitos no formulário de cadastro.
 
-Após analisar o sistema atual, proponho uma estrutura otimizada onde cada página tem seu foco específico, evitando duplicação de informações e criando uma experiência mais organizada.
+## Como Funciona a Validação do CPF
 
-## Estrutura Proposta
+O CPF brasileiro possui 11 dígitos, sendo os dois últimos os dígitos verificadores. A validação segue um algoritmo matemático específico:
 
-```text
-+----------------------------------+----------------------------------+
-|           PRODUTOS               |          FORNECEDORES            |
-|  (Visão Geral do Inventário)     |    (Análise por Parceiro)        |
-+----------------------------------+----------------------------------+
-| - Dashboard geral do estoque     | - Dados cadastrais               |
-| - Total Custo (todo estoque)     | - Custo/Venda POR fornecedor     |
-| - Total Venda (todo estoque)     | - Qtd produtos por fornecedor    |
-| - Lucro Potencial TOTAL          | - Análise de investimento        |
-| - Produtos sem fornecedor        |   em cada parceiro               |
-| - Margem por produto             |                                  |
-+----------------------------------+----------------------------------+
-```
+1. **Primeiro dígito verificador**: Calculado multiplicando os 9 primeiros dígitos por pesos decrescentes (10 a 2), somando e aplicando módulo 11
+2. **Segundo dígito verificador**: Calculado multiplicando os 10 primeiros dígitos por pesos decrescentes (11 a 2), somando e aplicando módulo 11
 
-## Mudancas em Produtos
+---
 
-### 1. Dashboard de Inventario Geral (novo)
-Adicionar cards no topo da pagina de Produtos com:
+## Alterações Planejadas
 
-- **Valor Total em Custo**: Soma de (custo x estoque) de TODOS os produtos
-- **Valor Total em Venda**: Soma de (preco x estoque) de TODOS os produtos  
-- **Lucro Potencial**: Diferenca entre venda e custo com percentual de margem
-- **Produtos sem Fornecedor**: Alerta mostrando quantos produtos nao estao vinculados
+### Arquivo: `src/components/auth/RegisterForm.tsx`
 
-### 2. Coluna de Margem na Tabela de Produtos
-Adicionar coluna "Margem" na listagem mostrando:
-- Percentual de lucro de cada produto: ((preco - custo) / custo) x 100
-- Cor verde para margem maior que 30%
-- Cor amarela para margem entre 15% e 30%
-- Cor vermelha para margem menor que 15%
+**1. Criar função de validação do CPF**
 
-### 3. Indicador Visual de Preco de Custo
-Na tabela de produtos, mostrar o preco de custo junto ao preco de venda em texto menor
+Adicionar uma função `validateCpf` que:
+- Remove caracteres não numéricos
+- Verifica se tem exatamente 11 dígitos
+- Rejeita CPFs com todos os dígitos iguais (ex: 111.111.111-11)
+- Calcula e valida o primeiro dígito verificador
+- Calcula e valida o segundo dígito verificador
 
-## Mudancas em Fornecedores
+**2. Atualizar o schema Zod**
 
-### 1. Manter Dashboard Atual (sem alteracao)
-O dashboard de fornecedores continua focado na analise por parceiro comercial:
-- Total investido com cada fornecedor
-- Valor potencial de venda por fornecedor
-- Quantidade de produtos por fornecedor
+Modificar a validação do campo `cpf` no `fisicaSchema` para usar `.refine()` com a função de validação, exibindo mensagem de erro específica quando o CPF for inválido.
 
-### 2. Pequena Melhoria: Link para Produtos
-Ao clicar na quantidade de produtos de um fornecedor, filtrar a pagina de produtos para mostrar apenas os itens daquele fornecedor
+**3. Adicionar feedback visual em tempo real**
 
-## Detalhes Tecnicos
+Adicionar validação no `onChange` do campo CPF para mostrar feedback visual quando o CPF completo é digitado e é inválido.
 
-### Arquivo: src/pages/admin/Produtos.tsx
+---
 
-**Novas dependencias**:
-- Importar Card, CardContent, CardHeader, CardTitle de @/components/ui/card
-- Importar icones: DollarSign, TrendingUp, Package, AlertTriangle
-- Importar useMemo de react
-
-**Nova query para calculos**:
-```typescript
-const inventoryStats = useMemo(() => {
-  if (!products) return { totalCost: 0, totalSale: 0, profit: 0, noSupplier: 0 };
-  
-  const totalCost = products.reduce((sum, p) => 
-    sum + ((p.cost_price || 0) * (p.stock || 0)), 0);
-  const totalSale = products.reduce((sum, p) => 
-    sum + ((p.price || 0) * (p.stock || 0)), 0);
-  const noSupplier = products.filter(p => !p.supplier_id).length;
-  
-  return {
-    totalCost,
-    totalSale,
-    profit: totalSale - totalCost,
-    noSupplier,
-  };
-}, [products]);
-```
-
-**Dashboard (4 cards)**:
-- Total em Custo (valor de compra do estoque)
-- Total em Venda (valor potencial de venda)
-- Lucro Potencial (com percentual de margem)
-- Sem Fornecedor (alerta se houver produtos sem vinculo)
-
-**Nova coluna na tabela**:
-- Adicionar "Custo" e "Margem" entre "Preco" e "Estoque"
-- Calcular margem: ((preco - custo) / custo) * 100
-- Aplicar cores condicionais baseadas no percentual
-
-### Arquivo: src/pages/admin/Fornecedores.tsx
-
-**Pequeno ajuste**:
-- Remover o dashboard global (Total em Custo, Total em Venda, Lucro Potencial)
-- Manter apenas os dados por fornecedor na tabela
-- Adicionar link na coluna "Produtos" para filtrar por fornecedor
-
-Alternativa: Manter como esta se preferir ter a visao duplicada em ambos os lugares
-
-## Resumo Visual
+## Detalhes Técnicos
 
 ```text
-ANTES (atual):
-- Fornecedores: Dashboard geral + dados por fornecedor
-- Produtos: Apenas lista de produtos
+Função validateCpf(cpf: string): boolean
 
-DEPOIS (otimizado):
-- Fornecedores: Apenas dados por fornecedor (foco no parceiro)
-- Produtos: Dashboard geral + lista com margem (foco no inventario)
+1. Limpar CPF (remover . e -)
+2. Se length != 11 → retorna false
+3. Se todos dígitos iguais → retorna false
+4. Calcular 1º dígito:
+   - soma = Σ(cpf[i] × (10-i)) para i=0..8
+   - resto = soma % 11
+   - d1 = resto < 2 ? 0 : 11 - resto
+5. Calcular 2º dígito:
+   - soma = Σ(cpf[i] × (11-i)) para i=0..9
+   - resto = soma % 11
+   - d2 = resto < 2 ? 0 : 11 - resto
+6. Comparar d1 e d2 com dígitos 10 e 11 do CPF
 ```
 
-## Beneficios
+---
 
-1. **Clareza**: Cada pagina tem seu proposito definido
-2. **Consistencia**: Dashboard de inventario fica onde faz mais sentido (Produtos)
-3. **Visibilidade**: Margem de lucro visivel diretamente na listagem
-4. **Alertas**: Identificacao rapida de produtos sem fornecedor
-5. **Navegacao**: Link direto de fornecedor para seus produtos
+## Experiência do Usuário
 
-## Arquivos a Modificar
-
-| Arquivo | Acao |
-|---------|------|
-| src/pages/admin/Produtos.tsx | Adicionar dashboard + colunas de custo/margem |
-| src/pages/admin/Fornecedores.tsx | Opcional: remover dashboard global duplicado |
-
+- **Mensagem de erro clara**: "CPF inválido. Verifique os números digitados."
+- **Validação ao digitar**: Quando o CPF completo (14 caracteres com máscara) é digitado, valida imediatamente
+- **Indicador visual**: Campo fica com borda vermelha se inválido após preenchimento completo
+- **Validação no submit**: Também valida antes de enviar o formulário
