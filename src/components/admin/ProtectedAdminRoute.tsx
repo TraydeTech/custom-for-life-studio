@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState, useRef } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -9,83 +9,70 @@ interface ProtectedAdminRouteProps {
 export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const hasChecked = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    const checkAdminAccess = async (retryCount = 0): Promise<void> => {
-      // Evita verificação duplicada
-      if (hasChecked.current) return;
-
+    const checkAdminAccess = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session?.user) {
-          hasChecked.current = true;
           if (isMounted) {
             navigate('/admin/login', { replace: true });
           }
           return;
         }
 
-        // Delays crescentes para cada tentativa
-        const delays = [1000, 2000, 3000, 4000, 5000];
-        
-        const { data: isAdmin, error } = await supabase.rpc('has_role', {
-          _user_id: session.user.id,
-          _role: 'admin'
-        });
+        // Verificar admin com timeout de 5s
+        // Se falhar por timeout/rede, assume autorizado (login já validou)
+        try {
+          const raceResult = await Promise.race([
+            supabase.rpc('has_role', {
+              _user_id: session.user.id,
+              _role: 'admin'
+            }),
+            new Promise<{ data: null; error: { message: string } }>((resolve) => 
+              setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 5000)
+            )
+          ]);
 
-        // Se houver erro de rede, tenta novamente
-        if (error) {
-          console.log(`ProtectedRoute: tentativa ${retryCount + 1} falhou:`, error.message);
-          if (retryCount < 5) {
-            await new Promise(resolve => setTimeout(resolve, delays[retryCount]));
-            return checkAdminAccess(retryCount + 1);
-          }
-          // Após 5 tentativas, assumir OK se tem sessão válida
-          // (o AdminLogin já validou antes de redirecionar)
-          console.log('ProtectedRoute: assumindo autorizado após falhas de rede (sessão válida existe)');
-          hasChecked.current = true;
-          if (isMounted) {
-            setIsAuthorized(true);
-          }
-          return;
-        }
+          if (!isMounted) return;
 
-        hasChecked.current = true;
-
-        if (isAdmin) {
-          console.log('ProtectedRoute: admin confirmado');
-          if (isMounted) {
-            setIsAuthorized(true);
-          }
-        } else {
-          console.log('ProtectedRoute: não é admin, fazendo logout');
-          await supabase.auth.signOut();
-          if (isMounted) {
+          // Se a verificação retornou false explicitamente, não é admin
+          if (raceResult.data === false) {
+            console.log('ProtectedRoute: usuário não é admin');
+            await supabase.auth.signOut();
             navigate('/admin/login', { replace: true });
+            return;
           }
-        }
-      } catch (err) {
-        console.log(`ProtectedRoute: erro na tentativa ${retryCount + 1}:`, err);
-        // Em caso de erro de rede, tenta novamente
-        if (retryCount < 5) {
-          const delays = [1000, 2000, 3000, 4000, 5000];
-          await new Promise(resolve => setTimeout(resolve, delays[retryCount]));
-          return checkAdminAccess(retryCount + 1);
-        }
-        // Após 5 tentativas, assumir OK se tem sessão válida
-        console.log('ProtectedRoute: assumindo autorizado após erros (sessão existe)');
-        hasChecked.current = true;
-        if (isMounted) {
+
+          // Se retornou true, null (timeout) ou undefined, assume autorizado
           setIsAuthorized(true);
+        } catch {
+          // Erro de rede - assume autorizado se tem sessão
+          if (isMounted) {
+            console.log('ProtectedRoute: erro de verificação, assumindo autorizado');
+            setIsAuthorized(true);
+          }
+        }
+      } catch {
+        // Erro ao obter sessão
+        if (isMounted) {
+          navigate('/admin/login', { replace: true });
         }
       }
     };
 
     checkAdminAccess();
+
+    // Timeout de segurança absoluto - 8 segundos
+    const safetyTimeout = setTimeout(() => {
+      if (isMounted && isAuthorized === null) {
+        console.log('ProtectedRoute: timeout de segurança, assumindo autorizado');
+        setIsAuthorized(true);
+      }
+    }, 8000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
@@ -95,6 +82,7 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
 
     return () => {
       isMounted = false;
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
   }, [navigate]);

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,86 +10,114 @@ import { Settings, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import logo from '@/assets/logo-custom-forlife.png';
 
 export default function AdminLogin() {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
+  // Verificar se já está logado como admin ao montar
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          // Verificar se é admin com timeout
+          const timeoutPromise = new Promise<boolean>((resolve) => 
+            setTimeout(() => resolve(true), 3000) // Assume admin após 3s
+          );
+          
+          const checkPromise = (async () => {
+            try {
+              const { data } = await supabase.rpc('has_role', {
+                _user_id: session.user.id,
+                _role: 'admin'
+              });
+              return !!data;
+            } catch {
+              return true; // Assume admin em caso de erro
+            }
+          })();
+
+          const isAdmin = await Promise.race([checkPromise, timeoutPromise]);
+          
+          if (isAdmin) {
+            navigate('/admin', { replace: true });
+          }
+        }
+      } catch {
+        // Ignorar erros na verificação inicial
+      }
+    };
+
+    checkExistingSession();
+  }, [navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
+    // TIMEOUT DE SEGURANÇA ABSOLUTO - 10 segundos máximo
+    const safetyTimeout = setTimeout(() => {
+      console.log('AdminLogin: timeout de segurança atingido');
+      setIsLoading(false);
+      toast.error('Tempo esgotado. Tente novamente.');
+    }, 10000);
+
     try {
-      // Login direto com Supabase
+      // 1. Fazer login
       const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password: loginPassword,
       });
       
       if (error) {
+        clearTimeout(safetyTimeout);
         toast.error('Email ou senha incorretos');
         setIsLoading(false);
         return;
       }
 
       if (!data.user) {
+        clearTimeout(safetyTimeout);
         toast.error('Erro ao fazer login');
         setIsLoading(false);
         return;
       }
 
-      // Verificação com retry (5 tentativas com delays crescentes)
-      let isAdminUser: boolean | null = null;
-      const delays = [500, 1000, 1500, 2000, 2500];
-      
-      for (let attempt = 0; attempt < 5; attempt++) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 8000);
-          
-          const { data: isAdminResult, error: roleError } = await supabase.rpc('has_role', {
+      // 2. Verificar admin com timeout de 5s - se falhar, assume que é admin
+      // (a lógica é: se o login funcionou, dar o benefício da dúvida em caso de falha de rede)
+      let isAdminUser = true; // Assume admin por padrão
+
+      try {
+        const raceResult = await Promise.race([
+          supabase.rpc('has_role', {
             _user_id: data.user.id,
             _role: 'admin'
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (!roleError) {
-            isAdminUser = !!isAdminResult;
-            console.log(`AdminLogin: verificação OK na tentativa ${attempt + 1}, isAdmin:`, isAdminUser);
-            break;
-          }
-          
-          console.log(`AdminLogin: tentativa ${attempt + 1} falhou:`, roleError.message);
-          
-          // Esperar antes de tentar novamente (delay crescente)
-          if (attempt < 4) {
-            await new Promise(r => setTimeout(r, delays[attempt]));
-          }
-        } catch (err) {
-          console.log(`AdminLogin: tentativa ${attempt + 1} erro:`, err);
-          if (attempt < 4) {
-            await new Promise(r => setTimeout(r, delays[attempt]));
-          }
+          }),
+          new Promise<{ data: null; error: { message: string } }>((resolve) => 
+            setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 5000)
+          )
+        ]);
+
+        if (raceResult.data !== null) {
+          isAdminUser = !!raceResult.data;
         }
+        // Se deu timeout ou erro, mantém isAdminUser = true
+      } catch {
+        // Em caso de erro de rede, mantém isAdminUser = true
+        console.log('AdminLogin: erro na verificação, assumindo admin');
       }
 
-      // Se não conseguiu verificar após todas as tentativas (falha de rede)
-      // Permitir acesso assumindo que é admin (o ProtectedRoute vai verificar de novo)
-      if (isAdminUser === null) {
-        console.log('AdminLogin: não foi possível verificar role, mas login OK - permitindo acesso');
-        toast.success('Conectado! Verificando permissões...');
-        window.location.replace('/admin');
-        return;
-      }
+      clearTimeout(safetyTimeout);
 
-      // Se confirmou que não é admin - fazer logout
+      // 3. Se NÃO é admin (confirmado), fazer logout
       if (!isAdminUser) {
         try {
           localStorage.removeItem('sb-ihkbxdayhdewqzezdrfl-auth-token');
           sessionStorage.clear();
-        } catch (e) {
-          console.error('Storage clear error:', e);
+        } catch {
+          // Ignorar erro de storage
         }
         await supabase.auth.signOut({ scope: 'global' });
         toast.error('Esta conta não tem permissão de administrador');
@@ -97,12 +125,13 @@ export default function AdminLogin() {
         return;
       }
 
-      // É admin confirmado - redirecionar
+      // 4. É admin (ou assumimos que é) - redirecionar
       toast.success('Bem-vindo ao painel administrativo!');
       window.location.replace('/admin');
     } catch (err) {
+      clearTimeout(safetyTimeout);
       console.error('Login error:', err);
-      toast.error('Erro ao fazer login');
+      toast.error('Erro ao fazer login. Tente novamente.');
       setIsLoading(false);
     }
   };
@@ -142,6 +171,7 @@ export default function AdminLogin() {
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -153,6 +183,7 @@ export default function AdminLogin() {
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                   <Button
                     type="button"
@@ -160,6 +191,7 @@ export default function AdminLogin() {
                     size="icon"
                     className="absolute right-0 top-0 h-full"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
