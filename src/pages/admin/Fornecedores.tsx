@@ -54,17 +54,17 @@ export default function AdminFornecedores() {
     queryKey: ['suppliers'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('suppliers')
+        .from('suppliers' as any)
         .select('*')
         .order('name');
       if (error) throw error;
-      return data as Supplier[];
+      return data as unknown as Supplier[];
     },
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { error } = await supabase.from('suppliers').insert({
+      const { error } = await supabase.from('suppliers' as any).insert({
         name: data.name,
         contact_name: data.contact_name || null,
         email: data.email || null,
@@ -87,7 +87,7 @@ export default function AdminFornecedores() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
       const { error } = await supabase
-        .from('suppliers')
+        .from('suppliers' as any)
         .update({
           name: data.name,
           contact_name: data.contact_name || null,
@@ -111,7 +111,7 @@ export default function AdminFornecedores() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('suppliers').delete().eq('id', id);
+      const { error } = await supabase.from('suppliers' as any).delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
