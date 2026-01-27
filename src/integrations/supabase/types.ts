@@ -369,6 +369,7 @@ export type Database = {
           slug: string
           specifications: Json | null
           stock: number | null
+          supplier_id: string | null
           updated_at: string
         }
         Insert: {
@@ -388,6 +389,7 @@ export type Database = {
           slug: string
           specifications?: Json | null
           stock?: number | null
+          supplier_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -407,6 +409,7 @@ export type Database = {
           slug?: string
           specifications?: Json | null
           stock?: number | null
+          supplier_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -415,6 +418,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]

@@ -37,6 +37,11 @@ import { Tables } from '@/integrations/supabase/types';
 type Product = Tables<'products'>;
 type Category = Tables<'categories'>;
 
+interface Supplier {
+  id: string;
+  name: string;
+}
+
 export default function AdminProdutos() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -52,6 +57,7 @@ export default function AdminProdutos() {
     stock: '',
     min_quantity: '1',
     category_id: '',
+    supplier_id: '',
     is_active: true,
     is_featured: false,
   });
@@ -81,8 +87,20 @@ export default function AdminProdutos() {
     },
   });
 
+  const { data: suppliers } = useQuery({
+    queryKey: ['suppliers-list'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('suppliers' as any)
+        .select('id, name')
+        .order('name');
+      if (error) throw error;
+      return data as unknown as Supplier[];
+    },
+  });
+
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string; slug: string; description: string | null; short_description: string | null; price: number; compare_price: number | null; stock: number; min_quantity: number; category_id: string | null; is_active: boolean; is_featured: boolean }) => {
+    mutationFn: async (data: { name: string; slug: string; description: string | null; short_description: string | null; price: number; compare_price: number | null; stock: number; min_quantity: number; category_id: string | null; supplier_id: string | null; is_active: boolean; is_featured: boolean }) => {
       const { error } = await supabase.from('products').insert([data]);
       if (error) throw error;
     },
@@ -138,6 +156,7 @@ export default function AdminProdutos() {
       stock: '',
       min_quantity: '1',
       category_id: '',
+      supplier_id: '',
       is_active: true,
       is_featured: false,
     });
@@ -156,6 +175,7 @@ export default function AdminProdutos() {
       stock: product.stock ? String(product.stock) : '',
       min_quantity: product.min_quantity ? String(product.min_quantity) : '1',
       category_id: product.category_id || '',
+      supplier_id: (product as any).supplier_id || '',
       is_active: product.is_active ?? true,
       is_featured: product.is_featured ?? false,
     });
@@ -174,6 +194,7 @@ export default function AdminProdutos() {
       stock: formData.stock ? parseInt(formData.stock) : 0,
       min_quantity: parseInt(formData.min_quantity) || 1,
       category_id: formData.category_id || null,
+      supplier_id: formData.supplier_id || null,
       is_active: formData.is_active,
       is_featured: formData.is_featured,
     };
@@ -321,6 +342,25 @@ export default function AdminProdutos() {
                     </div>
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="supplier">Fornecedor</Label>
+                    <Select
+                      value={formData.supplier_id}
+                      onValueChange={(value) => setFormData({ ...formData, supplier_id: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um fornecedor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {suppliers?.map((supplier) => (
+                          <SelectItem key={supplier.id} value={supplier.id}>
+                            {supplier.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
                       <Switch
@@ -369,6 +409,7 @@ export default function AdminProdutos() {
                 <TableRow>
                   <TableHead>Produto</TableHead>
                   <TableHead>Categoria</TableHead>
+                  <TableHead>Fornecedor</TableHead>
                   <TableHead>Preço</TableHead>
                   <TableHead>Estoque</TableHead>
                   <TableHead>Status</TableHead>
@@ -378,32 +419,35 @@ export default function AdminProdutos() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       Carregando...
                     </TableCell>
                   </TableRow>
                 ) : filteredProducts?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Nenhum produto encontrado
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredProducts?.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell>{(product as any).categories?.name || '-'}</TableCell>
-                      <TableCell>{formatCurrency(product.price)}</TableCell>
-                      <TableCell>{product.stock ?? 0}</TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          product.is_active 
-                            ? 'bg-green-500/20 text-green-500' 
-                            : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {product.is_active ? 'Ativo' : 'Inativo'}
-                        </span>
-                      </TableCell>
+                  filteredProducts?.map((product) => {
+                    const supplierName = suppliers?.find(s => s.id === (product as any).supplier_id)?.name;
+                    return (
+                      <TableRow key={product.id}>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        <TableCell>{(product as any).categories?.name || '-'}</TableCell>
+                        <TableCell>{supplierName || '-'}</TableCell>
+                        <TableCell>{formatCurrency(product.price)}</TableCell>
+                        <TableCell>{product.stock ?? 0}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            product.is_active 
+                              ? 'bg-green-500/20 text-green-500' 
+                              : 'bg-muted text-muted-foreground'
+                          }`}>
+                            {product.is_active ? 'Ativo' : 'Inativo'}
+                          </span>
+                        </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button
@@ -428,7 +472,8 @@ export default function AdminProdutos() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
