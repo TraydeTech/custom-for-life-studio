@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -30,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, DollarSign, TrendingUp, Package, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tables } from '@/integrations/supabase/types';
 
@@ -216,6 +217,40 @@ export default function AdminProdutos() {
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+  // Inventory statistics for dashboard
+  const inventoryStats = useMemo(() => {
+    if (!products) return { totalCost: 0, totalSale: 0, profit: 0, marginPercent: 0, noSupplier: 0 };
+    
+    const totalCost = products.reduce((sum, p) => 
+      sum + (((p as any).cost_price || 0) * (p.stock || 0)), 0);
+    const totalSale = products.reduce((sum, p) => 
+      sum + ((p.price || 0) * (p.stock || 0)), 0);
+    const noSupplier = products.filter(p => !(p as any).supplier_id).length;
+    const profit = totalSale - totalCost;
+    const marginPercent = totalCost > 0 ? (profit / totalCost) * 100 : 0;
+    
+    return {
+      totalCost,
+      totalSale,
+      profit,
+      marginPercent,
+      noSupplier,
+    };
+  }, [products]);
+
+  // Calculate margin for a product
+  const calculateMargin = (price: number, costPrice: number): number => {
+    if (!costPrice || costPrice === 0) return 0;
+    return ((price - costPrice) / costPrice) * 100;
+  };
+
+  // Get margin color class
+  const getMarginColorClass = (margin: number): string => {
+    if (margin >= 30) return 'text-green-600 bg-green-100';
+    if (margin >= 15) return 'text-yellow-600 bg-yellow-100';
+    return 'text-red-600 bg-red-100';
+  };
 
   return (
     <ProtectedAdminRoute>
@@ -408,6 +443,58 @@ export default function AdminProdutos() {
             </Dialog>
           </div>
 
+          {/* Dashboard de Inventário */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total em Custo</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(inventoryStats.totalCost)}</div>
+                <p className="text-xs text-muted-foreground">Valor de compra do estoque</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total em Venda</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(inventoryStats.totalSale)}</div>
+                <p className="text-xs text-muted-foreground">Valor potencial de venda</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Lucro Potencial</CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${inventoryStats.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(inventoryStats.profit)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Margem: {inventoryStats.marginPercent.toFixed(1)}%
+                </p>
+              </CardContent>
+            </Card>
+            <Card className={inventoryStats.noSupplier > 0 ? 'border-yellow-500' : ''}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Sem Fornecedor</CardTitle>
+                <AlertTriangle className={`h-4 w-4 ${inventoryStats.noSupplier > 0 ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${inventoryStats.noSupplier > 0 ? 'text-yellow-500' : ''}`}>
+                  {inventoryStats.noSupplier}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {inventoryStats.noSupplier > 0 ? 'Produtos sem vínculo' : 'Todos vinculados'}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -426,6 +513,8 @@ export default function AdminProdutos() {
                   <TableHead>Categoria</TableHead>
                   <TableHead>Fornecedor</TableHead>
                   <TableHead>Preço</TableHead>
+                  <TableHead>Custo</TableHead>
+                  <TableHead>Margem</TableHead>
                   <TableHead>Estoque</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -434,25 +523,39 @@ export default function AdminProdutos() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       Carregando...
                     </TableCell>
                   </TableRow>
                 ) : filteredProducts?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       Nenhum produto encontrado
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredProducts?.map((product) => {
                     const supplierName = suppliers?.find(s => s.id === (product as any).supplier_id)?.name;
+                    const costPrice = (product as any).cost_price || 0;
+                    const margin = calculateMargin(product.price, costPrice);
                     return (
                       <TableRow key={product.id}>
                         <TableCell className="font-medium">{product.name}</TableCell>
                         <TableCell>{(product as any).categories?.name || '-'}</TableCell>
                         <TableCell>{supplierName || '-'}</TableCell>
                         <TableCell>{formatCurrency(product.price)}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {costPrice > 0 ? formatCurrency(costPrice) : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {costPrice > 0 ? (
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getMarginColorClass(margin)}`}>
+                              {margin.toFixed(1)}%
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell>{product.stock ?? 0}</TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
