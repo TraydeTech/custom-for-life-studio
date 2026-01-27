@@ -159,10 +159,9 @@ export function RegisterForm() {
       const data = await response.json();
       
       if (!data.message) {
-        // Preencher dados da empresa
+        // Preencher dados da empresa (email NÃO é preenchido - usuário pode usar outro para login)
         setCompanyName(data.razao_social || '');
         setFullName(data.nome_fantasia || data.razao_social || '');
-        setEmail(data.email || email);
         setPhone(data.ddd_telefone_1 ? formatPhone(data.ddd_telefone_1) : phone);
         
         // Preencher endereço
