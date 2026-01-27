@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -29,12 +29,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Eye, Package, Store, Globe, ChevronLeft, ChevronRight, CalendarIcon, X, Download } from 'lucide-react';
+import { Search, Eye, Package, Store, Globe, ChevronLeft, ChevronRight, CalendarIcon, X, Download, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Tables, Constants } from '@/integrations/supabase/types';
+import { OrderReceipt } from '@/components/admin/OrderReceipt';
 import * as XLSX from 'xlsx';
 
 type Order = Tables<'orders'>;
@@ -62,6 +63,7 @@ const ITEMS_PER_PAGE = 15;
 
 export default function AdminPedidos() {
   const queryClient = useQueryClient();
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
@@ -229,6 +231,41 @@ export default function AdminPedidos() {
     
     XLSX.writeFile(wb, fileName);
     toast.success(`${filteredOrders.length} pedido(s) exportado(s) com sucesso!`);
+  };
+
+  const handlePrintReceipt = () => {
+    if (!receiptRef.current || !selectedOrder) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Não foi possível abrir a janela de impressão');
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Recibo - ${selectedOrder.order_number}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Courier New', monospace; font-size: 12px; }
+            @media print {
+              body { width: 80mm; }
+            }
+          </style>
+        </head>
+        <body>
+          ${receiptRef.current.innerHTML}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   return (
@@ -472,9 +509,15 @@ export default function AdminPedidos() {
           <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Pedido {selectedOrder?.order_number}
+                <DialogTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Pedido {selectedOrder?.order_number}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handlePrintReceipt}>
+                    <Printer className="h-4 w-4 mr-2" />
+                    Imprimir Recibo
+                  </Button>
                 </DialogTitle>
               </DialogHeader>
               
@@ -553,6 +596,11 @@ export default function AdminPedidos() {
                       <p className="text-sm bg-muted p-3 rounded">{selectedOrder.notes}</p>
                     </div>
                   )}
+
+                  {/* Hidden receipt for printing */}
+                  <div className="hidden">
+                    <OrderReceipt ref={receiptRef} order={selectedOrder} items={orderItems} />
+                  </div>
                 </div>
               )}
             </DialogContent>
