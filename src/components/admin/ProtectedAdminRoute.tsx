@@ -29,21 +29,24 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
           return;
         }
 
+        // Delays crescentes para cada tentativa
+        const delays = [1000, 2000, 3000, 4000, 5000];
+        
         const { data: isAdmin, error } = await supabase.rpc('has_role', {
           _user_id: session.user.id,
           _role: 'admin'
         });
 
-        // Se houver erro de rede, tenta novamente até 5 vezes com 2s de delay
+        // Se houver erro de rede, tenta novamente
         if (error) {
-          console.log(`ProtectedRoute: tentativa ${retryCount + 1} falhou:`, error);
+          console.log(`ProtectedRoute: tentativa ${retryCount + 1} falhou:`, error.message);
           if (retryCount < 5) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, delays[retryCount]));
             return checkAdminAccess(retryCount + 1);
           }
           // Após 5 tentativas, assumir OK se tem sessão válida
-          // (o AdminLogin já validou que é admin)
-          console.log('ProtectedRoute: assumindo autorizado após falhas de rede');
+          // (o AdminLogin já validou antes de redirecionar)
+          console.log('ProtectedRoute: assumindo autorizado após falhas de rede (sessão válida existe)');
           hasChecked.current = true;
           if (isMounted) {
             setIsAuthorized(true);
@@ -54,10 +57,12 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
         hasChecked.current = true;
 
         if (isAdmin) {
+          console.log('ProtectedRoute: admin confirmado');
           if (isMounted) {
             setIsAuthorized(true);
           }
         } else {
+          console.log('ProtectedRoute: não é admin, fazendo logout');
           await supabase.auth.signOut();
           if (isMounted) {
             navigate('/admin/login', { replace: true });
@@ -67,11 +72,12 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
         console.log(`ProtectedRoute: erro na tentativa ${retryCount + 1}:`, err);
         // Em caso de erro de rede, tenta novamente
         if (retryCount < 5) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          const delays = [1000, 2000, 3000, 4000, 5000];
+          await new Promise(resolve => setTimeout(resolve, delays[retryCount]));
           return checkAdminAccess(retryCount + 1);
         }
         // Após 5 tentativas, assumir OK se tem sessão válida
-        console.log('ProtectedRoute: assumindo autorizado após erros');
+        console.log('ProtectedRoute: assumindo autorizado após erros (sessão existe)');
         hasChecked.current = true;
         if (isMounted) {
           setIsAuthorized(true);

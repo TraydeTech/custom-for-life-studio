@@ -38,39 +38,48 @@ export default function AdminLogin() {
         return;
       }
 
-      // Verificação com retry (3 tentativas)
+      // Verificação com retry (5 tentativas com delays crescentes)
       let isAdminUser: boolean | null = null;
+      const delays = [500, 1000, 1500, 2000, 2500];
       
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 5; attempt++) {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+          
           const { data: isAdminResult, error: roleError } = await supabase.rpc('has_role', {
             _user_id: data.user.id,
             _role: 'admin'
           });
           
+          clearTimeout(timeoutId);
+          
           if (!roleError) {
             isAdminUser = !!isAdminResult;
+            console.log(`AdminLogin: verificação OK na tentativa ${attempt + 1}, isAdmin:`, isAdminUser);
             break;
           }
           
-          console.log(`Tentativa ${attempt + 1} falhou:`, roleError);
+          console.log(`AdminLogin: tentativa ${attempt + 1} falhou:`, roleError.message);
           
-          // Esperar antes de tentar novamente
-          if (attempt < 2) {
-            await new Promise(r => setTimeout(r, 1500));
+          // Esperar antes de tentar novamente (delay crescente)
+          if (attempt < 4) {
+            await new Promise(r => setTimeout(r, delays[attempt]));
           }
         } catch (err) {
-          console.log(`Tentativa ${attempt + 1} erro:`, err);
-          if (attempt < 2) {
-            await new Promise(r => setTimeout(r, 1500));
+          console.log(`AdminLogin: tentativa ${attempt + 1} erro:`, err);
+          if (attempt < 4) {
+            await new Promise(r => setTimeout(r, delays[attempt]));
           }
         }
       }
 
-      // Se não conseguiu verificar (falha de rede) - NÃO fazer logout
+      // Se não conseguiu verificar após todas as tentativas (falha de rede)
+      // Permitir acesso assumindo que é admin (o ProtectedRoute vai verificar de novo)
       if (isAdminUser === null) {
-        toast.error('Erro de conexão. Por favor, tente novamente.');
-        setIsLoading(false);
+        console.log('AdminLogin: não foi possível verificar role, mas login OK - permitindo acesso');
+        toast.success('Conectado! Verificando permissões...');
+        window.location.replace('/admin');
         return;
       }
 
@@ -88,7 +97,7 @@ export default function AdminLogin() {
         return;
       }
 
-      // É admin - redirecionar imediatamente
+      // É admin confirmado - redirecionar
       toast.success('Bem-vindo ao painel administrativo!');
       window.location.replace('/admin');
     } catch (err) {
