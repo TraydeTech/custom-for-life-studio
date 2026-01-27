@@ -7,16 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, Phone, MapPin, Home, Building, Calendar } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Phone, MapPin, Home, Building, Calendar, Building2 } from 'lucide-react';
 import { z } from 'zod';
 import { parse, isValid, format } from 'date-fns';
 
-const registerSchema = z.object({
+type PersonType = 'fisica' | 'juridica';
+
+const baseSchema = {
   fullName: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres').max(100),
   email: z.string().email('Email inválido').max(255),
   phone: z.string().min(10, 'Telefone inválido').max(15),
-  cpf: z.string().min(11, 'CPF inválido').max(14),
-  birthDate: z.string().optional(),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   confirmPassword: z.string(),
   zipCode: z.string().min(8, 'CEP inválido').max(9),
@@ -26,16 +26,34 @@ const registerSchema = z.object({
   neighborhood: z.string().min(2, 'Bairro obrigatório').max(100),
   city: z.string().min(2, 'Cidade obrigatória').max(100),
   state: z.string().min(2, 'Estado obrigatório').max(2),
+};
+
+const fisicaSchema = z.object({
+  ...baseSchema,
+  cpf: z.string().min(11, 'CPF inválido').max(14),
+  birthDate: z.string().optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'As senhas não coincidem',
+  path: ['confirmPassword'],
+});
+
+const juridicaSchema = z.object({
+  ...baseSchema,
+  cnpj: z.string().min(14, 'CNPJ inválido').max(18),
+  companyName: z.string().min(3, 'Razão Social obrigatória').max(200),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'As senhas não coincidem',
   path: ['confirmPassword'],
 });
 
 export function RegisterForm() {
+  const [personType, setPersonType] = useState<PersonType>('fisica');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [cpf, setCpf] = useState('');
+  const [cnpj, setCnpj] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -48,6 +66,7 @@ export function RegisterForm() {
   const [state, setState] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
+  const [loadingCnpj, setLoadingCnpj] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { signUp } = useAuth();
   const navigate = useNavigate();
@@ -64,6 +83,11 @@ export function RegisterForm() {
   const formatCpf = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4').trim();
+  };
+
+  const formatCnpj = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, '$1.$2.$3/$4-$5').trim();
   };
 
   const formatCep = (value: string) => {
@@ -85,6 +109,55 @@ export function RegisterForm() {
       return format(parsed, 'yyyy-MM-dd');
     }
     return null;
+  };
+
+  const fetchCompanyByCnpj = async (cnpjValue: string) => {
+    const cleanCnpj = cnpjValue.replace(/\D/g, '');
+    if (cleanCnpj.length !== 14) return;
+
+    setLoadingCnpj(true);
+    try {
+      const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
+      const data = await response.json();
+      
+      if (!data.message) {
+        // Preencher dados da empresa
+        setCompanyName(data.razao_social || '');
+        setFullName(data.nome_fantasia || data.razao_social || '');
+        setEmail(data.email || email);
+        setPhone(data.ddd_telefone_1 ? formatPhone(data.ddd_telefone_1) : phone);
+        
+        // Preencher endereço
+        if (data.cep) {
+          setZipCode(formatCep(data.cep));
+          setStreet(data.logradouro || '');
+          setNumber(data.numero || '');
+          setComplement(data.complemento || '');
+          setNeighborhood(data.bairro || '');
+          setCity(data.municipio || '');
+          setState(data.uf || '');
+        }
+        
+        toast({
+          title: 'Dados encontrados!',
+          description: 'Os dados da empresa foram preenchidos automaticamente.',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'CNPJ não encontrado',
+          description: 'Verifique o CNPJ informado.',
+        });
+      }
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao buscar CNPJ',
+        description: 'Não foi possível buscar os dados da empresa.',
+      });
+    } finally {
+      setLoadingCnpj(false);
+    }
   };
 
   const fetchAddressByCep = async (cep: string) => {
@@ -123,10 +196,14 @@ export function RegisterForm() {
     e.preventDefault();
     setErrors({});
 
-    const validation = registerSchema.safeParse({
-      fullName, email, phone, cpf, birthDate, password, confirmPassword,
+    const baseData = {
+      fullName, email, phone, password, confirmPassword,
       zipCode, street, number, complement, neighborhood, city, state
-    });
+    };
+
+    const validation = personType === 'fisica'
+      ? fisicaSchema.safeParse({ ...baseData, cpf, birthDate })
+      : juridicaSchema.safeParse({ ...baseData, cnpj, companyName });
     
     if (!validation.success) {
       const fieldErrors: Record<string, string> = {};
@@ -160,14 +237,24 @@ export function RegisterForm() {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      // Atualizar o perfil com CPF, telefone e data de nascimento
+      // Atualizar o perfil
+      const profileData = personType === 'fisica'
+        ? {
+            phone: phone.replace(/\D/g, ''),
+            cpf: cpf.replace(/\D/g, ''),
+            birth_date: parseBirthDateToISO(birthDate),
+            person_type: 'fisica',
+          }
+        : {
+            phone: phone.replace(/\D/g, ''),
+            cnpj: cnpj.replace(/\D/g, ''),
+            company_name: companyName,
+            person_type: 'juridica',
+          };
+
       await supabase
         .from('profiles')
-        .update({
-          phone: phone.replace(/\D/g, ''),
-          cpf: cpf.replace(/\D/g, ''),
-          birth_date: parseBirthDateToISO(birthDate),
-        })
+        .update(profileData)
         .eq('user_id', user.id);
 
       // Criar o endereço padrão
@@ -183,7 +270,7 @@ export function RegisterForm() {
           city,
           state,
           is_default: true,
-          label: 'Casa',
+          label: personType === 'fisica' ? 'Casa' : 'Empresa',
         });
     }
 
@@ -205,25 +292,141 @@ export function RegisterForm() {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-6">
-          {/* Dados Pessoais */}
+          {/* Tipo de Pessoa */}
+          <div>
+            <Label className="text-base font-semibold mb-3 block">Tipo de Cadastro *</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant={personType === 'fisica' ? 'default' : 'outline'}
+                className="h-16 flex flex-col gap-1"
+                onClick={() => setPersonType('fisica')}
+              >
+                <User className="h-5 w-5" />
+                <span>Pessoa Física</span>
+              </Button>
+              <Button
+                type="button"
+                variant={personType === 'juridica' ? 'default' : 'outline'}
+                className="h-16 flex flex-col gap-1"
+                onClick={() => setPersonType('juridica')}
+              >
+                <Building2 className="h-5 w-5" />
+                <span>Pessoa Jurídica</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Identificação - CPF ou CNPJ primeiro */}
           <div>
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              Dados Pessoais
+              {personType === 'fisica' ? (
+                <>
+                  <User className="h-5 w-5 text-primary" />
+                  Dados Pessoais
+                </>
+              ) : (
+                <>
+                  <Building2 className="h-5 w-5 text-primary" />
+                  Dados da Empresa
+                </>
+              )}
             </h3>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {personType === 'fisica' ? (
+                <>
+                  {/* CPF primeiro para Pessoa Física */}
+                  <div className="space-y-2">
+                    <Label htmlFor="cpf">CPF *</Label>
+                    <Input
+                      id="cpf"
+                      type="text"
+                      placeholder="000.000.000-00"
+                      value={cpf}
+                      onChange={(e) => setCpf(formatCpf(e.target.value))}
+                      maxLength={14}
+                      required
+                    />
+                    {errors.cpf && <p className="text-sm text-destructive">{errors.cpf}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="birthDate">Data de Nascimento</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="birthDate"
+                        type="text"
+                        placeholder="29/11/1976"
+                        value={birthDate}
+                        onChange={(e) => setBirthDate(formatBirthDate(e.target.value))}
+                        className="pl-10"
+                        maxLength={10}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* CNPJ primeiro para Pessoa Jurídica */}
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="cnpj">CNPJ * <span className="text-xs text-muted-foreground">(preenche automaticamente)</span></Label>
+                    <div className="relative">
+                      <Input
+                        id="cnpj"
+                        type="text"
+                        placeholder="00.000.000/0000-00"
+                        value={cnpj}
+                        onChange={(e) => {
+                          const formatted = formatCnpj(e.target.value);
+                          setCnpj(formatted);
+                          if (formatted.replace(/\D/g, '').length === 14) {
+                            fetchCompanyByCnpj(formatted);
+                          }
+                        }}
+                        maxLength={18}
+                        required
+                      />
+                      {loadingCnpj && (
+                        <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
+                    {errors.cnpj && <p className="text-sm text-destructive">{errors.cnpj}</p>}
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="companyName">Razão Social *</Label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="companyName"
+                        type="text"
+                        placeholder="Razão Social da Empresa"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                    {errors.companyName && <p className="text-sm text-destructive">{errors.companyName}</p>}
+                  </div>
+                </>
+              )}
+
+              {/* Nome */}
               <div className="space-y-2">
-                <Label htmlFor="fullName">Nome Completo *</Label>
+                <Label htmlFor="fullName">{personType === 'fisica' ? 'Nome Completo *' : 'Nome Fantasia *'}</Label>
                 <Input
                   id="fullName"
                   type="text"
-                  placeholder="Seu nome completo"
+                  placeholder={personType === 'fisica' ? 'Seu nome completo' : 'Nome Fantasia'}
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
                 />
                 {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
               </div>
+
+              {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email *</Label>
                 <div className="relative">
@@ -240,7 +443,9 @@ export function RegisterForm() {
                 </div>
                 {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               </div>
-              <div className="space-y-2">
+
+              {/* Telefone */}
+              <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="phone">Telefone *</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -256,34 +461,6 @@ export function RegisterForm() {
                   />
                 </div>
                 {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cpf">CPF *</Label>
-                <Input
-                  id="cpf"
-                  type="text"
-                  placeholder="000.000.000-00"
-                  value={cpf}
-                  onChange={(e) => setCpf(formatCpf(e.target.value))}
-                  maxLength={14}
-                  required
-                />
-                {errors.cpf && <p className="text-sm text-destructive">{errors.cpf}</p>}
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="birthDate">Data de Nascimento</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="birthDate"
-                    type="text"
-                    placeholder="29/11/1976"
-                    value={birthDate}
-                    onChange={(e) => setBirthDate(formatBirthDate(e.target.value))}
-                    className="pl-10"
-                    maxLength={10}
-                  />
-                </div>
               </div>
             </div>
           </div>
@@ -326,7 +503,7 @@ export function RegisterForm() {
           <div>
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
-              Endereço de Entrega
+              {personType === 'fisica' ? 'Endereço de Entrega' : 'Endereço da Empresa'}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
