@@ -1,5 +1,6 @@
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ProtectedAdminRoute } from '@/components/admin/ProtectedAdminRoute';
+import { LowStockAlert } from '@/components/admin/LowStockAlert';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -40,6 +41,9 @@ export default function AdminDashboard() {
             <h1 className="text-3xl font-heading font-bold">Dashboard</h1>
             <p className="text-muted-foreground">Visão geral do seu negócio</p>
           </div>
+
+          {/* Low Stock Alert */}
+          <LowStockAlert />
 
           {isLoading ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
