@@ -17,14 +17,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePendingOrdersCount } from '@/hooks/usePendingOrdersCount';
+import { useLowStockCount } from '@/hooks/useLowStockProducts';
 import logo from '@/assets/logo-custom-forlife.png';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
   { icon: Store, label: 'PDV', path: '/admin/pdv' },
-  { icon: Package, label: 'Produtos', path: '/admin/produtos' },
+  { icon: Package, label: 'Produtos', path: '/admin/produtos', showStockBadge: true },
   { icon: Tags, label: 'Categorias', path: '/admin/categorias' },
-  { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos', showBadge: true },
+  { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos', showOrderBadge: true },
   { icon: Truck, label: 'Fornecedores', path: '/admin/fornecedores' },
   { icon: Wallet, label: 'Financeiro', path: '/admin/financeiro' },
   { icon: BarChart3, label: 'Relatórios', path: '/admin/relatorios' },
@@ -35,6 +36,7 @@ export function AdminSidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
   const { data: pendingCount } = usePendingOrdersCount();
+  const { totalCount: lowStockCount } = useLowStockCount();
 
   const handleLogout = async () => {
     await signOut();
@@ -56,6 +58,14 @@ export function AdminSidebar() {
             const isActive = location.pathname === item.path || 
               (item.path !== '/admin' && location.pathname.startsWith(item.path));
             
+            // Determine badge count based on item type
+            let badgeCount = 0;
+            if (item.showOrderBadge && pendingCount) {
+              badgeCount = pendingCount;
+            } else if (item.showStockBadge && lowStockCount) {
+              badgeCount = lowStockCount;
+            }
+            
             return (
               <li key={item.path}>
                 <Link
@@ -69,17 +79,19 @@ export function AdminSidebar() {
                 >
                   <item.icon className="h-5 w-5" />
                   <span className="font-medium flex-1">{item.label}</span>
-                  {item.showBadge && pendingCount !== undefined && pendingCount > 0 && (
+                  {badgeCount > 0 && (
                     <Badge 
                       variant="secondary" 
                       className={cn(
                         "ml-auto h-5 min-w-5 flex items-center justify-center text-xs font-bold",
                         isActive 
                           ? "bg-primary-foreground/20 text-primary-foreground" 
-                          : "bg-destructive text-destructive-foreground"
+                          : item.showStockBadge 
+                            ? "bg-warning text-warning-foreground"
+                            : "bg-destructive text-destructive-foreground"
                       )}
                     >
-                      {pendingCount > 99 ? '99+' : pendingCount}
+                      {badgeCount > 99 ? '99+' : badgeCount}
                     </Badge>
                   )}
                 </Link>
