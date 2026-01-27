@@ -6,6 +6,8 @@ import { ProtectedAdminRoute } from '@/components/admin/ProtectedAdminRoute';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Table,
   TableBody,
@@ -27,10 +29,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Eye, Package, Store, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Eye, Package, Store, Globe, ChevronLeft, ChevronRight, CalendarIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 import { Tables, Constants } from '@/integrations/supabase/types';
 
 type Order = Tables<'orders'>;
@@ -61,6 +64,10 @@ export default function AdminPedidos() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined,
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -123,7 +130,24 @@ export default function AdminPedidos() {
     const matchesSearch = o.order_number.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'all' || o.status === statusFilter;
     const matchesSource = sourceFilter === 'all' || o.source === sourceFilter;
-    return matchesSearch && matchesStatus && matchesSource;
+    
+    // Date range filter
+    let matchesDate = true;
+    if (dateRange.from || dateRange.to) {
+      const orderDate = parseISO(o.created_at);
+      if (dateRange.from && dateRange.to) {
+        matchesDate = isWithinInterval(orderDate, {
+          start: startOfDay(dateRange.from),
+          end: endOfDay(dateRange.to),
+        });
+      } else if (dateRange.from) {
+        matchesDate = orderDate >= startOfDay(dateRange.from);
+      } else if (dateRange.to) {
+        matchesDate = orderDate <= endOfDay(dateRange.to);
+      }
+    }
+    
+    return matchesSearch && matchesStatus && matchesSource && matchesDate;
   });
 
   // Pagination logic
@@ -136,6 +160,16 @@ export default function AdminPedidos() {
   // Reset to page 1 when filters change
   const handleFilterChange = (setter: (value: string) => void, value: string) => {
     setter(value);
+    setCurrentPage(1);
+  };
+
+  const handleDateRangeChange = (range: { from: Date | undefined; to: Date | undefined }) => {
+    setDateRange(range);
+    setCurrentPage(1);
+  };
+
+  const clearDateFilter = () => {
+    setDateRange({ from: undefined, to: undefined });
     setCurrentPage(1);
   };
   const formatCurrency = (value: number) =>
@@ -190,6 +224,47 @@ export default function AdminPedidos() {
                 <SelectItem value="site">Site</SelectItem>
               </SelectContent>
             </Select>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className={cn(
+                    "justify-start text-left font-normal min-w-[200px]",
+                    !dateRange.from && !dateRange.to && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateRange.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, 'dd/MM/yy', { locale: ptBR })} - {format(dateRange.to, 'dd/MM/yy', { locale: ptBR })}
+                      </>
+                    ) : (
+                      format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })
+                    )
+                  ) : (
+                    <span>Filtrar por data</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={{ from: dateRange.from, to: dateRange.to }}
+                  onSelect={(range) => handleDateRangeChange({ from: range?.from, to: range?.to })}
+                  locale={ptBR}
+                  numberOfMonths={2}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+
+            {(dateRange.from || dateRange.to) && (
+              <Button variant="ghost" size="icon" onClick={clearDateFilter} title="Limpar filtro de data">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
 
           <div className="border rounded-lg">
