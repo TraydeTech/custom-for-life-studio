@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -13,11 +13,15 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const traydeUrl = Deno.env.get("TRAYDE_SUPABASE_URL")!;
-  const traydeKey = Deno.env.get("TRAYDE_SERVICE_ROLE_KEY")!;
+
+  // Ensure TRAYDE URL has https:// prefix
+  let traydeUrl = Deno.env.get("TRAYDE_SUPABASE_URL") || "";
+  if (traydeUrl && !traydeUrl.startsWith("http")) {
+    traydeUrl = `https://${traydeUrl}`;
+  }
+  const traydeKey = Deno.env.get("TRAYDE_SERVICE_ROLE_KEY") || "";
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  const trayde = createClient(traydeUrl, traydeKey);
 
   try {
     if (req.method === "POST") {
@@ -53,6 +57,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (ticketError) {
+        console.error("Erro ao criar ticket:", ticketError);
         throw new Error(`Erro ao criar ticket: ${ticketError.message}`);
       }
 
@@ -77,26 +82,32 @@ Deno.serve(async (req) => {
               .from("suporte-anexos")
               .getPublicUrl(filePath);
             anexoUrl = urlData.publicUrl;
+          } else {
+            console.error("Erro no upload:", uploadError);
           }
         } catch (e) {
           console.error("Erro no upload:", e);
         }
       }
 
-      // Sync to Trayde Tech
-      try {
-        await trayde.from("support_tickets").insert({
-          ticket_number: ticketNumber,
-          subject: tipo,
-          description: descricao + (anexoUrl ? `\n\nAnexo: ${anexoUrl}` : ""),
-          client_email: usuario_email,
-          client_name: userName || "",
-          client_system: clientSystem || "",
-          priority: prioridade || "media",
-          status: "aberto",
-        });
-      } catch (e) {
-        console.error("Erro ao sincronizar com Trayde Tech:", e);
+      // Sync to Trayde Tech (only if configured)
+      if (traydeUrl && traydeKey) {
+        try {
+          const trayde = createClient(traydeUrl, traydeKey);
+          await trayde.from("support_tickets").insert({
+            ticket_number: ticketNumber,
+            subject: tipo,
+            description: descricao + (anexoUrl ? `\n\nAnexo: ${anexoUrl}` : ""),
+            client_email: usuario_email,
+            client_name: userName || "",
+            client_system: clientSystem || "",
+            priority: prioridade || "media",
+            status: "aberto",
+          });
+        } catch (e) {
+          console.error("Erro ao sincronizar com Trayde Tech:", e);
+          // Don't fail the request if Trayde sync fails
+        }
       }
 
       return new Response(
@@ -134,6 +145,7 @@ Deno.serve(async (req) => {
       { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    console.error("Edge function error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
