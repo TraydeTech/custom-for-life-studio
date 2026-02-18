@@ -93,21 +93,38 @@ Deno.serve(async (req) => {
       // Sync to Trayde Tech (only if configured)
       if (traydeUrl && traydeKey) {
         try {
-          const trayde = createClient(traydeUrl, traydeKey);
-          await trayde.from("support_tickets").insert({
-            ticket_number: ticketNumber,
-            subject: tipo,
-            description: descricao + (anexoUrl ? `\n\nAnexo: ${anexoUrl}` : ""),
-            client_email: usuario_email,
-            client_name: userName || "",
-            client_system: clientSystem || "",
-            priority: prioridade || "media",
-            status: "aberto",
+          console.log("Syncing to Trayde Tech...", { 
+            urlConfigured: !!traydeUrl, 
+            keyConfigured: !!traydeKey,
+            urlPrefix: traydeUrl.substring(0, 10) 
           });
+          const trayde = createClient(traydeUrl, traydeKey);
+          const { data: traydeData, error: traydeError } = await trayde
+            .from("support_tickets")
+            .insert({
+              ticket_number: ticketNumber,
+              subject: tipo,
+              description: descricao + (anexoUrl ? `\n\nAnexo: ${anexoUrl}` : ""),
+              client_email: usuario_email,
+              client_name: userName || "",
+              client_system: clientSystem || "",
+              priority: prioridade || "media",
+              status: "aberto",
+            });
+          
+          if (traydeError) {
+            console.error("Erro Trayde insert:", traydeError.message, traydeError.details);
+          } else {
+            console.log("Ticket synced to Trayde Tech successfully");
+          }
         } catch (e) {
           console.error("Erro ao sincronizar com Trayde Tech:", e);
-          // Don't fail the request if Trayde sync fails
         }
+      } else {
+        console.warn("Trayde Tech not configured - skipping sync", { 
+          hasUrl: !!traydeUrl, 
+          hasKey: !!traydeKey 
+        });
       }
 
       return new Response(
