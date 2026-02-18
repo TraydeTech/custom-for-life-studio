@@ -72,7 +72,10 @@ Deno.serve(async (req) => {
             bytes[i] = binaryString.charCodeAt(i);
           }
 
-          const filePath = `${ticket.id}/${anexo_nome}`;
+          const sanitizedName = anexo_nome
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-zA-Z0-9._-]/g, "_");
+          const filePath = `${ticket.id}/${sanitizedName}`;
           const { error: uploadError } = await supabase.storage
             .from("suporte-anexos")
             .upload(filePath, bytes, { contentType: "image/png", upsert: true });
