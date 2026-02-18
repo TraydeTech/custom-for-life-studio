@@ -480,6 +480,41 @@ export type Database = {
         }
         Relationships: []
       }
+      suporte_mensagens: {
+        Row: {
+          created_at: string | null
+          id: string
+          lida: boolean | null
+          mensagem: string
+          remetente: string
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lida?: boolean | null
+          mensagem: string
+          remetente: string
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lida?: boolean | null
+          mensagem?: string
+          remetente?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suporte_mensagens_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets_suporte"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -540,6 +575,48 @@ export type Database = {
           street?: string | null
           updated_at?: string
           zip_code?: string | null
+        }
+        Relationships: []
+      }
+      tickets_suporte: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          id: string
+          numero_ticket: string
+          resolvido_em: string | null
+          resposta: string | null
+          status: string
+          tipo: string
+          updated_at: string | null
+          usuario_email: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          numero_ticket: string
+          resolvido_em?: string | null
+          resposta?: string | null
+          status?: string
+          tipo: string
+          updated_at?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          numero_ticket?: string
+          resolvido_em?: string | null
+          resposta?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
         }
         Relationships: []
       }
