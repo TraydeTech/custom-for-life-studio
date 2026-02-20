@@ -10,7 +10,8 @@ import {
   Store,
   Wallet,
   Truck,
-  BarChart3
+  BarChart3,
+  MessageCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePendingOrdersCount } from '@/hooks/usePendingOrdersCount';
 import { useLowStockCount } from '@/hooks/useLowStockProducts';
+import { useOpenTicketsCount } from '@/hooks/useOpenTicketsCount';
 import logo from '@/assets/logo-custom-forlife.png';
 
 const menuItems = [
@@ -29,6 +31,7 @@ const menuItems = [
   { icon: Truck, label: 'Fornecedores', path: '/admin/fornecedores' },
   { icon: Wallet, label: 'Financeiro', path: '/admin/financeiro' },
   { icon: BarChart3, label: 'Relatórios', path: '/admin/relatorios' },
+  { icon: MessageCircle, label: 'Chamados', path: '/admin/chamados', showTicketBadge: true },
   { icon: Users, label: 'Clientes', path: '/admin/clientes' },
 ];
 
@@ -37,6 +40,7 @@ export function AdminSidebar() {
   const { signOut } = useAuth();
   const { data: pendingCount } = usePendingOrdersCount();
   const { totalCount: lowStockCount } = useLowStockCount();
+  const { data: openTicketsCount } = useOpenTicketsCount();
 
   const handleLogout = async () => {
     await signOut();
@@ -64,6 +68,8 @@ export function AdminSidebar() {
               badgeCount = pendingCount;
             } else if (item.showStockBadge && lowStockCount) {
               badgeCount = lowStockCount;
+            } else if (item.showTicketBadge && openTicketsCount) {
+              badgeCount = openTicketsCount;
             }
             
             return (
