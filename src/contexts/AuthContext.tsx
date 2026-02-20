@@ -51,97 +51,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let isMounted = true;
-    
+
+    // Listener for ONGOING auth changes - does NOT control isLoading
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, newSession) => {
+        if (!isMounted) return;
+        
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        
+        if (event === 'SIGNED_OUT' || !newSession?.user) {
+          setIsAdmin(false);
+          setAdminChecked(true);
+          return;
+        }
+        
+        // Defer Supabase calls to avoid deadlock
+        if (event === 'SIGNED_IN' && newSession?.user) {
+          setTimeout(() => {
+            if (!isMounted) return;
+            checkIsAdmin(newSession.user.id).then(adminStatus => {
+              if (isMounted) {
+                setIsAdmin(adminStatus);
+                setAdminChecked(true);
+              }
+            });
+          }, 0);
+        }
+      }
+    );
+
+    // INITIAL load - controls isLoading
     const initializeAuth = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
         if (!isMounted) return;
         
-        // Definir sessão e usuário ANTES de qualquer verificação
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
         
         if (initialSession?.user) {
-          // Usar Promise.race com timeout curto para não travar a UI
-          const adminCheck = Promise.race([
+          const adminStatus = await Promise.race([
             checkIsAdmin(initialSession.user.id),
             new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 1500))
           ]);
-          
-          const adminStatus = await adminCheck;
           if (isMounted) {
             setIsAdmin(adminStatus);
             setAdminChecked(true);
-            setLoading(false);
           }
         } else {
-          // Sem usuário - marcar como verificado IMEDIATAMENTE
           if (isMounted) {
             setIsAdmin(false);
             setAdminChecked(true);
-            setLoading(false);
           }
         }
       } catch {
         if (isMounted) {
           setIsAdmin(false);
           setAdminChecked(true);
-          setLoading(false);
         }
+      } finally {
+        if (isMounted) setLoading(false);
       }
     };
-
-    // Subscrição para mudanças de auth (login/logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        if (!isMounted) return;
-        
-        // Atualizar sessão imediatamente
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        
-        // Se é um evento de logout, limpar estado imediatamente
-        if (event === 'SIGNED_OUT' || !newSession?.user) {
-          setIsAdmin(false);
-          setAdminChecked(true);
-          setLoading(false);
-          return;
-        }
-        
-        // Se é login, verificar admin rapidamente
-        if (event === 'SIGNED_IN' && newSession?.user) {
-          const adminCheck = Promise.race([
-            checkIsAdmin(newSession.user.id),
-            new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 1500))
-          ]);
-          
-          const adminStatus = await adminCheck;
-          if (isMounted) {
-            setIsAdmin(adminStatus);
-            setAdminChecked(true);
-            setLoading(false);
-          }
-        }
-      }
-    );
 
     initializeAuth();
 
-    // Timeout de segurança mais agressivo - 2 segundos
-    const safetyTimeout = setTimeout(() => {
-      if (isMounted && loading) {
-        setLoading(false);
-        setAdminChecked(true);
-      }
-    }, 2000);
-
     return () => {
       isMounted = false;
-      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
-  }, [checkIsAdmin]);
+  }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const { error } = await supabase.auth.signUp({
