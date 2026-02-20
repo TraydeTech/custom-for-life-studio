@@ -55,8 +55,27 @@ Deno.serve(async (req) => {
         .eq("ticket_id", ticket.id)
         .order("created_at", { ascending: true });
 
+      // Map to standardized API format
+      const formattedMessages = (messages || []).map((m: any) => ({
+        id: m.id,
+        sender_name: m.remetente,
+        sender_type: m.remetente === "suporte" ? "admin" : "client",
+        message: m.mensagem,
+        created_at: m.created_at,
+      }));
+
       return new Response(
-        JSON.stringify({ success: true, ticket, messages: messages || [] }),
+        JSON.stringify({
+          success: true,
+          ticket_number: ticket.numero_ticket,
+          status: ticket.status,
+          subject: ticket.tipo,
+          description: ticket.descricao,
+          client_email: ticket.usuario_email,
+          created_at: ticket.created_at,
+          resolved_at: ticket.resolvido_em,
+          messages: formattedMessages,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -115,18 +134,16 @@ Deno.serve(async (req) => {
         );
       }
 
-      // POST - Create new ticket (original flow)
-      const {
-        tipo,
-        descricao,
-        prioridade,
-        usuario_email,
-        usuario_id,
-        userName,
-        clientSystem,
-        anexo_base64,
-        anexo_nome,
-      } = body;
+      // Accept both Portuguese and English field names
+      const tipo = body.tipo || body.subject || "";
+      const descricao = body.descricao || body.description || "";
+      const prioridade = body.prioridade || body.priority || "media";
+      const usuario_email = body.usuario_email || body.client_email || "";
+      const usuario_id = body.usuario_id || null;
+      const userName = body.userName || body.client_name || "";
+      const clientSystem = body.clientSystem || body.client_system || "";
+      const anexo_base64 = body.anexo_base64 || null;
+      const anexo_nome = body.anexo_nome || null;
 
       // Generate ticket number
       const now = new Date();
