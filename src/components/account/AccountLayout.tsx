@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { User, Package, MapPin } from 'lucide-react';
+import { User, Package, MapPin, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AccountLayoutProps {
@@ -14,6 +14,7 @@ const menuItems = [
   { label: 'Minha Conta', href: '/minha-conta', icon: User },
   { label: 'Meus Pedidos', href: '/minha-conta/pedidos', icon: Package },
   { label: 'Endereços', href: '/minha-conta/enderecos', icon: MapPin },
+  { label: 'Meus Chamados', href: '/minha-conta/chamados', icon: MessageCircle },
 ];
 
 export function AccountLayout({ children, title }: AccountLayoutProps) {

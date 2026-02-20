@@ -14,6 +14,7 @@ import Carrinho from "./pages/Carrinho";
 import MinhaConta from "./pages/MinhaConta";
 import MeusPedidos from "./pages/MeusPedidos";
 import MeusEnderecos from "./pages/MeusEnderecos";
+import MeusChamados from "./pages/MeusChamados";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/minha-conta" element={<MinhaConta />} />
             <Route path="/minha-conta/pedidos" element={<MeusPedidos />} />
             <Route path="/minha-conta/enderecos" element={<MeusEnderecos />} />
+            <Route path="/minha-conta/chamados" element={<MeusChamados />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />

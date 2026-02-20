@@ -121,6 +121,12 @@ export function SupportWidget({ clientSystem, userName, userEmail }: SupportWidg
                 <CheckCircle className="h-12 w-12 text-primary" />
                 <p className="font-semibold text-lg">Ticket Enviado!</p>
                 <p className="text-sm text-muted-foreground">Número: <strong>{ticketNumber}</strong></p>
+                <a
+                  href="/minha-conta/chamados"
+                  className="text-xs text-primary underline hover:opacity-80"
+                >
+                  Acompanhar meus chamados
+                </a>
                 <Button size="sm" onClick={resetForm}>Novo Ticket</Button>
               </div>
             ) : (

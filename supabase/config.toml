@@ -2,3 +2,6 @@ project_id = "ihkbxdayhdewqzezdrfl"
 
 [functions.support-ticket]
 verify_jwt = false
+
+[functions.sync-ticket-response]
+verify_jwt = false
