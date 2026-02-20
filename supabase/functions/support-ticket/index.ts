@@ -129,31 +129,27 @@ Deno.serve(async (req) => {
             .eq("id", ticket.id);
         }
 
-        // Sync message to Trayde Tech
-        if (traydeUrl && traydeKey) {
-          try {
-            const trayde = createClient(traydeUrl, traydeKey);
-            // Find the ticket in Trayde by ticket_number
-            const { data: traydeTicket } = await trayde
-              .from("support_tickets")
-              .select("id")
-              .eq("ticket_number", ticket_number)
-              .single();
+        // Sync message to Trayde Tech via their API
+        const TRAYDE_SUPPORT_API = "https://yblxrbmtbxtopctuuqjr.supabase.co/functions/v1/support-ticket";
+        try {
+          const syncRes = await fetch(TRAYDE_SUPPORT_API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "send_message",
+              ticket_number,
+              sender_name: remetente,
+              message,
+            }),
+          });
 
-            if (traydeTicket) {
-              await trayde.from("ticket_messages").insert({
-                ticket_id: traydeTicket.id,
-                sender_name: remetente,
-                sender_type: remetente === "suporte" ? "admin" : "client",
-                message,
-              });
-              console.log("Message synced to Trayde Tech");
-            } else {
-              console.warn("Ticket not found in Trayde Tech for sync:", ticket_number);
-            }
-          } catch (e) {
-            console.error("Erro ao sincronizar mensagem com Trayde Tech:", e);
+          if (syncRes.ok) {
+            console.log("✅ Mensagem sincronizada com Trayde Tech");
+          } else {
+            console.error("❌ Erro ao sincronizar:", await syncRes.text());
           }
+        } catch (e) {
+          console.error("❌ Erro de conexão com Trayde Tech:", e);
         }
 
         return new Response(
