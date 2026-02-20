@@ -83,6 +83,44 @@ Deno.serve(async (req) => {
     if (req.method === "POST") {
       const body = await req.json();
 
+      // POST with action: "update_status" - Update ticket status (from Trayde Tech)
+      if (body.action === "update_status") {
+        const { ticket_number, status, response } = body;
+
+        if (!ticket_number || !status) {
+          return new Response(
+            JSON.stringify({ error: "ticket_number and status are required" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        console.log("📥 Recebendo update_status de Trayde Tech:", { ticket_number, status });
+
+        const updateData: Record<string, unknown> = { 
+          status, 
+          updated_at: new Date().toISOString() 
+        };
+        if (status === "resolvido") updateData.resolvido_em = new Date().toISOString();
+        if (response) updateData.resposta = response;
+
+        const { error } = await supabase
+          .from("tickets_suporte")
+          .update(updateData)
+          .eq("numero_ticket", ticket_number);
+
+        if (error) {
+          console.error("❌ Erro ao atualizar status:", error.message);
+          throw new Error(`Erro ao atualizar status: ${error.message}`);
+        }
+
+        console.log("✅ Status atualizado para:", status);
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       // POST with action: "send_message" - Add message to existing ticket
       if (body.action === "send_message") {
         const { ticket_number, sender_name, message } = body;
