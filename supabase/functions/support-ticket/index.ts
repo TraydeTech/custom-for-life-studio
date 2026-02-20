@@ -24,8 +24,98 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
+    // GET - Fetch ticket + messages
+    if (req.method === "GET") {
+      const url = new URL(req.url);
+      const ticketNumber = url.searchParams.get("ticket_number");
+
+      if (!ticketNumber) {
+        return new Response(
+          JSON.stringify({ error: "ticket_number is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: ticket, error: ticketError } = await supabase
+        .from("tickets_suporte")
+        .select("*")
+        .eq("numero_ticket", ticketNumber)
+        .single();
+
+      if (ticketError || !ticket) {
+        return new Response(
+          JSON.stringify({ error: "Ticket not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: messages } = await supabase
+        .from("suporte_mensagens")
+        .select("*")
+        .eq("ticket_id", ticket.id)
+        .order("created_at", { ascending: true });
+
+      return new Response(
+        JSON.stringify({ success: true, ticket, messages: messages || [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (req.method === "POST") {
       const body = await req.json();
+
+      // POST with action: "send_message" - Add message to existing ticket
+      if (body.action === "send_message") {
+        const { ticket_number, sender_name, message } = body;
+
+        if (!ticket_number || !message) {
+          return new Response(
+            JSON.stringify({ error: "ticket_number and message are required" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { data: ticket, error: ticketError } = await supabase
+          .from("tickets_suporte")
+          .select("id, status")
+          .eq("numero_ticket", ticket_number)
+          .single();
+
+        if (ticketError || !ticket) {
+          return new Response(
+            JSON.stringify({ error: "Ticket not found" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { error: msgError } = await supabase
+          .from("suporte_mensagens")
+          .insert({
+            ticket_id: ticket.id,
+            mensagem: message,
+            remetente: sender_name || "cliente",
+            lida: false,
+          });
+
+        if (msgError) {
+          throw new Error(`Erro ao enviar mensagem: ${msgError.message}`);
+        }
+
+        // If ticket was resolved, reopen it
+        if (ticket.status === "resolvido") {
+          await supabase
+            .from("tickets_suporte")
+            .update({ status: "em_andamento", updated_at: new Date().toISOString() })
+            .eq("id", ticket.id);
+        }
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // POST - Create new ticket (original flow)
       const {
         tipo,
         descricao,
