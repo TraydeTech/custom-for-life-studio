@@ -50,13 +50,14 @@ export default function MeusChamados() {
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/login');
   }, [authLoading, user, navigate]);
 
-  // Fetch tickets
+  // Fetch tickets and unread counts
   useEffect(() => {
     if (!user) return;
     const fetchTickets = async () => {
@@ -67,7 +68,27 @@ export default function MeusChamados() {
         .eq('usuario_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (!error && data) setTickets(data);
+      if (!error && data) {
+        setTickets(data);
+        // Fetch unread message counts for each ticket
+        const ticketIds = data.map(t => t.id);
+        if (ticketIds.length > 0) {
+          const { data: unreadMsgs } = await supabase
+            .from('suporte_mensagens')
+            .select('ticket_id')
+            .in('ticket_id', ticketIds)
+            .eq('lida', false)
+            .neq('remetente', 'cliente');
+          
+          if (unreadMsgs) {
+            const counts: Record<string, number> = {};
+            unreadMsgs.forEach(m => {
+              counts[m.ticket_id] = (counts[m.ticket_id] || 0) + 1;
+            });
+            setUnreadCounts(counts);
+          }
+        }
+      }
       setLoading(false);
     };
     fetchTickets();
@@ -230,12 +251,19 @@ export default function MeusChamados() {
                         }`}
                       >
                         <p className="text-xs font-medium mb-1 opacity-70">
-                          {msg.remetente === 'cliente' ? 'Você' : msg.remetente}
+                          {msg.remetente === 'cliente' ? 'Você' : 'Suporte'}
                         </p>
                         <p>{msg.mensagem}</p>
-                        <p className="text-[10px] opacity-50 mt-1">
-                          {formatDate(msg.created_at)}
-                        </p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-[10px] opacity-50">
+                            {formatDate(msg.created_at)}
+                          </span>
+                          {msg.remetente === 'cliente' && (
+                            <span className={`text-[10px] ${msg.lida ? 'text-blue-400' : 'opacity-50'}`} title={msg.lida ? 'Lida pelo suporte' : 'Enviada'}>
+                              {msg.lida ? '✓✓' : '✓'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -298,17 +326,26 @@ export default function MeusChamados() {
           {tickets.map((ticket) => {
             const st = getStatus(ticket.status);
             const StatusIcon = st.icon;
+            const unread = unreadCounts[ticket.id] || 0;
             return (
               <Card
                 key={ticket.id}
-                className="cursor-pointer hover:border-primary/50 transition-colors"
-                onClick={() => setSelectedTicket(ticket)}
+                className={`cursor-pointer hover:border-primary/50 transition-colors ${unread > 0 ? 'border-primary/30 bg-primary/5' : ''}`}
+                onClick={() => {
+                  setSelectedTicket(ticket);
+                  setUnreadCounts(prev => ({ ...prev, [ticket.id]: 0 }));
+                }}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <StatusIcon className="h-4 w-4" />
                       <span className="font-medium text-sm">{ticket.numero_ticket}</span>
+                      {unread > 0 && (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">
+                          {unread} {unread === 1 ? 'nova' : 'novas'}
+                        </Badge>
+                      )}
                     </div>
                     <Badge variant={st.variant}>{st.label}</Badge>
                   </div>
