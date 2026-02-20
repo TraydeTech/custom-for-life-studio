@@ -181,17 +181,25 @@ export default function AdminChamados() {
   const handleChangeStatus = async (newStatus: string) => {
     if (!selectedTicket) return;
 
-    const updates: Record<string, unknown> = { status: newStatus };
-    if (newStatus === 'resolvido') updates.resolvido_em = new Date().toISOString();
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const res = await fetch(`${supabaseUrl}/functions/v1/support-ticket`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ticket_number: selectedTicket.numero_ticket,
+          status: newStatus,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
 
-    const { error } = await supabase.from('tickets_suporte').update(updates).eq('id', selectedTicket.id);
-    if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-    } else {
       setSelectedTicket(prev => prev ? { ...prev, status: newStatus } : null);
       queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
       queryClient.invalidateQueries({ queryKey: ['open-tickets-count'] });
       toast({ title: 'Status atualizado' });
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
     }
   };
 

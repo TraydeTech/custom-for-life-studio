@@ -275,6 +275,7 @@ Deno.serve(async (req) => {
       if (status) updateData.status = status;
       if (response) updateData.resposta = response;
       if (status === "resolvido") updateData.resolvido_em = new Date().toISOString();
+      updateData.updated_at = new Date().toISOString();
 
       const { error } = await supabase
         .from("tickets_suporte")
@@ -283,6 +284,23 @@ Deno.serve(async (req) => {
 
       if (error) {
         throw new Error(`Erro ao atualizar ticket: ${error.message}`);
+      }
+
+      // Sync status change to Trayde Tech
+      const TRAYDE_SUPPORT_API = "https://yblxrbmtbxtopctuuqjr.supabase.co/functions/v1/support-ticket";
+      try {
+        const syncRes = await fetch(TRAYDE_SUPPORT_API, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ticket_number, status, response }),
+        });
+        if (syncRes.ok) {
+          console.log("✅ Status sincronizado com Trayde Tech:", status);
+        } else {
+          console.error("❌ Erro ao sincronizar status:", await syncRes.text());
+        }
+      } catch (e) {
+        console.error("❌ Erro de conexão com Trayde Tech:", e);
       }
 
       return new Response(
