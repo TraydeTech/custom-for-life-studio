@@ -149,15 +149,21 @@ export default function AdminChamados() {
     if (!novaMensagem.trim() || !selectedTicket) return;
     setSending(true);
 
-    const { error } = await supabase.from('suporte_mensagens').insert({
-      ticket_id: selectedTicket.id,
-      mensagem: novaMensagem.trim(),
-      remetente: 'suporte',
-    });
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const res = await fetch(`${supabaseUrl}/functions/v1/support-ticket`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_message',
+          ticket_number: selectedTicket.numero_ticket,
+          sender_name: 'suporte',
+          message: novaMensagem.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
 
-    if (error) {
-      toast({ title: 'Erro ao enviar', description: error.message, variant: 'destructive' });
-    } else {
       setNovaMensagem('');
       // Update ticket status to em_andamento if it was aberto
       if (selectedTicket.status === 'aberto') {
@@ -166,6 +172,8 @@ export default function AdminChamados() {
         queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
         queryClient.invalidateQueries({ queryKey: ['open-tickets-count'] });
       }
+    } catch (err: any) {
+      toast({ title: 'Erro ao enviar', description: err.message, variant: 'destructive' });
     }
     setSending(false);
   };

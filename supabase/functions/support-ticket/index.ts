@@ -107,12 +107,13 @@ Deno.serve(async (req) => {
           );
         }
 
+        const remetente = sender_name || "cliente";
         const { error: msgError } = await supabase
           .from("suporte_mensagens")
           .insert({
             ticket_id: ticket.id,
             mensagem: message,
-            remetente: sender_name || "cliente",
+            remetente,
             lida: false,
           });
 
@@ -126,6 +127,33 @@ Deno.serve(async (req) => {
             .from("tickets_suporte")
             .update({ status: "em_andamento", updated_at: new Date().toISOString() })
             .eq("id", ticket.id);
+        }
+
+        // Sync message to Trayde Tech
+        if (traydeUrl && traydeKey) {
+          try {
+            const trayde = createClient(traydeUrl, traydeKey);
+            // Find the ticket in Trayde by ticket_number
+            const { data: traydeTicket } = await trayde
+              .from("support_tickets")
+              .select("id")
+              .eq("ticket_number", ticket_number)
+              .single();
+
+            if (traydeTicket) {
+              await trayde.from("ticket_messages").insert({
+                ticket_id: traydeTicket.id,
+                sender_name: remetente,
+                sender_type: remetente === "suporte" ? "admin" : "client",
+                message,
+              });
+              console.log("Message synced to Trayde Tech");
+            } else {
+              console.warn("Ticket not found in Trayde Tech for sync:", ticket_number);
+            }
+          } catch (e) {
+            console.error("Erro ao sincronizar mensagem com Trayde Tech:", e);
+          }
         }
 
         return new Response(

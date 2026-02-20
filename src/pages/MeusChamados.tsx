@@ -143,37 +143,25 @@ export default function MeusChamados() {
     if (!newMessage.trim() || !selectedTicket || !user) return;
     setSending(true);
 
-    // Insert locally
-    const { error } = await supabase.from('suporte_mensagens').insert({
-      ticket_id: selectedTicket.id,
-      mensagem: newMessage.trim(),
-      remetente: 'cliente',
-      lida: false,
-    });
-
-    if (error) {
-      toast({ title: 'Erro ao enviar mensagem', variant: 'destructive' });
-      setSending(false);
-      return;
-    }
-
-    // Sync to Trayde Tech via support-ticket edge function
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      await fetch(`${supabaseUrl}/functions/v1/support-ticket`, {
-        method: 'PATCH',
+      const res = await fetch(`${supabaseUrl}/functions/v1/support-ticket`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'send_message',
           ticket_number: selectedTicket.numero_ticket,
-          response: newMessage.trim(),
-          status: selectedTicket.status,
+          sender_name: 'cliente',
+          message: newMessage.trim(),
         }),
       });
-    } catch (e) {
-      console.error('Erro ao sincronizar com Trayde:', e);
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      setNewMessage('');
+    } catch (e: any) {
+      toast({ title: 'Erro ao enviar mensagem', description: e.message, variant: 'destructive' });
     }
 
-    setNewMessage('');
     setSending(false);
   };
 
