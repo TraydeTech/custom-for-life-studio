@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
-  }, [checkIsAdmin, loading]);
+  }, [checkIsAdmin]);
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const { error } = await supabase.auth.signUp({
