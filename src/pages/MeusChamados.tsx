@@ -166,9 +166,10 @@ export default function MeusChamados() {
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const res = await fetch(`${supabaseUrl}/functions/v1/support-ticket`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` },
         body: JSON.stringify({
           action: 'send_message',
           ticket_number: selectedTicket.numero_ticket,

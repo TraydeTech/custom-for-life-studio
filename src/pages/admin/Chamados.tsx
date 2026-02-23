@@ -46,6 +46,7 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
   aberto: { label: 'Aberto', variant: 'destructive', icon: AlertCircle },
   em_andamento: { label: 'Em andamento', variant: 'default', icon: Clock },
   resolvido: { label: 'Resolvido', variant: 'secondary', icon: CheckCircle },
+  fechado: { label: 'Fechado', variant: 'outline', icon: CheckCircle },
 };
 
 export default function AdminChamados() {
@@ -151,9 +152,10 @@ export default function AdminChamados() {
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const res = await fetch(`${supabaseUrl}/functions/v1/support-ticket`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` },
         body: JSON.stringify({
           action: 'send_message',
           ticket_number: selectedTicket.numero_ticket,
@@ -183,9 +185,10 @@ export default function AdminChamados() {
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const res = await fetch(`${supabaseUrl}/functions/v1/support-ticket`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` },
         body: JSON.stringify({
           ticket_number: selectedTicket.numero_ticket,
           status: newStatus,
@@ -262,6 +265,7 @@ export default function AdminChamados() {
                       <SelectItem value="aberto">Aberto</SelectItem>
                       <SelectItem value="em_andamento">Em andamento</SelectItem>
                       <SelectItem value="resolvido">Resolvido</SelectItem>
+                      <SelectItem value="fechado">Fechado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -304,7 +308,7 @@ export default function AdminChamados() {
                     <div ref={messagesEndRef} />
                   </div>
 
-                  {selectedTicket.status !== 'resolvido' && (
+                  {selectedTicket.status !== 'resolvido' && selectedTicket.status !== 'fechado' && (
                     <div className="border-t p-3 flex gap-2">
                       <Textarea
                         placeholder="Digite sua resposta..."
@@ -343,6 +347,7 @@ export default function AdminChamados() {
                       <SelectItem value="aberto">Aberto</SelectItem>
                       <SelectItem value="em_andamento">Em andamento</SelectItem>
                       <SelectItem value="resolvido">Resolvido</SelectItem>
+                      <SelectItem value="fechado">Fechado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
