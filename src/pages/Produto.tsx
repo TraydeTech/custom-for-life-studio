@@ -190,7 +190,7 @@ export default function Produto() {
               )}
             </div>
 
-            {/* Thumbnails */}
+            {/* Image thumbnails for current variant */}
             {images.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {images.map((img, idx) => (
@@ -206,6 +206,42 @@ export default function Produto() {
                     <img src={img} alt="" className="w-full h-full object-contain" />
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* Color variant thumbnails */}
+            {hasVariants && variants.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {variants.map((variant, idx) => {
+                  const isSelected = idx === selectedVariantIndex;
+                  const thumbImg = variant.main_image || '/placeholder.svg';
+                  return (
+                    <button
+                      key={variant.id}
+                      onClick={() => handleVariantSelect(idx)}
+                      className="flex-shrink-0 flex flex-col items-center gap-1 cursor-pointer group"
+                    >
+                      <div
+                        className={`w-[70px] h-[70px] rounded-lg overflow-hidden transition-all ${
+                          isSelected
+                            ? 'border-2 scale-[1.08]'
+                            : 'border-[1.5px] border-white/15 group-hover:opacity-85'
+                        }`}
+                        style={isSelected ? { borderColor: '#EF9F27' } : undefined}
+                      >
+                        <img src={thumbImg} alt={variant.color_name} className="w-full h-full object-contain" />
+                      </div>
+                      <span
+                        className={`text-[11px] text-center leading-tight ${
+                          isSelected ? 'font-medium' : 'text-white/70'
+                        }`}
+                        style={isSelected ? { color: '#EF9F27' } : undefined}
+                      >
+                        {variant.color_name}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
