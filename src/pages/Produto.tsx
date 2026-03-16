@@ -237,7 +237,7 @@ export default function Produto() {
 
             {/* Color variant thumbnails */}
             {hasVariants && variants.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2 pl-3">
+              <div className="flex gap-2 overflow-x-auto pb-2 pl-3 mt-6 pt-2">
                 {variants.map((variant, idx) => {
                   const isSelected = idx === selectedVariantIndex;
                   const thumbImg = variant.main_image || '/placeholder.svg';
