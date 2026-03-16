@@ -1,0 +1,1 @@
+ALTER TABLE public.categories ADD COLUMN technical_sheet jsonb DEFAULT '[]'::jsonb;

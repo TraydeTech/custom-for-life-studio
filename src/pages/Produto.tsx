@@ -38,7 +38,7 @@ export default function Produto() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, category:categories(name, slug)')
+        .select('*, category:categories(name, slug, technical_sheet)')
         .eq('slug', slug!)
         .single();
       if (error) throw error;
@@ -322,6 +322,28 @@ export default function Produto() {
             )}
           </div>
         </div>
+
+        {/* Ficha Técnica */}
+        {product.category?.technical_sheet && Array.isArray(product.category.technical_sheet) && product.category.technical_sheet.length > 0 && (
+          <div className="mt-12 border-t pt-8">
+            <h2 className="text-2xl font-bold mb-6">📋 Ficha Técnica</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {(product.category.technical_sheet as { title: string; items: { label: string; value: string }[] }[]).map((section: { title: string; items: { label: string; value: string }[] }, sIdx: number) => (
+                <div key={sIdx} className="border rounded-lg p-4 bg-card">
+                  <h3 className="font-semibold text-primary mb-3">{section.title}</h3>
+                  <div className="space-y-2">
+                    {section.items.map((item: { label: string; value: string }, iIdx: number) => (
+                      <div key={iIdx} className="flex justify-between gap-4 text-sm">
+                        <span className="text-muted-foreground font-medium">{item.label}</span>
+                        <span className="text-right">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer />
