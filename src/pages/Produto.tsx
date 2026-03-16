@@ -171,7 +171,7 @@ export default function Produto() {
               <img
                 src={mainImage}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
               {product.is_featured && (
                 <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
@@ -203,7 +203,7 @@ export default function Produto() {
                         : 'border-transparent hover:border-muted-foreground/30'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img src={img} alt="" className="w-full h-full object-contain" />
                   </button>
                 ))}
               </div>
