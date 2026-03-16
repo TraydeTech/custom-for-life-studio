@@ -270,13 +270,13 @@ export default function Produto() {
             {/* Color variant thumbnails */}
             {hasVariants && variants.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2 pl-3 mt-6 pt-2">
-                {variants.map((variant, idx) => {
-                  const isSelected = idx === selectedVariantIndex;
+                {variants.map((variant) => {
+                  const isSelected = variant.id === currentVariant?.id;
                   const thumbImg = variant.main_image || '/placeholder.svg';
                   return (
                     <button
                       key={variant.id}
-                      onClick={() => handleVariantSelect(idx)}
+                      onClick={() => handleVariantSelect(variant)}
                       className="flex-shrink-0 flex flex-col items-center gap-1 cursor-pointer group"
                     >
                       <div
