@@ -32,6 +32,7 @@ export default function Produto() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [customizationNotes, setCustomizationNotes] = useState('');
+  const [isZoomed, setIsZoomed] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
