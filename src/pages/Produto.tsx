@@ -29,7 +29,7 @@ export default function Produto() {
   const { user } = useAuth();
   const { addToCart } = useCart();
   const canvasRef = useRef<ProductImageCanvasRef>(null);
-  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [customizationNotes, setCustomizationNotes] = useState('');
