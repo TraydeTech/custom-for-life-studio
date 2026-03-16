@@ -246,7 +246,7 @@ export default function AdminProdutos() {
       if (error) throw error;
 
       // Delete old variants and insert new ones
-      await supabase.from('product_variants').delete().eq('product_id', id);
+      await (supabase as any).from('product_variants').delete().eq('product_id', id);
 
       if (colorVariants.length > 0) {
         const variantsToInsert = colorVariants
