@@ -6,90 +6,98 @@
 
 @layer base {
   :root {
-    /* Custom For Life - Vibrant Brand Colors */
-    --background: 240 10% 6%;
-    --foreground: 0 0% 98%;
+    /* Custom For Life - Green & Amber Brand */
+    --background: 0 0% 100%;
+    --foreground: 210 20% 12%;
 
-    --card: 240 10% 10%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 20% 12%;
 
-    --popover: 240 10% 10%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 20% 12%;
 
-    /* Primary: Vibrant Orange */
-    --primary: 28 95% 55%;
+    /* Primary: Green #1D9E75 */
+    --primary: 158 70% 37%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Magenta/Pink */
-    --secondary: 330 85% 55%;
+    /* Secondary: Amber #EF9F27 */
+    --secondary: 37 87% 55%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 240 8% 18%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 210 15% 95%;
+    --muted-foreground: 210 10% 45%;
 
-    /* Accent: Deep Purple */
-    --accent: 280 70% 50%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent: Light green */
+    --accent: 158 40% 93%;
+    --accent-foreground: 158 70% 30%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 8% 20%;
-    --input: 240 8% 20%;
-    --ring: 28 95% 55%;
+    --border: 210 15% 90%;
+    --input: 210 15% 90%;
+    --ring: 158 70% 37%;
 
     --radius: 0.75rem;
 
+    /* Warning */
+    --warning: 37 87% 55%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Success */
+    --success: 158 70% 37%;
+    --success-foreground: 0 0% 100%;
+
     /* Brand Gradient */
-    --gradient-brand: linear-gradient(135deg, hsl(45, 100%, 55%) 0%, hsl(28, 95%, 55%) 25%, hsl(350, 85%, 55%) 50%, hsl(330, 85%, 55%) 75%, hsl(280, 70%, 50%) 100%);
-    --gradient-brand-hover: linear-gradient(135deg, hsl(45, 100%, 60%) 0%, hsl(28, 95%, 60%) 25%, hsl(350, 85%, 60%) 50%, hsl(330, 85%, 60%) 75%, hsl(280, 70%, 55%) 100%);
+    --gradient-brand: linear-gradient(135deg, hsl(158, 70%, 37%) 0%, hsl(158, 60%, 45%) 50%, hsl(37, 87%, 55%) 100%);
+    --gradient-brand-hover: linear-gradient(135deg, hsl(158, 70%, 42%) 0%, hsl(158, 60%, 50%) 50%, hsl(37, 87%, 60%) 100%);
     
     /* Text Gradient */
-    --gradient-text: linear-gradient(90deg, hsl(45, 100%, 55%) 0%, hsl(28, 95%, 55%) 30%, hsl(330, 85%, 55%) 70%, hsl(280, 70%, 50%) 100%);
+    --gradient-text: linear-gradient(90deg, hsl(158, 70%, 37%) 0%, hsl(37, 87%, 55%) 100%);
     
     /* Glow Effects */
-    --glow-primary: 0 0 40px hsl(28, 95%, 55%, 0.4);
-    --glow-secondary: 0 0 40px hsl(330, 85%, 55%, 0.4);
+    --glow-primary: 0 0 40px hsl(158, 70%, 37%, 0.2);
+    --glow-secondary: 0 0 40px hsl(37, 87%, 55%, 0.2);
 
     /* Sidebar */
-    --sidebar-background: 240 10% 8%;
+    --sidebar-background: 158 30% 12%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 28 95% 55%;
+    --sidebar-primary: 158 70% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 8% 15%;
+    --sidebar-accent: 158 20% 18%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 8% 20%;
-    --sidebar-ring: 28 95% 55%;
+    --sidebar-border: 158 15% 22%;
+    --sidebar-ring: 158 70% 45%;
   }
 
   .dark {
-    --background: 240 10% 6%;
+    --background: 210 20% 8%;
     --foreground: 0 0% 98%;
 
-    --card: 240 10% 10%;
+    --card: 210 18% 12%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 240 10% 10%;
+    --popover: 210 18% 12%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 28 95% 55%;
+    --primary: 158 70% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 330 85% 55%;
+    --secondary: 37 87% 55%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 240 8% 18%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 210 15% 18%;
+    --muted-foreground: 210 10% 60%;
 
-    --accent: 280 70% 50%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 158 30% 18%;
+    --accent-foreground: 158 70% 60%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 8% 20%;
-    --input: 240 8% 20%;
-    --ring: 28 95% 55%;
+    --border: 210 12% 22%;
+    --input: 210 12% 22%;
+    --ring: 158 70% 45%;
   }
 }
 
@@ -238,10 +246,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--gradient-brand);
+  background: hsl(var(--primary));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--gradient-brand-hover);
+  background: hsl(var(--primary) / 0.8);
 }
