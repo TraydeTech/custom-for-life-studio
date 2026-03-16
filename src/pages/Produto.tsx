@@ -269,13 +269,13 @@ export default function Produto() {
             {/* Customization */}
             <div className="space-y-2">
               <Label htmlFor="customization" className="text-sm font-medium">
-                Personalização (opcional)
+                Personalize sua garrafa — gravação a laser incluída no preço
               </Label>
               <Textarea
                 id="customization"
                 value={customizationNotes}
                 onChange={(e) => setCustomizationNotes(e.target.value)}
-                placeholder="Descreva como gostaria da personalização..."
+                placeholder="Digite o nome ou texto que deseja gravar..."
                 rows={3}
                 disabled={isOutOfStock}
               />

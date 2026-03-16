@@ -101,7 +101,7 @@ export default function Carrinho() {
                       </Link>
                       {item.customization_notes && (
                         <p className="text-sm text-muted-foreground mt-1">
-                          Personalização: {item.customization_notes}
+                          Gravação: {item.customization_notes}
                         </p>
                       )}
                       <div className="mt-2 flex items-center justify-between">
