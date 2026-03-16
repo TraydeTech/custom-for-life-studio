@@ -89,7 +89,7 @@ export default function Carrinho() {
                       <img
                         src={item.product?.images?.[0] || '/placeholder.svg'}
                         alt={item.product?.name}
-                        className="w-24 h-24 object-cover rounded-lg"
+                        className="w-24 h-24 object-contain rounded-lg"
                       />
                     </Link>
                     <div className="flex-1 min-w-0">

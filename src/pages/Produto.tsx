@@ -203,7 +203,7 @@ export default function Produto() {
                         : 'border-transparent hover:border-muted-foreground/30'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img src={img} alt="" className="w-full h-full object-contain" />
                   </button>
                 ))}
               </div>
