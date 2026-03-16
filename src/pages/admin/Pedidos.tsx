@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Dialog as ZoomDialog, DialogContent as ZoomDialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ProtectedAdminRoute } from '@/components/admin/ProtectedAdminRoute';
@@ -75,6 +76,7 @@ export default function AdminPedidos() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [zoomedPreview, setZoomedPreview] = useState<string | null>(null);
   const { data: orders, isLoading } = useQuery({
     queryKey: ['admin-orders'],
     queryFn: async () => {
@@ -578,23 +580,55 @@ export default function AdminPedidos() {
                     <p className="text-sm text-muted-foreground mb-2">Itens do Pedido</p>
                     <div className="border rounded-lg divide-y">
                       {orderItems.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between p-3">
-                          <div className="flex items-center gap-3">
-                            {item.product_image && (
-                              <img
-                                src={item.product_image}
-                                alt={item.product_name}
-                                className="w-12 h-12 object-cover rounded"
-                              />
-                            )}
-                            <div>
-                              <p className="font-medium">{item.product_name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {item.quantity}x {formatCurrency(item.unit_price)}
-                              </p>
+                        <div key={item.id} className="p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {(item as any).engraving_preview_url ? (
+                                <img
+                                  src={(item as any).engraving_preview_url}
+                                  alt={item.product_name}
+                                  className="w-16 h-16 object-contain rounded cursor-pointer hover:ring-2 ring-primary"
+                                  onClick={() => setZoomedPreview((item as any).engraving_preview_url)}
+                                />
+                              ) : item.product_image ? (
+                                <img
+                                  src={item.product_image}
+                                  alt={item.product_name}
+                                  className="w-12 h-12 object-cover rounded"
+                                />
+                              ) : null}
+                              <div>
+                                <p className="font-medium">
+                                  {item.product_name}
+                                  {(item as any).product_color && (
+                                    <span className="text-sm font-normal text-muted-foreground"> — {(item as any).product_color}</span>
+                                  )}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {item.quantity}x {formatCurrency(item.unit_price)}
+                                </p>
+                              </div>
                             </div>
+                            <p className="font-medium">{formatCurrency(item.total_price)}</p>
                           </div>
-                          <p className="font-medium">{formatCurrency(item.total_price)}</p>
+                          {(item as any).engraving_text && (
+                            <div className="ml-[76px] space-y-1 text-sm bg-muted/50 p-2 rounded">
+                              <p>
+                                <span className="text-muted-foreground">Gravação:</span>{' '}
+                                <span className="font-bold text-foreground">{(item as any).engraving_text}</span>
+                              </p>
+                              {(item as any).engraving_position_x != null && (
+                                <p className="text-muted-foreground text-xs">
+                                  Posição: X: {Math.round((item as any).engraving_position_x)}% — Y: {Math.round((item as any).engraving_position_y)}%
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {item.customization_notes && !(item as any).engraving_text && (
+                            <div className="ml-[76px] text-sm text-muted-foreground">
+                              Personalização: {item.customization_notes}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -636,6 +670,15 @@ export default function AdminPedidos() {
               )}
             </DialogContent>
           </Dialog>
+
+          {/* Zoomed engraving preview */}
+          <ZoomDialog open={!!zoomedPreview} onOpenChange={() => setZoomedPreview(null)}>
+            <ZoomDialogContent className="max-w-lg p-2">
+              {zoomedPreview && (
+                <img src={zoomedPreview} alt="Prévia da gravação" className="w-full h-auto rounded" />
+              )}
+            </ZoomDialogContent>
+          </ZoomDialog>
         </div>
       </AdminLayout>
     </ProtectedAdminRoute>

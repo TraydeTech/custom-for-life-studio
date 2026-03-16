@@ -158,7 +158,12 @@ export type Database = {
         Row: {
           created_at: string
           customization_notes: string | null
+          engraving_position_x: number | null
+          engraving_position_y: number | null
+          engraving_preview_image: string | null
+          engraving_text: string | null
           id: string
+          product_color: string | null
           product_id: string
           quantity: number
           updated_at: string
@@ -167,7 +172,12 @@ export type Database = {
         Insert: {
           created_at?: string
           customization_notes?: string | null
+          engraving_position_x?: number | null
+          engraving_position_y?: number | null
+          engraving_preview_image?: string | null
+          engraving_text?: string | null
           id?: string
+          product_color?: string | null
           product_id: string
           quantity?: number
           updated_at?: string
@@ -176,7 +186,12 @@ export type Database = {
         Update: {
           created_at?: string
           customization_notes?: string | null
+          engraving_position_x?: number | null
+          engraving_position_y?: number | null
+          engraving_preview_image?: string | null
+          engraving_text?: string | null
           id?: string
+          product_color?: string | null
           product_id?: string
           quantity?: number
           updated_at?: string
@@ -235,8 +250,13 @@ export type Database = {
         Row: {
           created_at: string
           customization_notes: string | null
+          engraving_position_x: number | null
+          engraving_position_y: number | null
+          engraving_preview_url: string | null
+          engraving_text: string | null
           id: string
           order_id: string
+          product_color: string | null
           product_id: string | null
           product_image: string | null
           product_name: string
@@ -247,8 +267,13 @@ export type Database = {
         Insert: {
           created_at?: string
           customization_notes?: string | null
+          engraving_position_x?: number | null
+          engraving_position_y?: number | null
+          engraving_preview_url?: string | null
+          engraving_text?: string | null
           id?: string
           order_id: string
+          product_color?: string | null
           product_id?: string | null
           product_image?: string | null
           product_name: string
@@ -259,8 +284,13 @@ export type Database = {
         Update: {
           created_at?: string
           customization_notes?: string | null
+          engraving_position_x?: number | null
+          engraving_position_y?: number | null
+          engraving_preview_url?: string | null
+          engraving_text?: string | null
           id?: string
           order_id?: string
+          product_color?: string | null
           product_id?: string | null
           product_image?: string | null
           product_name?: string
