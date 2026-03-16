@@ -324,7 +324,7 @@ export default function AdminProdutos() {
     });
 
     // Load existing variants
-    const { data: variants } = await supabase
+    const { data: variants } = await (supabase as any)
       .from('product_variants')
       .select('*')
       .eq('product_id', product.id)
