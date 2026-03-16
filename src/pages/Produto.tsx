@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,10 +11,9 @@ import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
 import { ShoppingCart, Minus, Plus, ChevronRight, X } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ProductImageCanvas } from '@/components/shop/ProductImageCanvas';
+import { ProductImageCanvas, ProductImageCanvasRef } from '@/components/shop/ProductImageCanvas';
 
 interface ProductVariant {
   id: string;
@@ -29,11 +28,14 @@ export default function Produto() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
   const { addToCart } = useCart();
+  const canvasRef = useRef<ProductImageCanvasRef>(null);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [customizationNotes, setCustomizationNotes] = useState('');
   const [isZoomed, setIsZoomed] = useState(false);
+  const [engravingPosX, setEngravingPosX] = useState(50);
+  const [engravingPosY, setEngravingPosY] = useState(72);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
@@ -100,7 +102,6 @@ export default function Produto() {
   const hasVariants = variants.length > 0;
   const currentVariant = hasVariants ? variants[selectedVariantIndex] : null;
 
-  // Build image gallery from current variant or product images
   const getAllImages = (): string[] => {
     if (currentVariant) {
       const imgs: string[] = [];
@@ -126,22 +127,38 @@ export default function Produto() {
       window.location.href = '/login';
       return;
     }
+
+    const engravingText = customizationNotes.trim() || undefined;
+    let engravingPreviewImage: string | undefined;
+
+    if (engravingText && canvasRef.current) {
+      engravingPreviewImage = canvasRef.current.getDataURL() || undefined;
+    }
+
     addToCart.mutate({
       productId: product.id,
       quantity,
       customizationNotes: customizationNotes || undefined,
+      engravingText,
+      engravingPositionX: engravingText ? Math.round(engravingPosX * 100) / 100 : undefined,
+      engravingPositionY: engravingText ? Math.round(engravingPosY * 100) / 100 : undefined,
+      engravingPreviewImage,
+      productColor: currentVariant?.color_name || undefined,
     });
   };
 
-  // When selecting a variant, reset image index to 0
   const handleVariantSelect = (index: number) => {
     setSelectedVariantIndex(index);
     setSelectedImageIndex(0);
   };
 
-  // When clicking a thumbnail, also detect which variant it belongs to
   const handleThumbnailClick = (imgIndex: number) => {
     setSelectedImageIndex(imgIndex);
+  };
+
+  const handlePositionChange = (x: number, y: number) => {
+    setEngravingPosX(x);
+    setEngravingPosY(y);
   };
 
   return (
@@ -174,10 +191,14 @@ export default function Produto() {
               style={{ backgroundColor: '#D9D9D9' }}
             >
               <ProductImageCanvas
+                ref={canvasRef}
                 imageSrc={mainImage}
                 altText={product.name}
                 customizationText={customizationNotes}
                 onClick={() => setIsZoomed(true)}
+                positionX={engravingPosX}
+                positionY={engravingPosY}
+                onPositionChange={handlePositionChange}
               />
               {product.is_featured && (
                 <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">

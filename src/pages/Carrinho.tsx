@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/hooks/useCart';
@@ -7,13 +7,14 @@ import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingBag, X } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 export default function Carrinho() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { cartItems, cartTotal, isLoading, updateQuantity, removeFromCart } = useCart();
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   if (!user) {
     return (
@@ -69,7 +70,7 @@ export default function Carrinho() {
     );
   }
 
-  const shippingCost = 0; // Frete grátis ou calcular depois
+  const shippingCost = 0;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -86,11 +87,23 @@ export default function Carrinho() {
                 <CardContent className="p-4">
                   <div className="flex gap-4">
                     <Link to={`/produto/${item.product?.slug}`} className="shrink-0">
-                      <img
-                        src={item.product?.images?.[0] || '/placeholder.svg'}
-                        alt={item.product?.name}
-                        className="w-24 h-24 object-contain rounded-lg"
-                      />
+                      {item.engraving_preview_image ? (
+                        <img
+                          src={item.engraving_preview_image}
+                          alt={item.product?.name}
+                          className="w-24 h-24 object-contain rounded-lg cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setZoomedImage(item.engraving_preview_image);
+                          }}
+                        />
+                      ) : (
+                        <img
+                          src={item.product?.images?.[0] || '/placeholder.svg'}
+                          alt={item.product?.name}
+                          className="w-24 h-24 object-contain rounded-lg"
+                        />
+                      )}
                     </Link>
                     <div className="flex-1 min-w-0">
                       <Link 
@@ -99,7 +112,19 @@ export default function Carrinho() {
                       >
                         {item.product?.name}
                       </Link>
-                      {item.customization_notes && (
+                      {item.product_color && (
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          Cor: <span className="text-foreground">{item.product_color}</span>
+                        </p>
+                      )}
+                      {item.engraving_text && (
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          Gravação: <span className="text-foreground font-medium">{item.engraving_text}</span>
+                          {' — '}
+                          <span className="text-xs">Posição: personalizada</span>
+                        </p>
+                      )}
+                      {!item.engraving_text && item.customization_notes && (
                         <p className="text-sm text-muted-foreground mt-1">
                           Gravação: {item.customization_notes}
                         </p>
@@ -186,6 +211,26 @@ export default function Carrinho() {
           </div>
         </div>
       </main>
+
+      {/* Zoom modal for engraving preview */}
+      {zoomedImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center cursor-zoom-out"
+          onClick={() => setZoomedImage(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white/70 hover:text-white z-50"
+            onClick={() => setZoomedImage(null)}
+          >
+            <X className="h-8 w-8" />
+          </button>
+          <img
+            src={zoomedImage}
+            alt="Prévia da gravação"
+            className="max-w-[90vw] max-h-[90vh] object-contain"
+          />
+        </div>
+      )}
 
       <Footer />
     </div>
