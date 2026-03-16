@@ -214,7 +214,7 @@ export default function AdminProdutos() {
           }));
 
         if (variantsToInsert.length > 0) {
-          const { error: varError } = await supabase
+          const { error: varError } = await (supabase as any)
             .from('product_variants')
             .insert(variantsToInsert);
           if (varError) throw varError;
