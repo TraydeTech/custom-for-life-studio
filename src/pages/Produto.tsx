@@ -167,7 +167,7 @@ export default function Produto() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="relative aspect-square rounded-xl overflow-hidden bg-muted border">
+            <div className="relative aspect-square rounded-xl overflow-hidden" style={{ backgroundColor: '#D9D9D9' }}>
               <img
                 src={mainImage}
                 alt={product.name}
