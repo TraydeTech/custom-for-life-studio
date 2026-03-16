@@ -10,6 +10,7 @@ import Cadastro from "./pages/Cadastro";
 import EsqueciSenha from "./pages/EsqueciSenha";
 import RedefinirSenha from "./pages/RedefinirSenha";
 import Loja from "./pages/Loja";
+import Produto from "./pages/Produto";
 import Carrinho from "./pages/Carrinho";
 import MinhaConta from "./pages/MinhaConta";
 import MeusPedidos from "./pages/MeusPedidos";
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
             <Route path="/redefinir-senha" element={<RedefinirSenha />} />
             <Route path="/loja" element={<Loja />} />
+            <Route path="/produto/:slug" element={<Produto />} />
             <Route path="/carrinho" element={<Carrinho />} />
             <Route path="/minha-conta" element={<MinhaConta />} />
             <Route path="/minha-conta/pedidos" element={<MeusPedidos />} />

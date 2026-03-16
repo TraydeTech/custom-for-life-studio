@@ -33,15 +33,16 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link to={`/produto/${product.slug}`}>
-      <Card className="group overflow-hidden hover:shadow-lg transition-shadow duration-300">
+      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 border hover:border-primary/30">
         <div className="relative aspect-square overflow-hidden bg-muted">
           <img
             src={imageUrl}
             alt={product.name}
             className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
           />
           {product.is_featured && (
-            <Badge className="absolute top-2 left-2 bg-primary">
+            <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground">
               Destaque
             </Badge>
           )}
