@@ -100,7 +100,9 @@ export default function Produto() {
   }
 
   const hasVariants = variants.length > 0;
-  const currentVariant = hasVariants ? variants[selectedVariantIndex] : null;
+  const currentVariant = hasVariants
+    ? variants.find((variant) => variant.id === selectedVariantId) ?? variants[0]
+    : null;
 
   const getAllImages = (): string[] => {
     if (currentVariant) {
