@@ -172,15 +172,6 @@ export default function Produto() {
     setEngravingPosY(y);
   };
 
-  useEffect(() => {
-    if (!variants.length) return;
-
-    const selectedStillExists = variants.some((variant) => variant.id === selectedVariantId);
-    if (!selectedVariantId || !selectedStillExists) {
-      setSelectedVariantId(variants[0].id);
-    }
-  }, [variants, selectedVariantId]);
-
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
