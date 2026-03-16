@@ -38,7 +38,7 @@ export default function Produto() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, category:categories(name, slug)')
+        .select('*, category:categories(name, slug, technical_sheet)')
         .eq('slug', slug!)
         .single();
       if (error) throw error;
