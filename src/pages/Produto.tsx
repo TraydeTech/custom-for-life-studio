@@ -14,6 +14,7 @@ import { ShoppingCart, Minus, Plus, ChevronRight, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { ProductImageCanvas } from '@/components/shop/ProductImageCanvas';
 
 interface ProductVariant {
   id: string;
