@@ -670,6 +670,15 @@ export default function AdminPedidos() {
               )}
             </DialogContent>
           </Dialog>
+
+          {/* Zoomed engraving preview */}
+          <ZoomDialog open={!!zoomedPreview} onOpenChange={() => setZoomedPreview(null)}>
+            <ZoomDialogContent className="max-w-lg p-2">
+              {zoomedPreview && (
+                <img src={zoomedPreview} alt="Prévia da gravação" className="w-full h-auto rounded" />
+              )}
+            </ZoomDialogContent>
+          </ZoomDialog>
         </div>
       </AdminLayout>
     </ProtectedAdminRoute>
