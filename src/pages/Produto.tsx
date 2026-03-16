@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,7 +29,7 @@ export default function Produto() {
   const { user } = useAuth();
   const { addToCart } = useCart();
   const canvasRef = useRef<ProductImageCanvasRef>(null);
-  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [customizationNotes, setCustomizationNotes] = useState('');
@@ -64,6 +64,15 @@ export default function Produto() {
     },
     enabled: !!product?.id,
   });
+
+  useEffect(() => {
+    if (!variants.length) return;
+
+    const selectedStillExists = variants.some((variant) => variant.id === selectedVariantId);
+    if (!selectedVariantId || !selectedStillExists) {
+      setSelectedVariantId(variants[0].id);
+    }
+  }, [variants, selectedVariantId]);
 
   if (isLoading) {
     return (
@@ -100,7 +109,9 @@ export default function Produto() {
   }
 
   const hasVariants = variants.length > 0;
-  const currentVariant = hasVariants ? variants[selectedVariantIndex] : null;
+  const currentVariant = hasVariants
+    ? variants.find((variant) => variant.id === selectedVariantId) ?? variants[0]
+    : null;
 
   const getAllImages = (): string[] => {
     if (currentVariant) {
@@ -147,8 +158,8 @@ export default function Produto() {
     });
   };
 
-  const handleVariantSelect = (index: number) => {
-    setSelectedVariantIndex(index);
+  const handleVariantSelect = (variant: ProductVariant) => {
+    setSelectedVariantId(variant.id);
     setSelectedImageIndex(0);
   };
 
@@ -259,13 +270,13 @@ export default function Produto() {
             {/* Color variant thumbnails */}
             {hasVariants && variants.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2 pl-3 mt-6 pt-2">
-                {variants.map((variant, idx) => {
-                  const isSelected = idx === selectedVariantIndex;
+                {variants.map((variant) => {
+                  const isSelected = variant.id === currentVariant?.id;
                   const thumbImg = variant.main_image || '/placeholder.svg';
                   return (
                     <button
                       key={variant.id}
-                      onClick={() => handleVariantSelect(idx)}
+                      onClick={() => handleVariantSelect(variant)}
                       className="flex-shrink-0 flex flex-col items-center gap-1 cursor-pointer group"
                     >
                       <div
@@ -325,12 +336,12 @@ export default function Produto() {
                   Cor: <span className="text-primary">{currentVariant?.color_name}</span>
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  {variants.map((variant, idx) => (
+                  {variants.map((variant) => (
                     <button
                       key={variant.id}
-                      onClick={() => handleVariantSelect(idx)}
+                      onClick={() => handleVariantSelect(variant)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
-                        idx === selectedVariantIndex
+                        variant.id === currentVariant?.id
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border hover:border-primary/50 text-foreground'
                       }`}

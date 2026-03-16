@@ -43,11 +43,17 @@ export const ProductImageCanvas = forwardRef<ProductImageCanvasRef, ProductImage
     }));
 
     useEffect(() => {
+      setImageLoaded(false);
+      imgRef.current = null;
+
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
         imgRef.current = img;
         setImageLoaded(true);
+      };
+      img.onerror = () => {
+        setImageLoaded(false);
       };
       img.src = imageSrc;
     }, [imageSrc]);
