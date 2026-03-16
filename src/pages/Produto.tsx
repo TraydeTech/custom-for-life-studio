@@ -171,7 +171,7 @@ export default function Produto() {
               <img
                 src={mainImage}
                 alt={product.name}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain scale-125"
               />
               {product.is_featured && (
                 <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
