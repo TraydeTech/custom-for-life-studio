@@ -168,7 +168,11 @@ export default function Produto() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="relative aspect-square rounded-xl overflow-hidden" style={{ backgroundColor: '#D9D9D9' }}>
+            <div
+              className="relative aspect-square rounded-xl overflow-hidden cursor-zoom-in"
+              style={{ backgroundColor: '#D9D9D9' }}
+              onClick={() => setIsZoomed(true)}
+            >
               <img
                 src={mainImage}
                 alt={product.name}
@@ -190,6 +194,26 @@ export default function Produto() {
                 </div>
               )}
             </div>
+
+            {/* Fullscreen zoom modal */}
+            {isZoomed && (
+              <div
+                className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center cursor-zoom-out"
+                onClick={() => setIsZoomed(false)}
+              >
+                <button
+                  className="absolute top-4 right-4 text-white/70 hover:text-white z-50"
+                  onClick={() => setIsZoomed(false)}
+                >
+                  <X className="h-8 w-8" />
+                </button>
+                <img
+                  src={mainImage}
+                  alt={product.name}
+                  className="max-w-[90vw] max-h-[90vh] object-contain"
+                />
+              </div>
+            )}
 
             {/* Image thumbnails for current variant */}
             {images.length > 1 && (
