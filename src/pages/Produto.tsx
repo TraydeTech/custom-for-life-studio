@@ -149,8 +149,8 @@ export default function Produto() {
     });
   };
 
-  const handleVariantSelect = (index: number) => {
-    setSelectedVariantIndex(index);
+  const handleVariantSelect = (variant: ProductVariant) => {
+    setSelectedVariantId(variant.id);
     setSelectedImageIndex(0);
   };
 
