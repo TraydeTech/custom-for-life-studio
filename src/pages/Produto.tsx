@@ -336,12 +336,12 @@ export default function Produto() {
                   Cor: <span className="text-primary">{currentVariant?.color_name}</span>
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  {variants.map((variant, idx) => (
+                  {variants.map((variant) => (
                     <button
                       key={variant.id}
-                      onClick={() => handleVariantSelect(idx)}
+                      onClick={() => handleVariantSelect(variant)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
-                        idx === selectedVariantIndex
+                        variant.id === currentVariant?.id
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border hover:border-primary/50 text-foreground'
                       }`}
