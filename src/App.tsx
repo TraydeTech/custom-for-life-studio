@@ -45,6 +45,7 @@ const App = () => (
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
             <Route path="/redefinir-senha" element={<RedefinirSenha />} />
             <Route path="/loja" element={<Loja />} />
+            <Route path="/produto/:slug" element={<Produto />} />
             <Route path="/carrinho" element={<Carrinho />} />
             <Route path="/minha-conta" element={<MinhaConta />} />
             <Route path="/minha-conta/pedidos" element={<MeusPedidos />} />
