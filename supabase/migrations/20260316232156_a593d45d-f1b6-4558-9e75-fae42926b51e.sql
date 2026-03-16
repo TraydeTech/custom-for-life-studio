@@ -1,0 +1,2 @@
+UPDATE product_variants SET main_image = 'https://ihkbxdayhdewqzezdrfl.supabase.co/storage/v1/object/public/product-images/products/variant-preto-nobg.png' WHERE id = '86350416-0e33-4978-89e3-a8ab44b2fb24';
+UPDATE product_variants SET main_image = 'https://ihkbxdayhdewqzezdrfl.supabase.co/storage/v1/object/public/product-images/products/variant-laranja-nobg.png' WHERE id = '19e9b3d2-c23f-4b45-9efc-ef491fa0481a';
