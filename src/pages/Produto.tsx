@@ -14,6 +14,7 @@ import { ShoppingCart, Minus, Plus, ChevronRight, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { ProductImageCanvas } from '@/components/shop/ProductImageCanvas';
 
 interface ProductVariant {
   id: string;
@@ -169,14 +170,14 @@ export default function Produto() {
           {/* Image Gallery */}
           <div className="space-y-4">
             <div
-              className="relative aspect-square rounded-xl overflow-hidden cursor-zoom-in"
+              className="relative aspect-square rounded-xl overflow-hidden"
               style={{ backgroundColor: '#D9D9D9' }}
-              onClick={() => setIsZoomed(true)}
             >
-              <img
-                src={mainImage}
-                alt={product.name}
-                className="w-full h-full object-contain scale-125"
+              <ProductImageCanvas
+                imageSrc={mainImage}
+                altText={product.name}
+                customizationText={customizationNotes}
+                onClick={() => setIsZoomed(true)}
               />
               {product.is_featured && (
                 <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
@@ -236,7 +237,7 @@ export default function Produto() {
 
             {/* Color variant thumbnails */}
             {hasVariants && variants.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2 pl-3">
+              <div className="flex gap-2 overflow-x-auto pb-2 pl-3 mt-6 pt-2">
                 {variants.map((variant, idx) => {
                   const isSelected = idx === selectedVariantIndex;
                   const thumbImg = variant.main_image || '/placeholder.svg';
