@@ -105,7 +105,7 @@ export default function AdminProdutos() {
   const { data: allVariants } = useQuery({
     queryKey: ['product-variants'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('product_variants')
         .select('*')
         .order('sort_order');

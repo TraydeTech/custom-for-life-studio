@@ -50,7 +50,7 @@ export default function Produto() {
   const { data: variants = [] } = useQuery({
     queryKey: ['product-variants', product?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('product_variants')
         .select('*')
         .eq('product_id', product!.id)
