@@ -108,15 +108,12 @@ export default function Produto() {
   }
 
   const hasVariants = variants.length > 0;
-  const currentVariant = hasVariants
-    ? variants.find((variant) => variant.id === selectedVariantId) ?? variants[0]
-    : null;
 
   const getAllImages = (): string[] => {
-    if (currentVariant) {
+    if (selected) {
       const imgs: string[] = [];
-      if (currentVariant.main_image) imgs.push(currentVariant.main_image);
-      if (currentVariant.additional_images) imgs.push(...currentVariant.additional_images);
+      if (selected.main_image) imgs.push(selected.main_image);
+      if (selected.additional_images) imgs.push(...selected.additional_images);
       return imgs;
     }
     return product.images || [];
