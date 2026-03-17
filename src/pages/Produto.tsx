@@ -337,7 +337,7 @@ export default function Produto() {
                       key={variant.id}
                       onClick={() => handleVariantSelect(variant)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
-                        variant.id === currentVariant?.id
+                        variant.id === selected?.id
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border hover:border-primary/50 text-foreground'
                       }`}
