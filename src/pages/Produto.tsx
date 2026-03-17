@@ -45,6 +45,7 @@ export default function Produto() {
   const [engravingPosY, setEngravingPosY] = useState(72);
   const [isDragging, setIsDragging] = useState(false);
   const [hasDragged, setHasDragged] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const dragStartRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
