@@ -652,6 +652,13 @@ export default function Produto() {
       </main>
 
       <Footer />
+
+      <AuthModal
+        open={showAuthModal}
+        onOpenChange={setShowAuthModal}
+        defaultTab="login"
+        onSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }
