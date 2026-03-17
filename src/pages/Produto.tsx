@@ -13,6 +13,7 @@ import { formatCurrency } from '@/lib/utils';
 import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { AuthModal } from '@/components/auth/AuthModal';
 
 interface ProductVariant {
   id: string;
