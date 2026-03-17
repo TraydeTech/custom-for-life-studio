@@ -155,7 +155,7 @@ export default function Produto() {
   };
 
   const handleVariantSelect = (variant: ProductVariant) => {
-    setSelectedVariantId(variant.id);
+    setSelected(variant);
     setSelectedImageIndex(0);
   };
 
