@@ -49,6 +49,8 @@ const App = () => (
             <Route path="/loja" element={<Loja />} />
             <Route path="/produto/:slug" element={<Produto />} />
             <Route path="/carrinho" element={<Carrinho />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/pedido-confirmado" element={<PedidoConfirmado />} />
             <Route path="/minha-conta" element={<MinhaConta />} />
             <Route path="/minha-conta/pedidos" element={<MeusPedidos />} />
             <Route path="/minha-conta/enderecos" element={<MeusEnderecos />} />

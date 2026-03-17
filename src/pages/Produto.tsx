@@ -584,12 +584,18 @@ export default function Produto() {
 
               <Button
                 size="lg"
-                className="flex-1"
+                className={`flex-1 transition-all ${addedToCart ? 'bg-[#1D9E75] hover:bg-[#1D9E75]' : ''}`}
                 onClick={handleAddToCart}
-                disabled={isOutOfStock || addToCart.isPending}
+                disabled={isOutOfStock || addToCart.isPending || addedToCart}
               >
-                <ShoppingCart className="mr-2 h-5 w-5" />
-                {isOutOfStock ? 'Esgotado' : 'Adicionar ao Carrinho'}
+                {addedToCart ? (
+                  <>✓ Adicionado!</>
+                ) : (
+                  <>
+                    <ShoppingCart className="mr-2 h-5 w-5" />
+                    {isOutOfStock ? 'Esgotado' : 'Adicionar ao Carrinho'}
+                  </>
+                )}
               </Button>
             </div>
 
