@@ -67,12 +67,11 @@ export default function Produto() {
 
   useEffect(() => {
     if (!variants.length) return;
-
-    const selectedStillExists = variants.some((variant) => variant.id === selectedVariantId);
-    if (!selectedVariantId || !selectedStillExists) {
-      setSelectedVariantId(variants[0].id);
+    const stillExists = selected && variants.some((v) => v.id === selected.id);
+    if (!selected || !stillExists) {
+      setSelected(variants[0]);
     }
-  }, [variants, selectedVariantId]);
+  }, [variants]);
 
   if (isLoading) {
     return (
