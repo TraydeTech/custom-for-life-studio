@@ -30,6 +30,7 @@ import AdminFinanceiro from "./pages/admin/Financeiro";
 import AdminFornecedores from "./pages/admin/Fornecedores";
 import AdminRelatorios from "./pages/admin/Relatorios";
 import AdminChamados from "./pages/admin/Chamados";
+import AdminGestaoPedidos from "./pages/admin/GestaoPedidos";
 
 const queryClient = new QueryClient();
 
