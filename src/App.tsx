@@ -12,6 +12,8 @@ import RedefinirSenha from "./pages/RedefinirSenha";
 import Loja from "./pages/Loja";
 import Produto from "./pages/Produto";
 import Carrinho from "./pages/Carrinho";
+import Checkout from "./pages/Checkout";
+import PedidoConfirmado from "./pages/PedidoConfirmado";
 import MinhaConta from "./pages/MinhaConta";
 import MeusPedidos from "./pages/MeusPedidos";
 import MeusEnderecos from "./pages/MeusEnderecos";
