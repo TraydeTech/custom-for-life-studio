@@ -267,7 +267,7 @@ export default function Produto() {
             {hasVariants && variants.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2 pl-3 mt-6 pt-2">
                 {variants.map((variant) => {
-                  const isSelected = variant.id === currentVariant?.id;
+                  const isSelected = variant.id === selected?.id;
                   const thumbImg = variant.main_image || '/placeholder.svg';
                   return (
                     <button
