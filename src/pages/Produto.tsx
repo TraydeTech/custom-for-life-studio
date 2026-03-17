@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,27 +28,31 @@ export default function Produto() {
   const { user } = useAuth();
   const { addToCart } = useCart();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  // Image cache — persists across variant switches for instant swaps
+  const imageCache = useRef<Record<string, HTMLImageElement>>({});
 
   // Single state for selected variant — controls everything
   const [selected, setSelected] = useState<ProductVariant | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [engravingText, setEngravingText] = useState('');
+  const [debouncedEngravingText, setDebouncedEngravingText] = useState('');
   const [isZoomed, setIsZoomed] = useState(false);
   const [engravingPosX, setEngravingPosX] = useState(50);
   const [engravingPosY, setEngravingPosY] = useState(72);
   const [isDragging, setIsDragging] = useState(false);
   const [hasDragged, setHasDragged] = useState(false);
   const dragStartRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch product
-  const { data: product, isLoading } = useQuery({
-    queryKey: ['product', slug],
+  // Fetch product + variants in a single query
+  const { data: productData, isLoading } = useQuery({
+    queryKey: ['product-with-variants', slug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, category:categories(name, slug, technical_sheet)')
+        .select('*, category:categories(name, slug, technical_sheet), product_variants(*)')
         .eq('slug', slug!)
         .single();
       if (error) throw error;
@@ -57,20 +61,10 @@ export default function Produto() {
     enabled: !!slug,
   });
 
-  // Fetch variants
-  const { data: variants = [] } = useQuery({
-    queryKey: ['product-variants', product?.id],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from('product_variants')
-        .select('*')
-        .eq('product_id', product!.id)
-        .order('sort_order');
-      if (error) throw error;
-      return data as ProductVariant[];
-    },
-    enabled: !!product?.id,
-  });
+  const product = productData ?? null;
+  const variants: ProductVariant[] = (productData as any)?.product_variants
+    ? [...(productData as any).product_variants].sort((a: ProductVariant, b: ProductVariant) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    : [];
 
   // Set initial selected variant
   useEffect(() => {
@@ -78,6 +72,37 @@ export default function Produto() {
       setSelected(variants[0]);
     }
   }, [variants]);
+
+  // Preload all variant images in background for instant switching
+  useEffect(() => {
+    variants.forEach((v) => {
+      const url = v.main_image;
+      if (url && !imageCache.current[url]) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = url;
+        img.onload = () => { imageCache.current[url] = img; };
+      }
+      // Also preload additional images
+      v.additional_images?.forEach((additionalUrl) => {
+        if (additionalUrl && !imageCache.current[additionalUrl]) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = additionalUrl;
+          img.onload = () => { imageCache.current[additionalUrl] = img; };
+        }
+      });
+    });
+  }, [variants]);
+
+  // Debounce engraving text for canvas rendering
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedEngravingText(engravingText);
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [engravingText]);
 
   // Get all images for the currently selected variant
   const getImages = (): string[] => {
@@ -93,22 +118,37 @@ export default function Produto() {
   const images = selected || product ? getImages() : [];
   const mainImage = images[selectedImageIndex] || '/placeholder.svg';
 
-  // Draw canvas whenever image or engraving changes
-  useEffect(() => {
-    if (!canvasRef.current) return;
+  // Draw text helper (reusable)
+  const drawText = useCallback((ctx: CanvasRenderingContext2D, size: number, text: string) => {
+    if (!text.trim()) return;
+    const fontSize = Math.max(24, size * 0.045);
+    ctx.save();
+    ctx.font = `600 ${fontSize}px "Inter", "Segoe UI", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const textX = (engravingPosX / 100) * size;
+    const textY = (engravingPosY / 100) * size;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.fillText(text, textX, textY);
+    ctx.restore();
+  }, [engravingPosX, engravingPosY]);
 
+  // Draw canvas with image cache
+  const drawCanvas = useCallback((url: string, text: string) => {
+    if (!canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      imgRef.current = img;
-      const size = 800;
-      canvas.width = size;
-      canvas.height = size;
+    const size = 800;
+    canvas.width = size;
+    canvas.height = size;
 
+    const renderImage = (img: HTMLImageElement) => {
       ctx.clearRect(0, 0, size, size);
       ctx.fillStyle = '#D9D9D9';
       ctx.fillRect(0, 0, size, size);
@@ -126,26 +166,35 @@ export default function Produto() {
       const drawX = (size - drawW) / 2;
       const drawY = (size - drawH) / 2;
       ctx.drawImage(img, drawX, drawY, drawW, drawH);
-
-      if (engravingText.trim()) {
-        const fontSize = Math.max(24, size * 0.045);
-        ctx.save();
-        ctx.font = `600 ${fontSize}px "Inter", "Segoe UI", sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        const textX = (engravingPosX / 100) * size;
-        const textY = (engravingPosY / 100) * size;
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 6;
-        ctx.shadowOffsetX = 1;
-        ctx.shadowOffsetY = 1;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-        ctx.fillText(engravingText, textX, textY);
-        ctx.restore();
-      }
+      drawText(ctx, size, text);
     };
-    img.src = mainImage;
-  }, [mainImage, engravingText, engravingPosX, engravingPosY]);
+
+    // Use cached image if available — instant render
+    if (imageCache.current[url]) {
+      renderImage(imageCache.current[url]);
+    } else {
+      // First load — cache and render
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        imageCache.current[url] = img;
+        renderImage(img);
+      };
+      img.src = url;
+    }
+  }, [drawText]);
+
+  // Trigger canvas redraw when image or debounced text changes
+  useEffect(() => {
+    drawCanvas(mainImage, debouncedEngravingText);
+  }, [mainImage, debouncedEngravingText, drawCanvas]);
+
+  // Also redraw immediately during drag (position changes)
+  useEffect(() => {
+    if (isDragging) {
+      drawCanvas(mainImage, engravingText);
+    }
+  }, [engravingPosX, engravingPosY, isDragging]);
 
   // Selection handler — receives the FULL variant object
   function handleSelectVariation(variant: ProductVariant) {
@@ -195,6 +244,8 @@ export default function Produto() {
     setIsDragging(false);
     setHasDragged(true);
     dragStartRef.current = null;
+    // Final redraw at resting position
+    drawCanvas(mainImage, engravingText);
   };
 
   const handleCanvasClick = () => {
@@ -231,18 +282,33 @@ export default function Produto() {
     });
   };
 
-  // Loading state
+  // Loading state with skeleton
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 container py-8">
+          <Skeleton className="h-4 w-64 mb-6" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <Skeleton className="aspect-square rounded-xl" />
             <div className="space-y-4">
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-6 w-1/2" />
+              <Skeleton className="aspect-square rounded-xl" />
+              <div className="flex gap-2">
+                <Skeleton className="w-[70px] h-[70px] rounded-lg" />
+                <Skeleton className="w-[70px] h-[70px] rounded-lg" />
+                <Skeleton className="w-[70px] h-[70px] rounded-lg" />
+              </div>
+            </div>
+            <div className="space-y-4">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-9 w-3/4" />
+              <Skeleton className="h-10 w-40" />
+              <div className="flex gap-2">
+                <Skeleton className="h-10 w-24 rounded-lg" />
+                <Skeleton className="h-10 w-24 rounded-lg" />
+                <Skeleton className="h-10 w-24 rounded-lg" />
+              </div>
               <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-12 w-full rounded-lg" />
             </div>
           </div>
         </main>
@@ -371,13 +437,13 @@ export default function Produto() {
                         : 'border-transparent hover:border-muted-foreground/30'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-contain" />
+                    <img src={img} alt="" className="w-full h-full object-contain" loading="lazy" width={80} height={80} />
                   </button>
                 ))}
               </div>
             )}
 
-            {/* Color variant thumbnails — uses selected.id for highlight */}
+            {/* Color variant thumbnails */}
             {hasVariants && variants.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2 pl-3 mt-6 pt-2">
                 {variants.map((v) => (
@@ -398,6 +464,9 @@ export default function Produto() {
                         src={v.main_image || '/placeholder.svg'}
                         alt={v.color_name}
                         className="w-full h-full object-contain"
+                        loading="lazy"
+                        width={70}
+                        height={70}
                       />
                     </div>
                     <span
@@ -439,7 +508,7 @@ export default function Produto() {
               )}
             </div>
 
-            {/* Color Selector — uses selected.id for highlight */}
+            {/* Color Selector */}
             {hasVariants && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium">
