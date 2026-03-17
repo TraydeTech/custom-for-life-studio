@@ -70,7 +70,7 @@ function GestaoPedidosContent() {
       const rawOrders = (data || []) as any[];
 
       // Get customer names
-      const userIds = (data || []).map(o => o.user_id).filter(Boolean);
+      const userIds = rawOrders.map((o: any) => o.user_id).filter(Boolean);
       let profiles: any[] = [];
       if (userIds.length > 0) {
         const { data: p } = await supabase
@@ -80,15 +80,16 @@ function GestaoPedidosContent() {
         profiles = p || [];
       }
 
-      return (data || []).map(order => {
-        const profile = profiles.find(p => p.user_id === order.user_id);
+      return rawOrders.map((order: any) => {
+        const profile = profiles.find((p: any) => p.user_id === order.user_id);
         let customerName = profile?.full_name;
         if (!customerName && order.notes) {
           const match = order.notes.match(/Cliente:\s*([^|]+)/i);
           if (match) customerName = match[1].trim();
         }
-        return { ...order, customer_name: customerName || 'Cliente' };
-      }) as OrderWithItems[];
+        // Read pdv_status from the raw data (column added via migration, not yet in types)
+        return { ...order, pdv_status: (order as any).pdv_status || 'aguardando_pagamento', customer_name: customerName || 'Cliente' } as OrderWithItems;
+      });
     },
   });
 

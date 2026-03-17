@@ -41,7 +41,7 @@ function FinanceiroContent() {
     queryKey: ['financial-transactions'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('financial_transactions')
+        .from('financial_transactions' as any)
         .select('*, orders(order_number, shipping_address, notes, user_id)')
         .order('transaction_date', { ascending: false });
       if (error) throw error;
