@@ -259,14 +259,9 @@ export default function Produto() {
     setIsZoomed(true);
   };
 
-  // Add to cart
-  const handleAddToCart = () => {
-    if (!user) {
-      window.location.href = '/login';
-      return;
-    }
+  // Perform the actual add-to-cart mutation
+  const doAddToCart = () => {
     if (!product) return;
-
     const text = engravingText.trim() || undefined;
     let previewImage: string | undefined;
     if (text && canvasRef.current) {
@@ -288,6 +283,29 @@ export default function Produto() {
         setTimeout(() => setAddedToCart(false), 2000);
       },
     });
+  };
+
+  // Add to cart — gate behind auth
+  const handleAddToCart = () => {
+    if (!user) {
+      // Save pending item info for after login
+      if (product) {
+        sessionStorage.setItem('pendingCartProduct', product.name);
+      }
+      setShowAuthModal(true);
+      return;
+    }
+    doAddToCart();
+  };
+
+  // Called after successful auth from modal
+  const handleAuthSuccess = () => {
+    const pendingName = sessionStorage.getItem('pendingCartProduct');
+    sessionStorage.removeItem('pendingCartProduct');
+    // Small delay to let auth state propagate
+    setTimeout(() => {
+      doAddToCart();
+    }, 500);
   };
 
   // Loading state with skeleton
