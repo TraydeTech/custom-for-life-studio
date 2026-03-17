@@ -280,6 +280,11 @@ export default function Produto() {
       engravingPositionY: text ? Math.round(engravingPosY * 100) / 100 : undefined,
       engravingPreviewImage: previewImage,
       productColor: selected?.color_name || undefined,
+    }, {
+      onSuccess: () => {
+        setAddedToCart(true);
+        setTimeout(() => setAddedToCart(false), 2000);
+      },
     });
   };
 
