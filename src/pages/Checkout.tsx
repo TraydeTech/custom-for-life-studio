@@ -36,16 +36,15 @@ export default function Checkout() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { cartItems, cartTotal, clearCart } = useCart();
-  const { data: profile } = useProfile();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
 
   const [customer, setCustomer] = useState<CustomerData>({
-    name: profile?.full_name || '',
-    email: profile?.email || user?.email || '',
-    phone: profile?.phone || '',
-    cpf: profile?.cpf || '',
+    name: user?.user_metadata?.full_name || '',
+    email: user?.email || '',
+    phone: '',
+    cpf: '',
   });
 
   const [address, setAddress] = useState<AddressData>({
@@ -56,19 +55,6 @@ export default function Checkout() {
     neighborhood: '',
     city: '',
     state: '',
-  });
-
-  // Update customer data when profile loads
-  useState(() => {
-    if (profile) {
-      setCustomer(prev => ({
-        ...prev,
-        name: prev.name || profile.full_name || '',
-        email: prev.email || profile.email || user?.email || '',
-        phone: prev.phone || profile.phone || '',
-        cpf: prev.cpf || profile.cpf || '',
-      }));
-    }
   });
 
   if (!user) {
