@@ -37,6 +37,7 @@ export default function Produto() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [engravingText, setEngravingText] = useState('');
+  const [addedToCart, setAddedToCart] = useState(false);
   const [debouncedEngravingText, setDebouncedEngravingText] = useState('');
   const [isZoomed, setIsZoomed] = useState(false);
   const [engravingPosX, setEngravingPosX] = useState(50);
