@@ -150,7 +150,7 @@ export default function Produto() {
       engravingPositionX: engravingText ? Math.round(engravingPosX * 100) / 100 : undefined,
       engravingPositionY: engravingText ? Math.round(engravingPosY * 100) / 100 : undefined,
       engravingPreviewImage,
-      productColor: currentVariant?.color_name || undefined,
+      productColor: selected?.color_name || undefined,
     });
   };
 
