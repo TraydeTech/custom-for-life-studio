@@ -10,10 +10,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
-import { ShoppingCart, Minus, Plus, ChevronRight, X } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ProductImageCanvas, ProductImageCanvasRef } from '@/components/shop/ProductImageCanvas';
 
 interface ProductVariant {
   id: string;
@@ -28,15 +27,22 @@ export default function Produto() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
   const { addToCart } = useCart();
-  const canvasRef = useRef<ProductImageCanvasRef>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  // Single state for selected variant — controls everything
   const [selected, setSelected] = useState<ProductVariant | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [customizationNotes, setCustomizationNotes] = useState('');
+  const [engravingText, setEngravingText] = useState('');
   const [isZoomed, setIsZoomed] = useState(false);
   const [engravingPosX, setEngravingPosX] = useState(50);
   const [engravingPosY, setEngravingPosY] = useState(72);
+  const [isDragging, setIsDragging] = useState(false);
+  const [hasDragged, setHasDragged] = useState(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
 
+  // Fetch product
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
     queryFn: async () => {
@@ -51,6 +57,7 @@ export default function Produto() {
     enabled: !!slug,
   });
 
+  // Fetch variants
   const { data: variants = [] } = useQuery({
     queryKey: ['product-variants', product?.id],
     queryFn: async () => {
@@ -65,14 +72,166 @@ export default function Produto() {
     enabled: !!product?.id,
   });
 
+  // Set initial selected variant
   useEffect(() => {
-    if (!variants.length) return;
-    const stillExists = selected && variants.some((v) => v.id === selected.id);
-    if (!selected || !stillExists) {
+    if (variants.length > 0 && !selected) {
       setSelected(variants[0]);
     }
   }, [variants]);
 
+  // Get all images for the currently selected variant
+  const getImages = (): string[] => {
+    if (selected) {
+      const imgs: string[] = [];
+      if (selected.main_image) imgs.push(selected.main_image);
+      if (selected.additional_images) imgs.push(...selected.additional_images);
+      return imgs;
+    }
+    return product?.images || [];
+  };
+
+  const images = selected || product ? getImages() : [];
+  const mainImage = images[selectedImageIndex] || '/placeholder.svg';
+
+  // Draw canvas whenever image or engraving changes
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      imgRef.current = img;
+      const size = 800;
+      canvas.width = size;
+      canvas.height = size;
+
+      ctx.clearRect(0, 0, size, size);
+      ctx.fillStyle = '#D9D9D9';
+      ctx.fillRect(0, 0, size, size);
+
+      const scale = 1.25;
+      const imgAspect = img.width / img.height;
+      let drawW: number, drawH: number;
+      if (imgAspect > 1) {
+        drawW = size * scale;
+        drawH = (size / imgAspect) * scale;
+      } else {
+        drawH = size * scale;
+        drawW = (size * imgAspect) * scale;
+      }
+      const drawX = (size - drawW) / 2;
+      const drawY = (size - drawH) / 2;
+      ctx.drawImage(img, drawX, drawY, drawW, drawH);
+
+      if (engravingText.trim()) {
+        const fontSize = Math.max(24, size * 0.045);
+        ctx.save();
+        ctx.font = `600 ${fontSize}px "Inter", "Segoe UI", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const textX = (engravingPosX / 100) * size;
+        const textY = (engravingPosY / 100) * size;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 1;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.fillText(engravingText, textX, textY);
+        ctx.restore();
+      }
+    };
+    img.src = mainImage;
+  }, [mainImage, engravingText, engravingPosX, engravingPosY]);
+
+  // Selection handler — receives the FULL variant object
+  function handleSelectVariation(variant: ProductVariant) {
+    setSelected(variant);
+    setSelectedImageIndex(0);
+  }
+
+  // Canvas drag handlers for engraving position
+  const getCanvasCoords = (clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 50, y: 72 };
+    const rect = canvas.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    return { x: Math.max(5, Math.min(95, x)), y: Math.max(5, Math.min(95, y)) };
+  };
+
+  const isOnText = (clientX: number, clientY: number): boolean => {
+    if (!engravingText.trim()) return false;
+    const coords = getCanvasCoords(clientX, clientY);
+    return Math.abs(coords.x - engravingPosX) < 15 && Math.abs(coords.y - engravingPosY) < 5;
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!engravingText.trim() || !isOnText(e.clientX, e.clientY)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    dragStartRef.current = { startX: e.clientX, startY: e.clientY, posX: engravingPosX, posY: engravingPosY };
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging || !dragStartRef.current || !canvasRef.current) return;
+    e.preventDefault();
+    const rect = canvasRef.current.getBoundingClientRect();
+    const deltaX = ((e.clientX - dragStartRef.current.startX) / rect.width) * 100;
+    const deltaY = ((e.clientY - dragStartRef.current.startY) / rect.height) * 100;
+    setEngravingPosX(Math.max(5, Math.min(95, dragStartRef.current.posX + deltaX)));
+    setEngravingPosY(Math.max(5, Math.min(95, dragStartRef.current.posY + deltaY)));
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    setHasDragged(true);
+    dragStartRef.current = null;
+  };
+
+  const handleCanvasClick = () => {
+    if (isDragging || hasDragged) {
+      setTimeout(() => setHasDragged(false), 100);
+      return;
+    }
+    setIsZoomed(true);
+  };
+
+  // Add to cart
+  const handleAddToCart = () => {
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
+    if (!product) return;
+
+    const text = engravingText.trim() || undefined;
+    let previewImage: string | undefined;
+    if (text && canvasRef.current) {
+      previewImage = canvasRef.current.toDataURL('image/png') || undefined;
+    }
+
+    addToCart.mutate({
+      productId: product.id,
+      quantity,
+      customizationNotes: engravingText || undefined,
+      engravingText: text,
+      engravingPositionX: text ? Math.round(engravingPosX * 100) / 100 : undefined,
+      engravingPositionY: text ? Math.round(engravingPosY * 100) / 100 : undefined,
+      engravingPreviewImage: previewImage,
+      productColor: selected?.color_name || undefined,
+    });
+  };
+
+  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -92,6 +251,7 @@ export default function Produto() {
     );
   }
 
+  // Not found
   if (!product) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -107,66 +267,13 @@ export default function Produto() {
     );
   }
 
-  const hasVariants = variants.length > 0;
-
-  const getAllImages = (): string[] => {
-    if (selected) {
-      const imgs: string[] = [];
-      if (selected.main_image) imgs.push(selected.main_image);
-      if (selected.additional_images) imgs.push(...selected.additional_images);
-      return imgs;
-    }
-    return product.images || [];
-  };
-
-  const images = getAllImages();
-  const mainImage = images[selectedImageIndex] || '/placeholder.svg';
-
   const hasDiscount = product.compare_price && product.compare_price > product.price;
   const discountPercentage = hasDiscount
     ? Math.round((1 - product.price / product.compare_price!) * 100)
     : 0;
-
   const isOutOfStock = (product.stock ?? 0) <= 0;
-
-  const handleAddToCart = () => {
-    if (!user) {
-      window.location.href = '/login';
-      return;
-    }
-
-    const engravingText = customizationNotes.trim() || undefined;
-    let engravingPreviewImage: string | undefined;
-
-    if (engravingText && canvasRef.current) {
-      engravingPreviewImage = canvasRef.current.getDataURL() || undefined;
-    }
-
-    addToCart.mutate({
-      productId: product.id,
-      quantity,
-      customizationNotes: customizationNotes || undefined,
-      engravingText,
-      engravingPositionX: engravingText ? Math.round(engravingPosX * 100) / 100 : undefined,
-      engravingPositionY: engravingText ? Math.round(engravingPosY * 100) / 100 : undefined,
-      engravingPreviewImage,
-      productColor: selected?.color_name || undefined,
-    });
-  };
-
-  const handleVariantSelect = (variant: ProductVariant) => {
-    setSelected(variant);
-    setSelectedImageIndex(0);
-  };
-
-  const handleThumbnailClick = (imgIndex: number) => {
-    setSelectedImageIndex(imgIndex);
-  };
-
-  const handlePositionChange = (x: number, y: number) => {
-    setEngravingPosX(x);
-    setEngravingPosY(y);
-  };
+  const hasVariants = variants.length > 0;
+  const showDragHint = engravingText.trim().length > 0 && !hasDragged;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -197,16 +304,23 @@ export default function Produto() {
               className="relative aspect-square rounded-xl overflow-hidden"
               style={{ backgroundColor: '#D9D9D9' }}
             >
-              <ProductImageCanvas
+              <canvas
                 ref={canvasRef}
-                imageSrc={mainImage}
-                altText={product.name}
-                customizationText={customizationNotes}
-                onClick={() => setIsZoomed(true)}
-                positionX={engravingPosX}
-                positionY={engravingPosY}
-                onPositionChange={handlePositionChange}
+                onClick={handleCanvasClick}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                className={`w-full h-full ${isDragging ? 'cursor-grabbing' : engravingText.trim() ? 'cursor-grab' : 'cursor-zoom-in'}`}
+                style={{ backgroundColor: '#D9D9D9', touchAction: 'none' }}
+                aria-label={product.name}
               />
+              {showDragHint && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/70 text-white text-xs px-3 py-1.5 rounded-full pointer-events-none animate-pulse">
+                  <Hand className="h-3.5 w-3.5" />
+                  Arraste o texto na foto para escolher onde gravar
+                </div>
+              )}
               {product.is_featured && (
                 <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
                   Destaque
@@ -250,7 +364,7 @@ export default function Produto() {
                 {images.map((img, idx) => (
                   <button
                     key={idx}
-                    onClick={() => handleThumbnailClick(idx)}
+                    onClick={() => setSelectedImageIndex(idx)}
                     className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
                       idx === selectedImageIndex
                         ? 'border-primary ring-2 ring-primary/20'
@@ -263,39 +377,39 @@ export default function Produto() {
               </div>
             )}
 
-            {/* Color variant thumbnails */}
+            {/* Color variant thumbnails — uses selected.id for highlight */}
             {hasVariants && variants.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2 pl-3 mt-6 pt-2">
-                {variants.map((variant) => {
-                  const isSelected = variant.id === selected?.id;
-                  const thumbImg = variant.main_image || '/placeholder.svg';
-                  return (
-                    <button
-                      key={variant.id}
-                      onClick={() => handleVariantSelect(variant)}
-                      className="flex-shrink-0 flex flex-col items-center gap-1 cursor-pointer group"
+                {variants.map((v) => (
+                  <button
+                    key={v.id}
+                    onClick={() => handleSelectVariation(v)}
+                    className="flex-shrink-0 flex flex-col items-center gap-1 cursor-pointer group"
+                  >
+                    <div
+                      className={`w-[70px] h-[70px] rounded-lg overflow-hidden transition-all ${
+                        selected?.id === v.id
+                          ? 'border-2 scale-[1.08]'
+                          : 'border-[1.5px] border-white/15 group-hover:opacity-85'
+                      }`}
+                      style={selected?.id === v.id ? { borderColor: '#EF9F27' } : undefined}
                     >
-                      <div
-                        className={`w-[70px] h-[70px] rounded-lg overflow-hidden transition-all ${
-                          isSelected
-                            ? 'border-2 scale-[1.08]'
-                            : 'border-[1.5px] border-white/15 group-hover:opacity-85'
-                        }`}
-                        style={isSelected ? { borderColor: '#EF9F27' } : undefined}
-                      >
-                        <img src={thumbImg} alt={variant.color_name} className="w-full h-full object-contain" />
-                      </div>
-                      <span
-                        className={`text-[11px] text-center leading-tight ${
-                          isSelected ? 'font-medium' : 'text-white/70'
-                        }`}
-                        style={isSelected ? { color: '#EF9F27' } : undefined}
-                      >
-                        {variant.color_name}
-                      </span>
-                    </button>
-                  );
-                })}
+                      <img
+                        src={v.main_image || '/placeholder.svg'}
+                        alt={v.color_name}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <span
+                      className={`text-[11px] text-center leading-tight ${
+                        selected?.id === v.id ? 'font-medium' : 'text-white/70'
+                      }`}
+                      style={selected?.id === v.id ? { color: '#EF9F27' } : undefined}
+                    >
+                      {v.color_name}
+                    </span>
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -325,24 +439,24 @@ export default function Produto() {
               )}
             </div>
 
-            {/* Color Selector */}
+            {/* Color Selector — uses selected.id for highlight */}
             {hasVariants && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium">
                   Cor: <span className="text-primary">{selected?.color_name}</span>
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  {variants.map((variant) => (
+                  {variants.map((v) => (
                     <button
-                      key={variant.id}
-                      onClick={() => handleVariantSelect(variant)}
+                      key={v.id}
+                      onClick={() => handleSelectVariation(v)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
-                        variant.id === selected?.id
+                        selected?.id === v.id
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border hover:border-primary/50 text-foreground'
                       }`}
                     >
-                      {variant.color_name}
+                      {v.color_name}
                     </button>
                   ))}
                 </div>
@@ -363,8 +477,8 @@ export default function Produto() {
               </Label>
               <Textarea
                 id="customization"
-                value={customizationNotes}
-                onChange={(e) => setCustomizationNotes(e.target.value)}
+                value={engravingText}
+                onChange={(e) => setEngravingText(e.target.value)}
                 placeholder="Digite o nome ou texto que deseja gravar..."
                 rows={3}
                 disabled={isOutOfStock}
@@ -418,11 +532,11 @@ export default function Produto() {
           <div className="mt-12 border-t pt-8">
             <h2 className="text-2xl font-bold mb-6">📋 Ficha Técnica</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {(product.category.technical_sheet as { title: string; items: { label: string; value: string }[] }[]).map((section: { title: string; items: { label: string; value: string }[] }, sIdx: number) => (
+              {(product.category.technical_sheet as { title: string; items: { label: string; value: string }[] }[]).map((section, sIdx) => (
                 <div key={sIdx} className="border rounded-lg p-4 bg-card">
                   <h3 className="font-semibold text-primary mb-3">{section.title}</h3>
                   <div className="space-y-2">
-                    {section.items.map((item: { label: string; value: string }, iIdx: number) => (
+                    {section.items.map((item, iIdx) => (
                       <div key={iIdx} className="flex justify-between gap-4 text-sm">
                         <span className="text-muted-foreground font-medium">{item.label}</span>
                         <span className="text-right">{item.value}</span>
