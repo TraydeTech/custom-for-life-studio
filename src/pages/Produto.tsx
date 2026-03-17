@@ -29,7 +29,7 @@ export default function Produto() {
   const { user } = useAuth();
   const { addToCart } = useCart();
   const canvasRef = useRef<ProductImageCanvasRef>(null);
-  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<ProductVariant | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [customizationNotes, setCustomizationNotes] = useState('');
@@ -67,12 +67,11 @@ export default function Produto() {
 
   useEffect(() => {
     if (!variants.length) return;
-
-    const selectedStillExists = variants.some((variant) => variant.id === selectedVariantId);
-    if (!selectedVariantId || !selectedStillExists) {
-      setSelectedVariantId(variants[0].id);
+    const stillExists = selected && variants.some((v) => v.id === selected.id);
+    if (!selected || !stillExists) {
+      setSelected(variants[0]);
     }
-  }, [variants, selectedVariantId]);
+  }, [variants]);
 
   if (isLoading) {
     return (
@@ -109,15 +108,12 @@ export default function Produto() {
   }
 
   const hasVariants = variants.length > 0;
-  const currentVariant = hasVariants
-    ? variants.find((variant) => variant.id === selectedVariantId) ?? variants[0]
-    : null;
 
   const getAllImages = (): string[] => {
-    if (currentVariant) {
+    if (selected) {
       const imgs: string[] = [];
-      if (currentVariant.main_image) imgs.push(currentVariant.main_image);
-      if (currentVariant.additional_images) imgs.push(...currentVariant.additional_images);
+      if (selected.main_image) imgs.push(selected.main_image);
+      if (selected.additional_images) imgs.push(...selected.additional_images);
       return imgs;
     }
     return product.images || [];
@@ -154,12 +150,12 @@ export default function Produto() {
       engravingPositionX: engravingText ? Math.round(engravingPosX * 100) / 100 : undefined,
       engravingPositionY: engravingText ? Math.round(engravingPosY * 100) / 100 : undefined,
       engravingPreviewImage,
-      productColor: currentVariant?.color_name || undefined,
+      productColor: selected?.color_name || undefined,
     });
   };
 
   const handleVariantSelect = (variant: ProductVariant) => {
-    setSelectedVariantId(variant.id);
+    setSelected(variant);
     setSelectedImageIndex(0);
   };
 
@@ -271,7 +267,7 @@ export default function Produto() {
             {hasVariants && variants.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2 pl-3 mt-6 pt-2">
                 {variants.map((variant) => {
-                  const isSelected = variant.id === currentVariant?.id;
+                  const isSelected = variant.id === selected?.id;
                   const thumbImg = variant.main_image || '/placeholder.svg';
                   return (
                     <button
@@ -333,7 +329,7 @@ export default function Produto() {
             {hasVariants && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium">
-                  Cor: <span className="text-primary">{currentVariant?.color_name}</span>
+                  Cor: <span className="text-primary">{selected?.color_name}</span>
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {variants.map((variant) => (
@@ -341,7 +337,7 @@ export default function Produto() {
                       key={variant.id}
                       onClick={() => handleVariantSelect(variant)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
-                        variant.id === currentVariant?.id
+                        variant.id === selected?.id
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border hover:border-primary/50 text-foreground'
                       }`}
