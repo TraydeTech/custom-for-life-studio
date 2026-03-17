@@ -11,7 +11,8 @@ import {
   Wallet,
   Truck,
   BarChart3,
-  MessageCircle
+  MessageCircle,
+  Kanban
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
