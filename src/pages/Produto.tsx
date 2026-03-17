@@ -329,7 +329,7 @@ export default function Produto() {
             {hasVariants && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium">
-                  Cor: <span className="text-primary">{currentVariant?.color_name}</span>
+                  Cor: <span className="text-primary">{selected?.color_name}</span>
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {variants.map((variant) => (
