@@ -136,8 +136,11 @@ export function Header() {
                 <Button variant="ghost" size="icon">
                   <ShoppingCart className="h-5 w-5" />
                   {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-                      {cartCount}
+                    <span
+                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-xs flex items-center justify-center font-bold text-black"
+                      style={{ backgroundColor: '#EF9F27' }}
+                    >
+                      {cartCount > 99 ? '99+' : cartCount}
                     </span>
                   )}
                 </Button>

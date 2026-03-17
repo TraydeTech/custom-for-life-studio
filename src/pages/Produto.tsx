@@ -37,6 +37,7 @@ export default function Produto() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [engravingText, setEngravingText] = useState('');
+  const [addedToCart, setAddedToCart] = useState(false);
   const [debouncedEngravingText, setDebouncedEngravingText] = useState('');
   const [isZoomed, setIsZoomed] = useState(false);
   const [engravingPosX, setEngravingPosX] = useState(50);
@@ -279,6 +280,11 @@ export default function Produto() {
       engravingPositionY: text ? Math.round(engravingPosY * 100) / 100 : undefined,
       engravingPreviewImage: previewImage,
       productColor: selected?.color_name || undefined,
+    }, {
+      onSuccess: () => {
+        setAddedToCart(true);
+        setTimeout(() => setAddedToCart(false), 2000);
+      },
     });
   };
 
@@ -578,12 +584,18 @@ export default function Produto() {
 
               <Button
                 size="lg"
-                className="flex-1"
+                className={`flex-1 transition-all ${addedToCart ? 'bg-[#1D9E75] hover:bg-[#1D9E75]' : ''}`}
                 onClick={handleAddToCart}
-                disabled={isOutOfStock || addToCart.isPending}
+                disabled={isOutOfStock || addToCart.isPending || addedToCart}
               >
-                <ShoppingCart className="mr-2 h-5 w-5" />
-                {isOutOfStock ? 'Esgotado' : 'Adicionar ao Carrinho'}
+                {addedToCart ? (
+                  <>✓ Adicionado!</>
+                ) : (
+                  <>
+                    <ShoppingCart className="mr-2 h-5 w-5" />
+                    {isOutOfStock ? 'Esgotado' : 'Adicionar ao Carrinho'}
+                  </>
+                )}
               </Button>
             </div>
 
