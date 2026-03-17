@@ -62,11 +62,12 @@ function GestaoPedidosContent() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, status, payment_status, payment_method, pdv_status, total, created_at, tracking_code, notes, shipping_address, user_id')
+        .select('id, order_number, status, payment_status, payment_method, total, created_at, tracking_code, notes, shipping_address, user_id')
         .eq('source', 'site')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      const rawOrders = (data || []) as any[];
 
       // Get customer names
       const userIds = (data || []).map(o => o.user_id).filter(Boolean);
