@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.sync-ticket-response]
 verify_jwt = false
+
+[functions.create-payment]
+verify_jwt = false
+
+[functions.check-payment-status]
+verify_jwt = false
+
+[functions.iugu-webhook]
+verify_jwt = false

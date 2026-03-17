@@ -11,7 +11,8 @@ import {
   Wallet,
   Truck,
   BarChart3,
-  MessageCircle
+  MessageCircle,
+  Kanban
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +26,7 @@ import logo from '@/assets/logo-custom-forlife.png';
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
   { icon: Store, label: 'PDV', path: '/admin/pdv' },
+  { icon: Kanban, label: 'Gestão Pedidos', path: '/admin/gestao-pedidos' },
   { icon: Package, label: 'Produtos', path: '/admin/produtos', showStockBadge: true },
   { icon: Tags, label: 'Categorias', path: '/admin/categorias' },
   { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos', showOrderBadge: true },
