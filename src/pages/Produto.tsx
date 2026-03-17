@@ -13,6 +13,7 @@ import { formatCurrency } from '@/lib/utils';
 import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { AuthModal } from '@/components/auth/AuthModal';
 
 interface ProductVariant {
   id: string;
@@ -44,6 +45,7 @@ export default function Produto() {
   const [engravingPosY, setEngravingPosY] = useState(72);
   const [isDragging, setIsDragging] = useState(false);
   const [hasDragged, setHasDragged] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const dragStartRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -257,14 +259,9 @@ export default function Produto() {
     setIsZoomed(true);
   };
 
-  // Add to cart
-  const handleAddToCart = () => {
-    if (!user) {
-      window.location.href = '/login';
-      return;
-    }
+  // Perform the actual add-to-cart mutation
+  const doAddToCart = () => {
     if (!product) return;
-
     const text = engravingText.trim() || undefined;
     let previewImage: string | undefined;
     if (text && canvasRef.current) {
@@ -286,6 +283,29 @@ export default function Produto() {
         setTimeout(() => setAddedToCart(false), 2000);
       },
     });
+  };
+
+  // Add to cart — gate behind auth
+  const handleAddToCart = () => {
+    if (!user) {
+      // Save pending item info for after login
+      if (product) {
+        sessionStorage.setItem('pendingCartProduct', product.name);
+      }
+      setShowAuthModal(true);
+      return;
+    }
+    doAddToCart();
+  };
+
+  // Called after successful auth from modal
+  const handleAuthSuccess = () => {
+    const pendingName = sessionStorage.getItem('pendingCartProduct');
+    sessionStorage.removeItem('pendingCartProduct');
+    // Small delay to let auth state propagate
+    setTimeout(() => {
+      doAddToCart();
+    }, 500);
   };
 
   // Loading state with skeleton
@@ -632,6 +652,13 @@ export default function Produto() {
       </main>
 
       <Footer />
+
+      <AuthModal
+        open={showAuthModal}
+        onOpenChange={setShowAuthModal}
+        defaultTab="login"
+        onSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }

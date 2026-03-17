@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
+import { AuthModal } from '@/components/auth/AuthModal';
 
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
@@ -57,9 +58,59 @@ export default function Checkout() {
     state: '',
   });
 
+  const [showAuthModal, setShowAuthModal] = useState(!user);
+
+  // Prefill from profile when user is available
+  useEffect(() => {
+    if (!user) return;
+    const loadProfile = async () => {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, phone, cpf')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (profile) {
+        setCustomer(prev => ({
+          ...prev,
+          name: profile.full_name || prev.name,
+          phone: profile.phone || prev.phone,
+          cpf: profile.cpf || prev.cpf,
+        }));
+      }
+      // Load default address
+      const { data: addr } = await supabase
+        .from('addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_default', true)
+        .maybeSingle();
+      if (addr) {
+        setAddress({
+          zip_code: addr.zip_code || '',
+          street: addr.street || '',
+          number: addr.number || '',
+          complement: addr.complement || '',
+          neighborhood: addr.neighborhood || '',
+          city: addr.city || '',
+          state: addr.state || '',
+        });
+      }
+    };
+    loadProfile();
+  }, [user]);
+
   if (!user) {
-    navigate('/login');
-    return null;
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container py-12 text-center">
+          <p className="text-muted-foreground mb-4">Faça login para finalizar sua compra.</p>
+          <Button onClick={() => setShowAuthModal(true)}>Entrar</Button>
+        </main>
+        <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+        <Footer />
+      </div>
+    );
   }
 
   if (cartItems.length === 0) {

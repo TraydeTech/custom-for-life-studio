@@ -9,12 +9,14 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Separator } from '@/components/ui/separator';
 import { Minus, Plus, Trash2, ShoppingBag, X } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { AuthModal } from '@/components/auth/AuthModal';
 
 export default function Carrinho() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { cartItems, cartTotal, isLoading, updateQuantity, removeFromCart } = useCart();
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(!user);
 
   if (!user) {
     return (
@@ -27,11 +29,10 @@ export default function Carrinho() {
             <p className="text-muted-foreground">
               Faça login para ver seu carrinho.
             </p>
-            <Link to="/login">
-              <Button>Entrar</Button>
-            </Link>
+            <Button onClick={() => setShowAuthModal(true)}>Entrar</Button>
           </div>
         </main>
+        <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
         <Footer />
       </div>
     );
