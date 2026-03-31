@@ -394,7 +394,7 @@ export default function Produto() {
           <div className="space-y-4">
             <div
               className="relative aspect-square rounded-xl overflow-hidden"
-              style={{ backgroundColor: 'hsl(var(--background))' }}
+              style={{ backgroundColor: '#FFFFFF' }}
             >
               <canvas
                 ref={canvasRef}
