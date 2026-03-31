@@ -10,6 +10,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { ArcGalleryHero } from "@/components/ui/arc-gallery-hero";
 import heroImage from "@/assets/hero-brindes-novo.png";
 import brindeCopo from "@/assets/brinde-copo.jpg";
 import brindeCamiseta from "@/assets/brinde-camiseta.jpg";
