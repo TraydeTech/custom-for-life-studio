@@ -103,10 +103,10 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
-      <div className="container flex min-h-[80px] items-center justify-between py-2">
+      <div className="container flex min-h-[120px] items-center justify-between py-3">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <img src={logoImage} alt="Custom For Life" className="h-[110px] w-auto py-2" />
+          <img src={logoImage} alt="Custom For Life" className="h-[100px] w-auto" />
         </Link>
 
         {/* Search Bar - Desktop */}
