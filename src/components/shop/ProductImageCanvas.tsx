@@ -197,7 +197,7 @@ export const ProductImageCanvas = forwardRef<ProductImageCanvasRef, ProductImage
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           className={`w-full h-full ${isDragging ? 'cursor-grabbing' : customizationText.trim() ? 'cursor-grab' : 'cursor-zoom-in'}`}
-          style={{ backgroundColor: '#D9D9D9', touchAction: 'none' }}
+          style={{ backgroundColor: 'hsl(var(--background))', touchAction: 'none' }}
           aria-label={altText}
         />
         {showHint && (
