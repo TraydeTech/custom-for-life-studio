@@ -10,6 +10,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { ArcGalleryHero } from "@/components/ui/arc-gallery-hero";
 import heroImage from "@/assets/hero-brindes-novo.png";
 import brindeCopo from "@/assets/brinde-copo.jpg";
 import brindeCamiseta from "@/assets/brinde-camiseta.jpg";
@@ -79,45 +80,27 @@ const Index = () => {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <Header />
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroImage})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
-        </div>
-        <div className="relative z-10 container mx-auto px-4 text-center">
-          <div className="animate-fade-in-up">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-sm text-muted-foreground mb-6">
-              <Sparkles className="w-4 h-4 text-primary" />
-              Brindes que criam conexões
-            </span>
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-heading font-bold mb-6 leading-tight">
-              Sua marca <span className="gradient-text">ganha vida</span>
-              <br /> em cada detalhe
-            </h1>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-              Transformamos ideias em brindes únicos. Personalizados com qualidade premium 
-              para fortalecer sua marca e criar experiências inesquecíveis.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="hero" size="xl" asChild>
-                <Link to="/loja">
-                  <ShoppingBag className="w-5 h-5" />
-                  Ver Produtos
-                </Link>
-              </Button>
-              <Button variant="heroBorder" size="xl" asChild>
-                <a href="https://www.instagram.com/custom_forlife/" target="_blank" rel="noopener noreferrer">
-                  <Instagram className="w-5 h-5" />
-                  Veja nossos projetos
-                </a>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Hero Section - Arc Gallery */}
+      <ArcGalleryHero
+        images={produtosReais}
+        startAngle={25}
+        endAngle={155}
+        radiusLg={450}
+        radiusMd={340}
+        radiusSm={240}
+        cardSizeLg={110}
+        cardSizeMd={90}
+        cardSizeSm={70}
+        title={
+          <>
+            Sua marca <span className="gradient-text">ganha vida</span>
+            <br /> em cada detalhe
+          </>
+        }
+        subtitle="Transformamos ideias em brindes únicos. Personalizados com qualidade premium para fortalecer sua marca e criar experiências inesquecíveis."
+        ctaPrimary={{ label: "🛍️ Ver Produtos", href: "/loja" }}
+        ctaSecondary={{ label: "📸 Veja nossos projetos", href: "https://www.instagram.com/custom_forlife/" }}
+      />
 
       {/* Sobre Section */}
       <section className="py-24 relative">
