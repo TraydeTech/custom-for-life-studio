@@ -199,6 +199,7 @@ export function Header() {
               <Button 
                 variant="ghost" 
                 size="icon"
+                className="text-gray-800 hover:text-gray-900 hover:bg-gray-100"
                 onClick={handleSignOut}
                 title="Sair"
               >
