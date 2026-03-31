@@ -220,7 +220,7 @@ export function Header() {
               </Link>
               <Link 
                 to="/admin/login" 
-                className="p-2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                 title="Acesso Administrativo"
               >
                 <Settings className="h-4 w-4" />
