@@ -148,7 +148,7 @@ export function Header() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2">
+                  <Button variant="ghost" className="flex items-center gap-2 text-gray-800 hover:text-gray-900 hover:bg-gray-100">
                     <User className="h-5 w-5" />
                     <span className="hidden lg:inline text-sm">Olá, {userName}</span>
                   </Button>
