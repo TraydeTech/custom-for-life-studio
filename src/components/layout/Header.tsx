@@ -133,7 +133,7 @@ export function Header() {
             // UI para CLIENTES logados
             <>
               <Link to="/carrinho" className="relative">
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="text-gray-800 hover:text-gray-900 hover:bg-gray-100">
                   <ShoppingCart className="h-5 w-5" />
                   {cartCount > 0 && (
                     <span
