@@ -192,7 +192,7 @@ export function Header() {
             // UI para ADMIN logado - apenas acesso ao painel e sair
             <div className="flex items-center gap-2">
               <Link to="/admin">
-                <Button variant="ghost" size="icon" title="Painel Administrativo">
+                <Button variant="ghost" size="icon" title="Painel Administrativo" className="text-gray-800 hover:text-gray-900 hover:bg-gray-100">
                   <Settings className="h-5 w-5" />
                 </Button>
               </Link>
