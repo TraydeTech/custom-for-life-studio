@@ -394,7 +394,7 @@ export default function Produto() {
           <div className="space-y-4">
             <div
               className="relative aspect-square rounded-xl overflow-hidden"
-              style={{ backgroundColor: '#D9D9D9' }}
+              style={{ backgroundColor: 'hsl(var(--background))' }}
             >
               <canvas
                 ref={canvasRef}
@@ -404,7 +404,7 @@ export default function Produto() {
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
                 className={`w-full h-full ${isDragging ? 'cursor-grabbing' : engravingText.trim() ? 'cursor-grab' : 'cursor-zoom-in'}`}
-                style={{ backgroundColor: '#D9D9D9', touchAction: 'none' }}
+                style={{ backgroundColor: 'hsl(var(--background))', touchAction: 'none' }}
                 aria-label={product.name}
               />
               {showDragHint && (

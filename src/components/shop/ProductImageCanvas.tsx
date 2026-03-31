@@ -71,7 +71,8 @@ export const ProductImageCanvas = forwardRef<ProductImageCanvasRef, ProductImage
       canvas.height = size;
 
       ctx.clearRect(0, 0, size, size);
-      ctx.fillStyle = '#D9D9D9';
+      const bgColor = getComputedStyle(canvas).getPropertyValue('--background').trim();
+      ctx.fillStyle = bgColor ? `hsl(${bgColor})` : '#0F0F10';
       ctx.fillRect(0, 0, size, size);
 
       const scale = 1.25;
@@ -196,7 +197,7 @@ export const ProductImageCanvas = forwardRef<ProductImageCanvasRef, ProductImage
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           className={`w-full h-full ${isDragging ? 'cursor-grabbing' : customizationText.trim() ? 'cursor-grab' : 'cursor-zoom-in'}`}
-          style={{ backgroundColor: '#D9D9D9', touchAction: 'none' }}
+          style={{ backgroundColor: 'hsl(var(--background))', touchAction: 'none' }}
           aria-label={altText}
         />
         {showHint && (
