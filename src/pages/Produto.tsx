@@ -404,7 +404,7 @@ export default function Produto() {
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
                 className={`w-full h-full ${isDragging ? 'cursor-grabbing' : engravingText.trim() ? 'cursor-grab' : 'cursor-zoom-in'}`}
-                style={{ backgroundColor: 'hsl(var(--background))', touchAction: 'none' }}
+                style={{ backgroundColor: '#FFFFFF', touchAction: 'none' }}
                 aria-label={product.name}
               />
               {showDragHint && (
