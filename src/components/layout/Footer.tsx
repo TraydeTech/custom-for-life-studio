@@ -10,7 +10,9 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo e Descrição */}
           <div className="space-y-4">
-            <img src={logoImage} alt="Custom For Life" className="h-12 w-auto" />
+            <div className="inline-block bg-white rounded-xl p-3">
+              <img src={logoImage} alt="Custom For Life" className="h-16 w-auto" />
+            </div>
             <p className="text-sm text-muted-foreground">
               Transformamos ideias em brindes únicos. Personalização de qualidade para 
               empresas e eventos.
