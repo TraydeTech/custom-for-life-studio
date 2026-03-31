@@ -153,7 +153,8 @@ export default function Produto() {
 
     const renderImage = (img: HTMLImageElement) => {
       ctx.clearRect(0, 0, size, size);
-      ctx.fillStyle = '#D9D9D9';
+      const bgColor = getComputedStyle(canvas).getPropertyValue('--background').trim();
+      ctx.fillStyle = bgColor ? `hsl(${bgColor})` : '#0F0F10';
       ctx.fillRect(0, 0, size, size);
 
       const scale = 1.25;
