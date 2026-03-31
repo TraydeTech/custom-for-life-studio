@@ -213,7 +213,7 @@ export function Header() {
             // Esta estrutura é FIXA e não pode ser modificada por nenhuma alteração futura
             <div className="flex items-center gap-2">
               <Link to="/login">
-                <Button variant="ghost">Entrar</Button>
+                <Button variant="ghost" className="text-gray-800 hover:text-gray-900 hover:bg-gray-100">Entrar</Button>
               </Link>
               <Link to="/cadastro">
                 <Button>Criar Conta</Button>
