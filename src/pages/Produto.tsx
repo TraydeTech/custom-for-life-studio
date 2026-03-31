@@ -153,8 +153,8 @@ export default function Produto() {
 
     const renderImage = (img: HTMLImageElement) => {
       ctx.clearRect(0, 0, size, size);
-      const bgColor = getComputedStyle(canvas).getPropertyValue('--background').trim();
-      ctx.fillStyle = bgColor ? `hsl(${bgColor})` : '#0F0F10';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, size, size);
       ctx.fillRect(0, 0, size, size);
 
       const scale = 1.25;
@@ -395,7 +395,7 @@ export default function Produto() {
           <div className="space-y-4">
             <div
               className="relative aspect-square rounded-xl overflow-hidden"
-              style={{ backgroundColor: 'hsl(var(--background))' }}
+              style={{ backgroundColor: '#FFFFFF' }}
             >
               <canvas
                 ref={canvasRef}
@@ -405,7 +405,7 @@ export default function Produto() {
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
                 className={`w-full h-full ${isDragging ? 'cursor-grabbing' : engravingText.trim() ? 'cursor-grab' : 'cursor-zoom-in'}`}
-                style={{ backgroundColor: 'hsl(var(--background))', touchAction: 'none' }}
+                style={{ backgroundColor: '#FFFFFF', touchAction: 'none' }}
                 aria-label={product.name}
               />
               {showDragHint && (
