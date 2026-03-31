@@ -124,9 +124,9 @@ export function Header() {
         </form>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-4">
+        <nav className="hidden md:flex items-center gap-4 text-gray-800">
           <Link to="/loja">
-            <Button variant="ghost">Produtos</Button>
+            <Button variant="ghost" className="text-gray-800 hover:text-gray-900 hover:bg-gray-100">Produtos</Button>
           </Link>
 
           {isCustomer ? (
