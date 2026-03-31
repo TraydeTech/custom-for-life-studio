@@ -433,11 +433,11 @@ export default function Produto() {
             {/* Fullscreen zoom modal */}
             {isZoomed && (
               <div
-                className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center cursor-zoom-out"
+                className="fixed inset-0 z-50 bg-white flex items-center justify-center cursor-zoom-out"
                 onClick={() => setIsZoomed(false)}
               >
                 <button
-                  className="absolute top-4 right-4 text-white/70 hover:text-white z-50"
+                  className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 z-50"
                   onClick={() => setIsZoomed(false)}
                 >
                   <X className="h-8 w-8" />
