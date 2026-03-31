@@ -157,7 +157,7 @@ export default function Produto() {
       ctx.fillRect(0, 0, size, size);
 
       const imgAspect = img.width / img.height;
-      const fillRatio = 0.92; // Use 92% of canvas to make product larger
+      const fillRatio = 1.0; // Use 100% of canvas
       let drawW: number, drawH: number;
       // Fit entire image inside canvas (object-contain behavior)
       if (imgAspect > 1) {
