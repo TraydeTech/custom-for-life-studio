@@ -216,7 +216,7 @@ export function Header() {
                 <Button variant="ghost" className="text-gray-800 hover:text-gray-900 hover:bg-gray-100">Entrar</Button>
               </Link>
               <Link to="/cadastro">
-                <Button className="bg-[#1D9E75] hover:bg-[#178a65] text-white">Criar Conta</Button>
+                <Button variant="hero">Criar Conta</Button>
               </Link>
               <Link 
                 to="/admin/login" 
