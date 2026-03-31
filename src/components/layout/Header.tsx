@@ -106,7 +106,7 @@ export function Header() {
       <div className="container flex min-h-[80px] items-center justify-between py-2">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <img src={logoImage} alt="Custom For Life" className="h-[90px] w-auto rounded-lg p-1" />
+          <img src={logoImage} alt="Custom For Life" className="h-[110px] w-auto py-2" />
         </Link>
 
         {/* Search Bar - Desktop */}
