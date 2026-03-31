@@ -156,15 +156,15 @@ export default function Produto() {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, size, size);
 
-      const scale = 1.4;
       const imgAspect = img.width / img.height;
       let drawW: number, drawH: number;
+      // Fit entire image inside canvas (object-contain behavior)
       if (imgAspect > 1) {
-        drawW = size * scale;
-        drawH = (size / imgAspect) * scale;
+        drawW = size;
+        drawH = size / imgAspect;
       } else {
-        drawH = size * scale;
-        drawW = (size * imgAspect) * scale;
+        drawH = size;
+        drawW = size * imgAspect;
       }
       const drawX = (size - drawW) / 2;
       const drawY = (size - drawH) / 2;
@@ -433,11 +433,11 @@ export default function Produto() {
             {/* Fullscreen zoom modal */}
             {isZoomed && (
               <div
-                className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center cursor-zoom-out"
+                className="fixed inset-0 z-50 bg-white flex items-center justify-center cursor-zoom-out"
                 onClick={() => setIsZoomed(false)}
               >
                 <button
-                  className="absolute top-4 right-4 text-white/70 hover:text-white z-50"
+                  className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 z-50"
                   onClick={() => setIsZoomed(false)}
                 >
                   <X className="h-8 w-8" />
