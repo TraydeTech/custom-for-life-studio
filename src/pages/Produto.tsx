@@ -156,7 +156,7 @@ export default function Produto() {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, size, size);
 
-      const scale = 0.85;
+      const scale = 1.05;
       const imgAspect = img.width / img.height;
       let drawW: number, drawH: number;
       if (imgAspect > 1) {
