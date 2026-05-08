@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { SEOMeta } from "@/components/SEOMeta";
 import { Instagram, Sparkles, Gift, Star, ArrowRight, Heart, CheckCircle, Phone, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
@@ -78,6 +79,10 @@ const diferenciais = [
 const Index = () => {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
+      <SEOMeta
+        title="Brindes Personalizados com Qualidade Premium"
+        description="Transformamos ideias em brindes únicos. Copos térmicos, camisetas, kits corporativos e muito mais com gravação a laser incluída. Orçamento rápido!"
+      />
       <Header />
 
       {/* Hero Section - Arc Gallery */}

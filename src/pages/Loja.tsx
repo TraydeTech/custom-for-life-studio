@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { SEOMeta } from '@/components/SEOMeta';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/layout/Header';
@@ -8,20 +9,25 @@ import { ProductCard } from '@/components/shop/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, Filter, X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, Filter, X, SlidersHorizontal } from 'lucide-react';
+
+type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'featured';
 
 export default function Loja() {
   const [searchParams, setSearchParams] = useSearchParams();
   const categorySlug = searchParams.get('categoria');
   const searchQuery = searchParams.get('busca') || '';
   const [localSearch, setLocalSearch] = useState(searchQuery);
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
+    staleTime: 1000 * 60 * 10, // 10 minutos
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
-        .select('*')
+        .select('id, name, slug, sort_order')
         .eq('is_active', true)
         .order('sort_order');
       if (error) throw error;
@@ -31,21 +37,17 @@ export default function Loja() {
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products', categorySlug, searchQuery],
+    staleTime: 1000 * 60 * 5, // 5 minutos
     queryFn: async () => {
       let query = supabase
         .from('products')
-        .select(`
-          *,
-          category:categories(name, slug)
-        `)
+        .select('id, name, slug, price, compare_price, images, is_featured, stock, category_id, category:categories(name, slug)')
         .eq('is_active', true)
-        .gt('stock', 0); // Só mostra produtos com estoque disponível
+        .gt('stock', 0);
 
-      if (categorySlug) {
+      if (categorySlug && categories.length > 0) {
         const category = categories.find(c => c.slug === categorySlug);
-        if (category) {
-          query = query.eq('category_id', category.id);
-        }
+        if (category) query = query.eq('category_id', category.id);
       }
 
       if (searchQuery) {
@@ -76,8 +78,20 @@ export default function Loja() {
 
   const activeCategory = categories.find(c => c.slug === categorySlug);
 
+  const sortedProducts = useMemo(() => {
+    const list = [...products];
+    if (sortBy === 'price_asc') return list.sort((a, b) => a.price - b.price);
+    if (sortBy === 'price_desc') return list.sort((a, b) => b.price - a.price);
+    if (sortBy === 'featured') return list.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
+    return list; // newest — já ordenado por created_at desc
+  }, [products, sortBy]);
+
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOMeta
+        title={activeCategory ? `${activeCategory.name} — Brindes Personalizados` : 'Loja — Todos os Produtos'}
+        description="Explore nossa linha completa de brindes personalizados. Filtros por categoria, preço e destaques. Entrega para todo o Brasil."
+      />
       <Header />
       
       <main className="flex-1 container py-8">
@@ -166,6 +180,31 @@ export default function Loja() {
 
           {/* Grid de produtos */}
           <div className="flex-1">
+            {/* Barra de ordenação e contagem */}
+            {!isLoading && (
+              <div className="flex items-center justify-between mb-4 gap-4">
+                <p className="text-sm text-muted-foreground">
+                  {sortedProducts.length > 0
+                    ? `${sortedProducts.length} produto${sortedProducts.length !== 1 ? 's' : ''} encontrado${sortedProducts.length !== 1 ? 's' : ''}`
+                    : ''}
+                </p>
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+                  <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                    <SelectTrigger className="w-44 h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Mais recentes</SelectItem>
+                      <SelectItem value="featured">Destaques primeiro</SelectItem>
+                      <SelectItem value="price_asc">Menor preço</SelectItem>
+                      <SelectItem value="price_desc">Maior preço</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
             {isLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
@@ -176,9 +215,9 @@ export default function Loja() {
                   </div>
                 ))}
               </div>
-            ) : products.length > 0 ? (
+            ) : sortedProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product) => (
+                {sortedProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>

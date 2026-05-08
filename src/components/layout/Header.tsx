@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,14 +10,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  Search, 
-  ShoppingCart, 
-  User, 
-  Menu, 
-  X, 
-  LogOut, 
-  Package, 
+import {
+  Search,
+  ShoppingCart,
+  User,
+  Menu,
+  X,
+  LogOut,
+  Package,
   MapPin,
   Settings
 } from 'lucide-react';
@@ -26,53 +25,15 @@ import { useCart } from '@/hooks/useCart';
 import logoImage from '@/assets/logo-custom-forlife.png';
 
 export function Header() {
-  const { user, signOut } = useAuth();
+  // isAdmin e adminChecked já estão no AuthContext — sem chamada extra ao banco
+  const { user, signOut, isAdmin, adminChecked } = useAuth();
   const { cartCount } = useCart();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isAdminUser, setIsAdminUser] = useState<boolean | null>(null);
 
-  // Verificar diretamente no banco se o usuário é admin
-  useEffect(() => {
-    let isMounted = true;
-    
-    const checkAdminStatus = async () => {
-      if (!user) {
-        if (isMounted) setIsAdminUser(null);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase.rpc('has_role', {
-          _user_id: user.id,
-          _role: 'admin'
-        });
-
-        if (isMounted) {
-          setIsAdminUser(error ? false : !!data);
-        }
-      } catch {
-        if (isMounted) setIsAdminUser(false);
-      }
-    };
-
-    checkAdminStatus();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
-
-  // Estados de exibição - cliente é assumido quando não é admin
   const isLoggedIn = !!user;
-  const adminCheckComplete = isAdminUser !== null;
-  const isAdmin = user && isAdminUser === true;
-  // Cliente: usuário logado E (verificação completa mostrando que não é admin OU verificação ainda em andamento)
-  // Assumimos cliente por padrão para mostrar a UI rapidamente
-  const isCustomer = user && !isAdmin;
-  
-  // Extrair o primeiro nome do usuário
+  const isCustomer = user && (!adminChecked || !isAdmin);
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || 'Cliente';
 
   const handleSearch = (e: React.FormEvent) => {
@@ -85,18 +46,10 @@ export function Header() {
 
   const handleSignOut = async () => {
     try {
-      // Limpar estado local primeiro
-      setIsAdminUser(null);
-      
-      // Forçar limpeza do localStorage diretamente
-      localStorage.removeItem('sb-ihkbxdayhdewqzezdrfl-auth-token');
-      sessionStorage.clear();
-      
       await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
     } finally {
-      // Sempre redirecionar com reload completo
       window.location.replace('/');
     }
   };

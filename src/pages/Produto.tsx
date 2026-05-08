@@ -7,13 +7,15 @@ import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
-import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { ProductCard } from '@/components/shop/ProductCard';
 
 interface ProductVariant {
   id: string;
@@ -49,6 +51,11 @@ export default function Produto() {
   const dragStartRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Calculador de frete
+  const [cepInput, setCepInput] = useState('');
+  const [shippingResult, setShippingResult] = useState<string | null>(null);
+  const [fetchingCep, setFetchingCep] = useState(false);
+
   // Fetch product + variants in a single query
   const { data: productData, isLoading } = useQuery({
     queryKey: ['product-with-variants', slug],
@@ -65,6 +72,26 @@ export default function Produto() {
   });
 
   const product = productData ?? null;
+
+  // Produtos relacionados: mesma categoria, excluindo o atual
+  const { data: relatedProducts = [] } = useQuery({
+    queryKey: ['related-products', product?.category_id, product?.id],
+    queryFn: async () => {
+      if (!product?.category_id) return [];
+      const { data } = await supabase
+        .from('products')
+        .select('id, name, slug, price, compare_price, images, is_featured, stock, category:categories(name,slug)')
+        .eq('is_active', true)
+        .eq('category_id', product.category_id)
+        .neq('id', product.id)
+        .gt('stock', 0)
+        .limit(4);
+      return (data || []) as any[];
+    },
+    enabled: !!product?.category_id,
+    staleTime: 1000 * 60 * 5,
+  });
+
   const variants: ProductVariant[] = (productData as any)?.product_variants
     ? [...(productData as any).product_variants].sort((a: ProductVariant, b: ProductVariant) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     : [];
@@ -286,28 +313,34 @@ export default function Produto() {
     });
   };
 
-  // Add to cart — gate behind auth
+  // Adiciona ao carrinho sem exigir login — visitante usa localStorage
   const handleAddToCart = () => {
-    if (!user) {
-      // Save pending item info for after login
-      if (product) {
-        sessionStorage.setItem('pendingCartProduct', product.name);
-      }
-      setShowAuthModal(true);
-      return;
-    }
     doAddToCart();
   };
 
-  // Called after successful auth from modal
-  const handleAuthSuccess = () => {
-    const pendingName = sessionStorage.getItem('pendingCartProduct');
-    sessionStorage.removeItem('pendingCartProduct');
-    // Small delay to let auth state propagate
-    setTimeout(() => {
-      doAddToCart();
-    }, 500);
+  const handleCepLookup = async () => {
+    const cep = cepInput.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+    setFetchingCep(true);
+    setShippingResult(null);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await res.json();
+      if (data.erro) {
+        setShippingResult('CEP não encontrado. Verifique e tente novamente.');
+      } else {
+        // Simulação de cálculo — em produção integrar com correios/melhor envio
+        setShippingResult(`Entrega para ${data.localidade}/${data.uf} — Frete grátis para pedidos acima de R$ 150,00. Consulte prazo no checkout.`);
+      }
+    } catch {
+      setShippingResult('Não foi possível calcular o frete. Tente novamente.');
+    } finally {
+      setFetchingCep(false);
+    }
   };
+
+  const handleAuthSuccess = () => {};
+
 
   // Loading state with skeleton
   if (isLoading) {
@@ -370,6 +403,12 @@ export default function Produto() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOMeta
+        title={product.name}
+        description={product.description?.slice(0, 160) || `${product.name} — Personalizado com gravação a laser. ${formatCurrency(product.price)} no Custom For Life Studio.`}
+        image={product.images?.[0]}
+        type="product"
+      />
       <Header />
 
       <main className="flex-1 container py-8">
@@ -524,14 +563,21 @@ export default function Produto() {
             <h1 className="text-3xl font-bold">{product.name}</h1>
 
             {/* Price */}
-            <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-bold text-primary">
-                {formatCurrency(product.price)}
-              </span>
-              {hasDiscount && (
-                <span className="text-lg text-muted-foreground line-through">
-                  {formatCurrency(product.compare_price!)}
+            <div className="space-y-1">
+              <div className="flex items-baseline gap-3">
+                <span className="text-3xl font-bold text-primary">
+                  {formatCurrency(product.price)}
                 </span>
+                {hasDiscount && (
+                  <span className="text-lg text-muted-foreground line-through">
+                    {formatCurrency(product.compare_price!)}
+                  </span>
+                )}
+              </div>
+              {product.price >= 30 && (
+                <p className="text-sm text-muted-foreground">
+                  ou <span className="font-semibold text-foreground">12x de {formatCurrency(product.price / 12)}</span> sem juros no cartão
+                </p>
               )}
             </div>
 
@@ -569,7 +615,7 @@ export default function Produto() {
             {/* Customization */}
             <div className="space-y-2">
               <Label htmlFor="customization" className="text-sm font-medium">
-                Personalize sua garrafa — gravação a laser incluída no preço
+                Personalização — gravação a laser incluída no preço
               </Label>
               <Textarea
                 id="customization"
@@ -626,6 +672,35 @@ export default function Produto() {
                 ⚡ Apenas {product.stock} unidades em estoque!
               </p>
             )}
+
+            {/* Calculador de Frete */}
+            <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <Truck className="h-4 w-4 text-primary" />
+                Calcular Frete
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  value={cepInput}
+                  onChange={e => setCepInput(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                  placeholder="00000-000"
+                  maxLength={9}
+                  className="flex-1"
+                  onKeyDown={e => e.key === 'Enter' && handleCepLookup()}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCepLookup}
+                  disabled={fetchingCep || cepInput.length < 8}
+                >
+                  {fetchingCep ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Calcular'}
+                </Button>
+              </div>
+              {shippingResult && (
+                <p className="text-sm text-muted-foreground">{shippingResult}</p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -646,6 +721,18 @@ export default function Produto() {
                     ))}
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Produtos Relacionados */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-12 border-t pt-8">
+            <h2 className="text-2xl font-bold mb-6">Você também pode gostar</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {relatedProducts.map((rp) => (
+                <ProductCard key={rp.id} product={rp} />
               ))}
             </div>
           </div>
