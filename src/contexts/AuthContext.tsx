@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { syncGuestCartToSupabase } from '@/hooks/useCart';
 
 interface AuthContextType {
   user: User | null;
@@ -152,6 +153,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const adminStatus = await checkIsAdmin(data.user.id);
       setIsAdmin(adminStatus);
       setAdminChecked(true);
+      // Mover carrinho de visitante para o banco após login
+      syncGuestCartToSupabase(data.user.id).catch(() => {});
       return { error: null, isAdmin: adminStatus };
     }
     
@@ -159,21 +162,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    // Limpar estado local primeiro
     setIsAdmin(false);
     setAdminChecked(false);
     setUser(null);
     setSession(null);
-    
-    // Forçar limpeza do localStorage
-    try {
-      localStorage.removeItem('sb-ihkbxdayhdewqzezdrfl-auth-token');
-      sessionStorage.clear();
-    } catch (e) {
-      console.error('Error clearing storage:', e);
-    }
-    
-    // Fazer signOut no Supabase
     await supabase.auth.signOut({ scope: 'global' });
   };
 

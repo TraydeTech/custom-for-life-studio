@@ -48,9 +48,11 @@ export function useAdminStats() {
 
       // Calcular métricas
       const totalOrders = orders?.length || 0;
-      const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
+      const paidOrders = orders?.filter(o => ['paid', 'processing', 'shipped', 'delivered'].includes(o.status) || o.payment_status === 'paid').length || 0;
+      // Faturamento real: apenas pedidos com pagamento confirmado
+      const totalRevenue = orders?.filter(o => o.payment_status === 'paid' || ['processing', 'shipped', 'delivered'].includes(o.status))
+        .reduce((sum, order) => sum + Number(order.total), 0) || 0;
       const pendingOrders = orders?.filter(o => o.status === 'pending').length || 0;
-      const paidOrders = orders?.filter(o => ['paid', 'processing', 'shipped', 'delivered'].includes(o.status)).length || 0;
 
       // Faturamento por mês (últimos 6 meses)
       const monthlyRevenue: { month: string; revenue: number; orders: number }[] = [];

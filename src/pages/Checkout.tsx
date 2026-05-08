@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   ChevronLeft, ChevronRight, MapPin, User, CreditCard, Loader2,
   QrCode, Lock, Copy, CheckCircle, Clock, Banknote
@@ -76,6 +77,18 @@ export default function Checkout() {
 
   const checkIntervalRef = useRef<number | null>(null);
   const timerRef = useRef<number | null>(null);
+
+  // Carrega Iugu.js corretamente via DOM (script tag em JSX não executa)
+  useEffect(() => {
+    if ((window as any).Iugu) return;
+    const script = document.createElement('script');
+    script.src = 'https://js.iugu.com/v2';
+    script.async = true;
+    document.head.appendChild(script);
+    return () => {
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+  }, []);
 
   // Prefill from profile
   useEffect(() => {
@@ -375,10 +388,7 @@ export default function Checkout() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      {/* Load Iugu.js */}
-      <script src="https://js.iugu.com/v2" />
-
-      <main className="flex-1 container py-8 max-w-3xl">
+        <main className="flex-1 container py-8 max-w-3xl">
         <h1 className="text-3xl font-bold mb-2">Finalizar Compra</h1>
 
         {/* Step indicator */}
@@ -513,7 +523,7 @@ export default function Checkout() {
                     ) : (
                       <div className="text-center space-y-4">
                         <div className="bg-white p-4 rounded-lg inline-block">
-                          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixData.qrCodeText)}`} alt="QR Code PIX" className="w-48 h-48" />
+                          <QRCodeSVG value={pixData.qrCodeText} size={192} />
                         </div>
                         <div className="flex items-center gap-2 justify-center">
                           <Clock className="h-4 w-4 text-amber-500" />
@@ -537,38 +547,36 @@ export default function Checkout() {
 
                   {/* Credit Card Tab */}
                   <TabsContent value="credit" className="space-y-4 pt-4">
-                    <div><Label>Número do cartão</Label><Input value={cardNumber} onChange={e => setCardNumber(formatCardNumber(e.target.value))} placeholder="0000 0000 0000 0000" maxLength={19} /></div>
-                    <div><Label>Nome impresso no cartão</Label><Input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="NOME COMO NO CARTÃO" /></div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div><Label>Validade</Label><Input value={cardExpiry} onChange={e => setCardExpiry(formatExpiry(e.target.value))} placeholder="MM/AA" maxLength={5} /></div>
-                      <div><Label>CVV</Label><Input value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="000" maxLength={4} type="password" /></div>
-                    </div>
-                    <div><Label>Parcelas</Label>
-                      <Select value={installments} onValueChange={setInstallments}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {installmentOptions.map(opt => (
-                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button size="lg" className="w-full gap-2" onClick={() => handleCardPayment('credit_card')} disabled={isSubmitting}>
-                      {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" />Processando...</> : <><Lock className="h-4 w-4" />Pagar {formatCurrency(cartTotal)}</>}
-                    </Button>
+                    <CardForm
+                      cardNumber={cardNumber} setCardNumber={setCardNumber}
+                      cardName={cardName} setCardName={setCardName}
+                      cardExpiry={cardExpiry} setCardExpiry={setCardExpiry}
+                      cardCvv={cardCvv} setCardCvv={setCardCvv}
+                      formatCardNumber={formatCardNumber} formatExpiry={formatExpiry}
+                      isCredit
+                      installments={installments} setInstallments={setInstallments}
+                      installmentOptions={installmentOptions}
+                      isSubmitting={isSubmitting}
+                      onSubmit={() => handleCardPayment('credit_card')}
+                      total={cartTotal}
+                    />
                   </TabsContent>
 
                   {/* Debit Card Tab */}
                   <TabsContent value="debit" className="space-y-4 pt-4">
-                    <div><Label>Número do cartão</Label><Input value={cardNumber} onChange={e => setCardNumber(formatCardNumber(e.target.value))} placeholder="0000 0000 0000 0000" maxLength={19} /></div>
-                    <div><Label>Nome impresso no cartão</Label><Input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="NOME COMO NO CARTÃO" /></div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div><Label>Validade</Label><Input value={cardExpiry} onChange={e => setCardExpiry(formatExpiry(e.target.value))} placeholder="MM/AA" maxLength={5} /></div>
-                      <div><Label>CVV</Label><Input value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="000" maxLength={4} type="password" /></div>
-                    </div>
-                    <Button size="lg" className="w-full gap-2" onClick={() => handleCardPayment('debit_card')} disabled={isSubmitting}>
-                      {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" />Processando...</> : <><Lock className="h-4 w-4" />Pagar {formatCurrency(cartTotal)} no débito</>}
-                    </Button>
+                    <CardForm
+                      cardNumber={cardNumber} setCardNumber={setCardNumber}
+                      cardName={cardName} setCardName={setCardName}
+                      cardExpiry={cardExpiry} setCardExpiry={setCardExpiry}
+                      cardCvv={cardCvv} setCardCvv={setCardCvv}
+                      formatCardNumber={formatCardNumber} formatExpiry={formatExpiry}
+                      isCredit={false}
+                      installments={installments} setInstallments={setInstallments}
+                      installmentOptions={installmentOptions}
+                      isSubmitting={isSubmitting}
+                      onSubmit={() => handleCardPayment('debit_card')}
+                      total={cartTotal}
+                    />
                   </TabsContent>
                 </Tabs>
 
@@ -582,5 +590,57 @@ export default function Checkout() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+interface CardFormProps {
+  cardNumber: string; setCardNumber: (v: string) => void;
+  cardName: string; setCardName: (v: string) => void;
+  cardExpiry: string; setCardExpiry: (v: string) => void;
+  cardCvv: string; setCardCvv: (v: string) => void;
+  formatCardNumber: (v: string) => string;
+  formatExpiry: (v: string) => string;
+  isCredit: boolean;
+  installments: string; setInstallments: (v: string) => void;
+  installmentOptions: { value: string; label: string }[];
+  isSubmitting: boolean;
+  onSubmit: () => void;
+  total: number;
+}
+
+function CardForm({
+  cardNumber, setCardNumber, cardName, setCardName,
+  cardExpiry, setCardExpiry, cardCvv, setCardCvv,
+  formatCardNumber, formatExpiry, isCredit,
+  installments, setInstallments, installmentOptions,
+  isSubmitting, onSubmit, total,
+}: CardFormProps) {
+  return (
+    <>
+      <div><Label>Número do cartão</Label><Input value={cardNumber} onChange={e => setCardNumber(formatCardNumber(e.target.value))} placeholder="0000 0000 0000 0000" maxLength={19} /></div>
+      <div><Label>Nome impresso no cartão</Label><Input value={cardName} onChange={e => setCardName(e.target.value.toUpperCase())} placeholder="NOME COMO NO CARTÃO" /></div>
+      <div className="grid grid-cols-2 gap-4">
+        <div><Label>Validade</Label><Input value={cardExpiry} onChange={e => setCardExpiry(formatExpiry(e.target.value))} placeholder="MM/AA" maxLength={5} /></div>
+        <div><Label>CVV</Label><Input value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="000" maxLength={4} type="password" /></div>
+      </div>
+      {isCredit && (
+        <div><Label>Parcelas</Label>
+          <Select value={installments} onValueChange={setInstallments}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {installmentOptions.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      <Button size="lg" className="w-full gap-2" onClick={onSubmit} disabled={isSubmitting}>
+        {isSubmitting
+          ? <><Loader2 className="h-4 w-4 animate-spin" />Processando...</>
+          : <><Lock className="h-4 w-4" />Pagar {formatCurrency(total)}{!isCredit ? ' no débito' : ''}</>
+        }
+      </Button>
+    </>
   );
 }

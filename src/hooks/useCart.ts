@@ -2,6 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import {
+  getGuestCart, saveGuestCart, clearGuestCart, addGuestCartItem,
+  type GuestCartItem,
+} from '@/lib/guestCart';
 
 export interface CartItem {
   id: string;
@@ -39,73 +43,91 @@ export function useCart() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: cartItems = [], isLoading } = useQuery({
+  // ── Carrinho logado (Supabase) ──────────────────────────────────────────────
+  const { data: dbCartItems = [], isLoading: dbLoading } = useQuery({
     queryKey: ['cart', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      
       const { data, error } = await supabase
         .from('cart_items')
         .select(`
-          id,
-          product_id,
-          quantity,
-          customization_notes,
-          engraving_text,
-          engraving_position_x,
-          engraving_position_y,
-          engraving_preview_image,
-          product_color,
-          product:products (
-            id,
-            name,
-            slug,
-            price,
-            images,
-            stock
-          )
+          id, product_id, quantity, customization_notes,
+          engraving_text, engraving_position_x, engraving_position_y,
+          engraving_preview_image, product_color,
+          product:products (id, name, slug, price, images, stock)
         `)
         .eq('user_id', user.id);
-
       if (error) throw error;
       return data as unknown as CartItem[];
     },
     enabled: !!user,
   });
 
-  const addToCart = useMutation({
-    mutationFn: async ({ 
-      productId, 
-      quantity = 1, 
-      customizationNotes,
-      engravingText,
-      engravingPositionX,
-      engravingPositionY,
-      engravingPreviewImage,
-      productColor,
-    }: AddToCartParams) => {
-      if (!user) throw new Error('Usuário não autenticado');
+  // ── Carrinho visitante (localStorage + busca de produtos) ───────────────────
+  const { data: guestCartItems = [], isLoading: guestLoading } = useQuery({
+    queryKey: ['guest-cart'],
+    queryFn: async () => {
+      const guestItems = getGuestCart();
+      if (guestItems.length === 0) return [];
 
-      // If has engraving, always insert new (don't merge with existing)
+      const productIds = [...new Set(guestItems.map(i => i.product_id))];
+      const { data: products } = await supabase
+        .from('products')
+        .select('id, name, slug, price, images, stock')
+        .in('id', productIds);
+
+      const productMap = new Map((products || []).map(p => [p.id, p]));
+
+      return guestItems
+        .map(item => ({
+          ...item,
+          product: productMap.get(item.product_id) || null,
+        }))
+        .filter(item => !!item.product) as CartItem[];
+    },
+    enabled: !user,
+    staleTime: 0,
+  });
+
+  const cartItems = user ? dbCartItems : guestCartItems;
+  const isLoading = user ? dbLoading : guestLoading;
+
+  // ── addToCart ───────────────────────────────────────────────────────────────
+  const addToCart = useMutation({
+    mutationFn: async ({
+      productId, quantity = 1, customizationNotes,
+      engravingText, engravingPositionX, engravingPositionY,
+      engravingPreviewImage, productColor,
+    }: AddToCartParams) => {
+      if (!user) {
+        // Visitante: salva no localStorage
+        addGuestCartItem({
+          product_id: productId,
+          quantity,
+          customization_notes: customizationNotes || null,
+          engraving_text: engravingText || null,
+          engraving_position_x: engravingPositionX || null,
+          engraving_position_y: engravingPositionY || null,
+          engraving_preview_image: engravingPreviewImage || null,
+          product_color: productColor || null,
+        });
+        return;
+      }
+
       if (engravingText) {
-        const { error } = await supabase
-          .from('cart_items')
-          .insert({
-            user_id: user.id,
-            product_id: productId,
-            quantity,
-            customization_notes: customizationNotes,
-            engraving_text: engravingText,
-            engraving_position_x: engravingPositionX,
-            engraving_position_y: engravingPositionY,
-            engraving_preview_image: engravingPreviewImage,
-            product_color: productColor,
-          } as any);
+        const { error } = await supabase.from('cart_items').insert({
+          user_id: user.id, product_id: productId, quantity,
+          customization_notes: customizationNotes,
+          engraving_text: engravingText,
+          engraving_position_x: engravingPositionX,
+          engraving_position_y: engravingPositionY,
+          engraving_preview_image: engravingPreviewImage,
+          product_color: productColor,
+        } as any);
         if (error) throw error;
         return;
       }
 
-      // Check if item already in cart (no engraving)
       const { data: existing } = await supabase
         .from('cart_items')
         .select('id, quantity')
@@ -121,100 +143,130 @@ export function useCart() {
           .eq('id', existing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('cart_items')
-          .insert({
-            user_id: user.id,
-            product_id: productId,
-            quantity,
-            customization_notes: customizationNotes,
-            product_color: productColor,
-          } as any);
+        const { error } = await supabase.from('cart_items').insert({
+          user_id: user.id, product_id: productId, quantity,
+          customization_notes: customizationNotes, product_color: productColor,
+        } as any);
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
-      toast({
-        title: 'Produto adicionado',
-        description: 'O produto foi adicionado ao carrinho.',
-      });
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: ['cart'] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['guest-cart'] });
+      }
+      toast({ title: 'Produto adicionado', description: 'Item adicionado ao carrinho.' });
     },
     onError: (error) => {
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: error.message,
-      });
+      toast({ variant: 'destructive', title: 'Erro', description: (error as Error).message });
     },
   });
 
+  // ── updateQuantity ──────────────────────────────────────────────────────────
   const updateQuantity = useMutation({
     mutationFn: async ({ itemId, quantity }: { itemId: string; quantity: number }) => {
+      if (!user) {
+        const items = getGuestCart();
+        const updated = quantity <= 0
+          ? items.filter(i => i.id !== itemId)
+          : items.map(i => i.id === itemId ? { ...i, quantity } : i);
+        saveGuestCart(updated);
+        return;
+      }
       if (quantity <= 0) {
-        const { error } = await supabase
-          .from('cart_items')
-          .delete()
-          .eq('id', itemId);
+        const { error } = await supabase.from('cart_items').delete().eq('id', itemId);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('cart_items')
-          .update({ quantity })
-          .eq('id', itemId);
+        const { error } = await supabase.from('cart_items').update({ quantity }).eq('id', itemId);
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: user ? ['cart'] : ['guest-cart'] });
     },
   });
 
+  // ── removeFromCart ──────────────────────────────────────────────────────────
   const removeFromCart = useMutation({
     mutationFn: async (itemId: string) => {
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('id', itemId);
+      if (!user) {
+        const items = getGuestCart().filter(i => i.id !== itemId);
+        saveGuestCart(items);
+        return;
+      }
+      const { error } = await supabase.from('cart_items').delete().eq('id', itemId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
-      toast({
-        title: 'Produto removido',
-        description: 'O produto foi removido do carrinho.',
-      });
+      queryClient.invalidateQueries({ queryKey: user ? ['cart'] : ['guest-cart'] });
+      toast({ title: 'Produto removido', description: 'Item removido do carrinho.' });
     },
   });
 
+  // ── clearCart ───────────────────────────────────────────────────────────────
   const clearCart = useMutation({
     mutationFn: async () => {
-      if (!user) return;
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', user.id);
+      if (!user) { clearGuestCart(); return; }
+      const { error } = await supabase.from('cart_items').delete().eq('user_id', user.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: user ? ['cart'] : ['guest-cart'] });
     },
   });
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = cartItems.reduce(
-    (sum, item) => sum + (item.product?.price || 0) * item.quantity, 
-    0
+    (sum, item) => sum + (item.product?.price || 0) * item.quantity, 0
   );
 
-  return {
-    cartItems,
-    cartCount,
-    cartTotal,
-    isLoading,
-    addToCart,
-    updateQuantity,
-    removeFromCart,
-    clearCart,
-  };
+  return { cartItems, cartCount, cartTotal, isLoading, addToCart, updateQuantity, removeFromCart, clearCart };
+}
+
+// ── syncGuestCartToSupabase ─────────────────────────────────────────────────
+// Chamado logo após o login para mover itens do localStorage para o banco
+export async function syncGuestCartToSupabase(userId: string): Promise<void> {
+  const guestItems = getGuestCart();
+  if (guestItems.length === 0) return;
+
+  for (const item of guestItems) {
+    try {
+      if (item.engraving_text) {
+        await supabase.from('cart_items').insert({
+          user_id: userId, product_id: item.product_id, quantity: item.quantity,
+          customization_notes: item.customization_notes,
+          engraving_text: item.engraving_text,
+          engraving_position_x: item.engraving_position_x,
+          engraving_position_y: item.engraving_position_y,
+          engraving_preview_image: item.engraving_preview_image,
+          product_color: item.product_color,
+        } as any);
+        continue;
+      }
+
+      const { data: existing } = await supabase
+        .from('cart_items')
+        .select('id, quantity')
+        .eq('user_id', userId)
+        .eq('product_id', item.product_id)
+        .is('engraving_text' as any, null)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from('cart_items')
+          .update({ quantity: existing.quantity + item.quantity })
+          .eq('id', existing.id);
+      } else {
+        await supabase.from('cart_items').insert({
+          user_id: userId, product_id: item.product_id, quantity: item.quantity,
+          customization_notes: item.customization_notes,
+          product_color: item.product_color,
+        } as any);
+      }
+    } catch {}
+  }
+
+  clearGuestCart();
 }

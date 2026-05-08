@@ -7,7 +7,7 @@ import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Minus, Plus, Trash2, ShoppingBag, X } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingBag, X, LogIn } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { AuthModal } from '@/components/auth/AuthModal';
 
@@ -16,27 +16,7 @@ export default function Carrinho() {
   const navigate = useNavigate();
   const { cartItems, cartTotal, isLoading, updateQuantity, removeFromCart } = useCart();
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
-  const [showAuthModal, setShowAuthModal] = useState(!user);
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 container py-12">
-          <div className="text-center space-y-4">
-            <ShoppingBag className="h-16 w-16 mx-auto text-muted-foreground" />
-            <h1 className="text-2xl font-bold">Carrinho de Compras</h1>
-            <p className="text-muted-foreground">
-              Faça login para ver seu carrinho.
-            </p>
-            <Button onClick={() => setShowAuthModal(true)}>Entrar</Button>
-          </div>
-        </main>
-        <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
-        <Footer />
-      </div>
-    );
-  }
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   if (isLoading) {
     return (
@@ -199,19 +179,30 @@ export default function Carrinho() {
                   <span>{formatCurrency(cartTotal + shippingCost)}</span>
                 </div>
               </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full" 
+              <CardFooter className="flex flex-col gap-2">
+                {!user && (
+                  <p className="text-xs text-muted-foreground text-center w-full">
+                    Faça login para finalizar sua compra
+                  </p>
+                )}
+                <Button
+                  className="w-full"
                   size="lg"
-                  onClick={() => navigate('/checkout')}
+                  onClick={() => user ? navigate('/checkout') : setShowAuthModal(true)}
                 >
-                  Finalizar Compra
+                  {user ? 'Finalizar Compra' : <><LogIn className="mr-2 h-4 w-4" />Entrar e Finalizar</>}
                 </Button>
               </CardFooter>
             </Card>
           </div>
         </div>
       </main>
+
+      <AuthModal
+        open={showAuthModal}
+        onOpenChange={setShowAuthModal}
+        onSuccess={() => navigate('/checkout')}
+      />
 
       {/* Zoom modal for engraving preview */}
       {zoomedImage && (
