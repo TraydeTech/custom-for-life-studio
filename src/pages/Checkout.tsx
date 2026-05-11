@@ -384,11 +384,7 @@ export default function Checkout() {
 
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
-  const installmentOptions = Array.from({ length: 12 }, (_, i) => {
-    const n = i + 1;
-    const value = cartTotal / n;
-    return { value: String(n), label: `${n}x de ${formatCurrency(value)}${n === 1 ? ' (à vista)' : ''}` };
-  });
+  const installmentOptions = buildInstallmentOptions(cartTotal);
 
   return (
     <div className="min-h-screen flex flex-col">
