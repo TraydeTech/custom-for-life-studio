@@ -274,7 +274,7 @@ export default function Checkout() {
           paymentMethod: 'pix',
           customerName: customer.name,
           customerEmail: customer.email,
-          customerCpf: customer.cpf,
+          customerCpf: unmaskCPF(customer.cpf),
         },
       });
 
@@ -357,7 +357,7 @@ export default function Checkout() {
           installments: type === 'credit_card' ? parseInt(installments) : 1,
           customerName: customer.name,
           customerEmail: customer.email,
-          customerCpf: customer.cpf,
+          customerCpf: unmaskCPF(customer.cpf),
         },
       });
 
