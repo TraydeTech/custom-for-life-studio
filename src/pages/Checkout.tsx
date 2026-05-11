@@ -188,7 +188,11 @@ export default function Checkout() {
     finally { setIsFetchingCep(false); }
   };
 
-  const canProceedStep1 = customer.name.trim() && customer.email.trim() && customer.phone.trim();
+  const canProceedStep1 =
+    customer.name.trim() &&
+    customer.email.trim() &&
+    customer.phone.trim() &&
+    isValidCPF(customer.cpf);
   const canProceedStep2 = address.zip_code.trim() && address.street.trim() && address.number.trim() && address.neighborhood.trim() && address.city.trim() && address.state.trim();
 
   const formatCardNumber = (v: string) => v.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').slice(0, 19);
