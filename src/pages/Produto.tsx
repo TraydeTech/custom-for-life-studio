@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProductCard } from '@/components/shop/ProductCard';
 import { SEOMeta } from '@/components/SEOMeta';
+import { getInstallmentText } from '@/lib/installments';
 
 interface ProductVariant {
   id: string;
