@@ -96,10 +96,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(initialSession?.user ?? null);
         
         if (initialSession?.user) {
-          const adminStatus = await Promise.race([
-            checkIsAdmin(initialSession.user.id),
-            new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 1500))
-          ]);
+          // Sem timeout fixo — aguarda confirmação real (com retry interno).
+          const adminStatus = await checkIsAdmin(initialSession.user.id);
           if (isMounted) {
             setIsAdmin(adminStatus);
             setAdminChecked(true);
