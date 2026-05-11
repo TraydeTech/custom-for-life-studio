@@ -429,9 +429,9 @@ export default function Produto() {
           <span className="text-foreground">{product.name}</span>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
           {/* Image Gallery */}
-          <div className="space-y-4">
+          <div className="space-y-4 lg:col-span-3">
             <div
               className="relative aspect-square rounded-xl overflow-hidden"
               style={{ backgroundColor: '#FFFFFF' }}
