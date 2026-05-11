@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { maskCPF, unmaskCPF, isValidCPF } from '@/lib/cpf';
+import { buildInstallmentOptions } from '@/lib/installments';
 
 interface CustomerData {
   name: string;
