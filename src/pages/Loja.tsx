@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { SEOMeta } from '@/components/SEOMeta';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -10,7 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, X, SlidersHorizontal } from 'lucide-react';
+import { Search, Filter, X, SlidersHorizontal, Loader2 } from 'lucide-react';
+
+const PAGE_SIZE = 12;
 
 type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'featured';
 
@@ -35,31 +37,57 @@ export default function Loja() {
     },
   });
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ['products', categorySlug, searchQuery],
-    staleTime: 1000 * 60 * 5, // 5 minutos
-    queryFn: async () => {
+  const activeCategoryId = useMemo(() => {
+    if (!categorySlug) return null;
+    return categories.find(c => c.slug === categorySlug)?.id ?? null;
+  }, [categories, categorySlug]);
+
+  const {
+    data: productsData,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['products', categorySlug, searchQuery, activeCategoryId, sortBy],
+    staleTime: 1000 * 60 * 5,
+    initialPageParam: 0,
+    enabled: categories.length > 0 || !categorySlug,
+    queryFn: async ({ pageParam = 0 }) => {
+      const from = pageParam * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
       let query = supabase
         .from('products')
         .select('id, name, slug, price, compare_price, images, is_featured, stock, category_id, category:categories(name, slug)')
         .eq('is_active', true)
         .gt('stock', 0);
 
-      if (categorySlug && categories.length > 0) {
-        const category = categories.find(c => c.slug === categorySlug);
-        if (category) query = query.eq('category_id', category.id);
+      if (activeCategoryId) {
+        query = query.eq('category_id', activeCategoryId);
       }
 
       if (searchQuery) {
         query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false });
+      // Ordenação no servidor
+      if (sortBy === 'price_asc') query = query.order('price', { ascending: true });
+      else if (sortBy === 'price_desc') query = query.order('price', { ascending: false });
+      else if (sortBy === 'featured') query = query.order('is_featured', { ascending: false }).order('created_at', { ascending: false });
+      else query = query.order('created_at', { ascending: false });
+
+      const { data, error } = await query.range(from, to);
       if (error) throw error;
-      return data;
+      return { items: data ?? [], nextPage: (data?.length ?? 0) === PAGE_SIZE ? pageParam + 1 : null };
     },
-    enabled: categories.length > 0 || !categorySlug,
+    getNextPageParam: (lastPage) => lastPage.nextPage,
   });
+
+  const products = useMemo(
+    () => productsData?.pages.flatMap(p => p.items) ?? [],
+    [productsData]
+  );
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
