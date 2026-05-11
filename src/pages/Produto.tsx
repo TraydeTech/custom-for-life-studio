@@ -575,9 +575,9 @@ export default function Produto() {
                   </span>
                 )}
               </div>
-              {product.price >= 30 && (
+              {getInstallmentText(product.price) && (
                 <p className="text-sm text-muted-foreground">
-                  ou <span className="font-semibold text-foreground">12x de {formatCurrency(product.price / 12)}</span> sem juros no cartão
+                  ou <span className="font-semibold text-foreground">{getInstallmentText(product.price)}</span> no cartão
                 </p>
               )}
             </div>
