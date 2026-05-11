@@ -106,14 +106,6 @@ export default function Loja() {
 
   const activeCategory = categories.find(c => c.slug === categorySlug);
 
-  const sortedProducts = useMemo(() => {
-    const list = [...products];
-    if (sortBy === 'price_asc') return list.sort((a, b) => a.price - b.price);
-    if (sortBy === 'price_desc') return list.sort((a, b) => b.price - a.price);
-    if (sortBy === 'featured') return list.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
-    return list; // newest — já ordenado por created_at desc
-  }, [products, sortBy]);
-
   return (
     <div className="min-h-screen flex flex-col">
       <SEOMeta
@@ -212,8 +204,8 @@ export default function Loja() {
             {!isLoading && (
               <div className="flex items-center justify-between mb-4 gap-4">
                 <p className="text-sm text-muted-foreground">
-                  {sortedProducts.length > 0
-                    ? `${sortedProducts.length} produto${sortedProducts.length !== 1 ? 's' : ''} encontrado${sortedProducts.length !== 1 ? 's' : ''}`
+                  {products.length > 0
+                    ? `${products.length} produto${products.length !== 1 ? 's' : ''} carregado${products.length !== 1 ? 's' : ''}${hasNextPage ? '+' : ''}`
                     : ''}
                 </p>
                 <div className="flex items-center gap-2">
@@ -243,12 +235,27 @@ export default function Loja() {
                   </div>
                 ))}
               </div>
-            ) : sortedProducts.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {sortedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
+            ) : products.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {products.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+                {hasNextPage && (
+                  <div className="flex justify-center mt-8">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                    >
+                      {isFetchingNextPage && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Carregar mais produtos
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-12">
                 <p className="text-muted-foreground text-lg">
