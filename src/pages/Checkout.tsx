@@ -419,7 +419,20 @@ export default function Checkout() {
               <div><Label htmlFor="name">Nome completo *</Label><Input id="name" value={customer.name} onChange={e => setCustomer(prev => ({ ...prev, name: e.target.value }))} placeholder="Seu nome completo" /></div>
               <div><Label htmlFor="email">E-mail *</Label><Input id="email" type="email" value={customer.email} onChange={e => setCustomer(prev => ({ ...prev, email: e.target.value }))} placeholder="seu@email.com" /></div>
               <div><Label htmlFor="phone">WhatsApp / Telefone *</Label><Input id="phone" value={customer.phone} onChange={e => setCustomer(prev => ({ ...prev, phone: e.target.value }))} placeholder="(11) 99999-9999" /></div>
-              <div><Label htmlFor="cpf">CPF (opcional)</Label><Input id="cpf" value={customer.cpf} onChange={e => setCustomer(prev => ({ ...prev, cpf: e.target.value }))} placeholder="000.000.000-00" /></div>
+              <div>
+                <Label htmlFor="cpf">CPF *</Label>
+                <Input
+                  id="cpf"
+                  value={customer.cpf}
+                  onChange={e => setCustomer(prev => ({ ...prev, cpf: maskCPF(e.target.value) }))}
+                  placeholder="000.000.000-00"
+                  inputMode="numeric"
+                  maxLength={14}
+                />
+                {customer.cpf.length > 0 && unmaskCPF(customer.cpf).length === 11 && !isValidCPF(customer.cpf) && (
+                  <p className="text-sm text-destructive mt-1">CPF inválido. Verifique os dígitos.</p>
+                )}
+              </div>
               <div className="flex justify-end pt-4">
                 <Button onClick={() => setStep(2)} disabled={!canProceedStep1}>Próximo<ChevronRight className="ml-2 h-4 w-4" /></Button>
               </div>
