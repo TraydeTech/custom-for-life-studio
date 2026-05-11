@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProductCard } from '@/components/shop/ProductCard';
+import { SEOMeta } from '@/components/SEOMeta';
 
 interface ProductVariant {
   id: string;
