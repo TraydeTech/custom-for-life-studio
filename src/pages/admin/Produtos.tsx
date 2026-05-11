@@ -277,8 +277,11 @@ export default function AdminProdutos() {
       setIsDialogOpen(false);
       resetForm();
     },
-    onError: (error) => {
-      toast.error('Erro ao atualizar produto: ' + error.message);
+    onError: (error: any) => {
+      const isDup = error?.code === '23505' || /products_slug_key|duplicate key/i.test(error?.message || '');
+      toast.error(isDup
+        ? 'Já existe outro produto com este slug. Use um slug único.'
+        : 'Erro ao atualizar produto: ' + error.message);
     },
   });
 
