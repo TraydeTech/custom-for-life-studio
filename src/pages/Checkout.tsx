@@ -20,6 +20,7 @@ import {
   QrCode, Lock, Copy, CheckCircle, Clock, Banknote
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { maskCPF, unmaskCPF, isValidCPF } from '@/lib/cpf';
 
 interface CustomerData {
   name: string;
