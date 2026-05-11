@@ -24,30 +24,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [adminChecked, setAdminChecked] = useState(false);
 
   const checkIsAdmin = useCallback(async (userId: string): Promise<boolean> => {
-    try {
-      // Tentar via RPC primeiro (mais confiável com SECURITY DEFINER)
-      const { data, error } = await supabase.rpc('has_role', {
-        _user_id: userId,
-        _role: 'admin'
-      });
-      
-      if (!error) {
-        return !!data;
+    // Retry com backoff curto para resiliência de rede.
+    // NUNCA retorna true em caso de erro — falhas mantêm acesso negado.
+    const MAX_ATTEMPTS = 3;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const { data, error } = await supabase.rpc('has_role', {
+          _user_id: userId,
+          _role: 'admin',
+        });
+        if (!error) return !!data;
+
+        // Fallback: query direta na tabela user_roles
+        const { data: roleData, error: queryError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .eq('role', 'admin')
+          .maybeSingle();
+        if (!queryError) return !!roleData;
+      } catch {
+        // continua para próxima tentativa
       }
-      
-      // Fallback: query direta
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
-      
-      return !!roleData;
-    } catch {
-      // Erros de abort são esperados durante navegação
-      return false;
+      if (attempt < MAX_ATTEMPTS) {
+        await new Promise((r) => setTimeout(r, 250 * attempt));
+      }
     }
+    return false;
   }, []);
 
   useEffect(() => {
@@ -93,10 +96,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(initialSession?.user ?? null);
         
         if (initialSession?.user) {
-          const adminStatus = await Promise.race([
-            checkIsAdmin(initialSession.user.id),
-            new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 1500))
-          ]);
+          // Sem timeout fixo — aguarda confirmação real (com retry interno).
+          const adminStatus = await checkIsAdmin(initialSession.user.id);
           if (isMounted) {
             setIsAdmin(adminStatus);
             setAdminChecked(true);
