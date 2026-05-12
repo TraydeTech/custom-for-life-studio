@@ -211,6 +211,9 @@ export default function Checkout() {
       city: address.city, state: address.state, zip_code: address.zip_code,
     };
 
+    // order_number é gerado automaticamente pelo trigger BEFORE INSERT
+    // (public.generate_order_number). Enviamos placeholder apenas para
+    // satisfazer NOT NULL — o banco sobrescreve com o número definitivo.
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -225,6 +228,10 @@ export default function Checkout() {
       .single();
 
     if (orderError) throw orderError;
+    if (!order?.order_number || order.order_number === 'temp' || order.order_number.startsWith('temp')) {
+      console.error('[Checkout] order_number não foi gerado pelo backend:', order);
+      throw new Error('Não foi possível gerar o número do pedido. Tente novamente em instantes.');
+    }
 
     for (const item of cartItems) {
       let engravingPreviewUrl: string | null = null;
