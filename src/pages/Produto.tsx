@@ -94,9 +94,13 @@ export default function Produto() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const variants: ProductVariant[] = (productData as any)?.product_variants
-    ? [...(productData as any).product_variants].sort((a: ProductVariant, b: ProductVariant) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-    : [];
+  const variants: ProductVariant[] = useMemo(() => {
+    const list = (productData as any)?.product_variants;
+    if (!list) return [];
+    return [...list].sort(
+      (a: ProductVariant, b: ProductVariant) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+    );
+  }, [productData]);
 
   // Set initial selected variant
   useEffect(() => {
