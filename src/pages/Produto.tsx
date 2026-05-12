@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -94,9 +94,13 @@ export default function Produto() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const variants: ProductVariant[] = (productData as any)?.product_variants
-    ? [...(productData as any).product_variants].sort((a: ProductVariant, b: ProductVariant) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-    : [];
+  const variants: ProductVariant[] = useMemo(() => {
+    const list = (productData as any)?.product_variants;
+    if (!list) return [];
+    return [...list].sort(
+      (a: ProductVariant, b: ProductVariant) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+    );
+  }, [productData]);
 
   // Set initial selected variant
   useEffect(() => {
@@ -315,9 +319,27 @@ export default function Produto() {
     });
   };
 
-  // Adiciona ao carrinho sem exigir login — visitante usa localStorage
+  // Tentativa de adicionar ao carrinho — exige autenticação. Se não logado,
+  // marca a intenção e abre o modal; após login bem-sucedido, retoma a ação.
+  const [pendingAddToCart, setPendingAddToCart] = useState(false);
+
   const handleAddToCart = () => {
+    if (!user) {
+      setPendingAddToCart(true);
+      setShowAuthModal(true);
+      return;
+    }
     doAddToCart();
+  };
+
+  // Após login via modal, retoma a adição ao carrinho preservando variante,
+  // quantidade e personalização que estavam selecionadas antes do login.
+  const handleAuthSuccess = () => {
+    if (pendingAddToCart) {
+      setPendingAddToCart(false);
+      // Pequeno delay para garantir que o contexto de auth atualizou
+      setTimeout(() => doAddToCart(), 50);
+    }
   };
 
   const handleCepLookup = async () => {
@@ -340,8 +362,6 @@ export default function Produto() {
       setFetchingCep(false);
     }
   };
-
-  const handleAuthSuccess = () => {};
 
 
   // Loading state with skeleton

@@ -99,6 +99,28 @@ export function useCart() {
       engravingText, engravingPositionX, engravingPositionY,
       engravingPreviewImage, productColor,
     }: AddToCartParams) => {
+      // Validação de estoque — busca estoque atual e soma com o que já está no carrinho.
+      const { data: stockProduct, error: stockErr } = await supabase
+        .from('products')
+        .select('stock, name')
+        .eq('id', productId)
+        .maybeSingle();
+      if (stockErr) throw stockErr;
+      const availableStock = stockProduct?.stock ?? 0;
+
+      const currentInCart = cartItems
+        .filter((i) => i.product_id === productId)
+        .reduce((sum, i) => sum + i.quantity, 0);
+
+      if (currentInCart + quantity > availableStock) {
+        const remaining = Math.max(0, availableStock - currentInCart);
+        throw new Error(
+          remaining > 0
+            ? `Quantidade indisponível em estoque. Restam apenas ${remaining} unidade(s) deste produto.`
+            : 'Quantidade indisponível em estoque. Ajuste a quantidade para continuar.'
+        );
+      }
+
       if (!user) {
         // Visitante: salva no localStorage
         addGuestCartItem({
