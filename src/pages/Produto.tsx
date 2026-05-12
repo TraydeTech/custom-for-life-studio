@@ -319,9 +319,27 @@ export default function Produto() {
     });
   };
 
-  // Adiciona ao carrinho sem exigir login — visitante usa localStorage
+  // Tentativa de adicionar ao carrinho — exige autenticação. Se não logado,
+  // marca a intenção e abre o modal; após login bem-sucedido, retoma a ação.
+  const [pendingAddToCart, setPendingAddToCart] = useState(false);
+
   const handleAddToCart = () => {
+    if (!user) {
+      setPendingAddToCart(true);
+      setShowAuthModal(true);
+      return;
+    }
     doAddToCart();
+  };
+
+  // Após login via modal, retoma a adição ao carrinho preservando variante,
+  // quantidade e personalização que estavam selecionadas antes do login.
+  const handleAuthSuccess = () => {
+    if (pendingAddToCart) {
+      setPendingAddToCart(false);
+      // Pequeno delay para garantir que o contexto de auth atualizou
+      setTimeout(() => doAddToCart(), 50);
+    }
   };
 
   const handleCepLookup = async () => {
@@ -344,8 +362,6 @@ export default function Produto() {
       setFetchingCep(false);
     }
   };
-
-  const handleAuthSuccess = () => {};
 
 
   // Loading state with skeleton
