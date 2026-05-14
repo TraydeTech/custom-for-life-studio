@@ -1,6 +1,6 @@
 import { MessageCircle } from 'lucide-react';
 
-const WHATSAPP_NUMBER = '5511999999999'; // Substituir pelo número real
+const WHATSAPP_NUMBER = '5511993439999'; // Número real atualizado
 const WHATSAPP_MESSAGE = encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar um orçamento de brindes personalizados.');
 
 export function WhatsAppButton() {

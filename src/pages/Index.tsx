@@ -119,7 +119,7 @@ const Index = () => {
           </>
         }
         subtitle="Criamos copos, garrafas, camisetas e kits corporativos personalizados com acabamento premium, ideais para empresas, eventos, equipes e presentes especiais."
-        ctaPrimary={{ label: "💬 Solicitar orçamento pelo WhatsApp", href: `https://wa.me/5511999999999?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar um orçamento de brindes personalizados.')}` }}
+        ctaPrimary={{ label: "💬 Solicitar orçamento pelo WhatsApp", href: `https://wa.me/5511993439999?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar um orçamento de brindes personalizados.')}` }}
         ctaSecondary={{ label: "🛍️ Ver catálogo de produtos", href: "/loja" }}
       />
 
@@ -168,8 +168,8 @@ const Index = () => {
                     <CheckCircle className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <p className="font-bold text-lg">+500</p>
-                    <p className="text-sm text-muted-foreground">Projetos personalizados entregues</p>
+                    <p className="font-bold text-lg">Mais de 500</p>
+                    <p className="text-sm text-muted-foreground">Projetos personalizados entregues para marcas, eventos e presentes especiais.</p>
                   </div>
                 </div>
               </div>
@@ -379,9 +379,9 @@ const Index = () => {
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { text: "Atendimento excelente e produto com acabamento impecável.", author: "Empresa de Tecnologia" },
-              { text: "Os brindes ficaram exatamente como imaginávamos.", author: "Organização de Eventos" },
-              { text: "Ótima opção para presentear clientes e equipe.", author: "Consultoria Premium" },
+              { text: "Produto com acabamento excelente e atendimento muito atencioso.", author: "Cliente Custom For Life" },
+              { text: "Os brindes ficaram lindos e representaram muito bem nossa marca.", author: "Cliente corporativo" },
+              { text: "Ótima opção para presentear clientes e equipe com algo útil e personalizado.", author: "Cliente Custom For Life" },
             ].map((dep, i) => (
               <div key={i} className="p-8 rounded-2xl bg-card border border-border italic text-center">
                 <p className="mb-4">"{dep.text}"</p>
@@ -407,7 +407,7 @@ const Index = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button variant="hero" size="xl" asChild>
-                <a href={`https://wa.me/5511999999999?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar um orçamento de brindes personalizados.')}`} target="_blank" rel="noopener noreferrer">
+                <a href={`https://wa.me/5511993439999?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar um orçamento de brindes personalizados.')}`} target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="w-5 h-5" />
                   Solicitar orçamento pelo WhatsApp
                 </a>

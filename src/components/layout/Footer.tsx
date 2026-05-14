@@ -27,7 +27,7 @@ export function Footer() {
                 <Instagram className="h-5 w-5" />
               </a>
               <a 
-                href={`https://wa.me/5511999999999?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar um orçamento de brindes personalizados.')}`} 
+                href={`https://wa.me/5511993439999?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar um orçamento de brindes personalizados.')}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary transition-colors"
