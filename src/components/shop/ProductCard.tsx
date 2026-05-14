@@ -81,6 +81,16 @@ export function ProductCard({ product }: ProductCardProps) {
           <h3 className="font-medium line-clamp-2 group-hover:text-primary transition-colors flex-1">
             {product.name}
           </h3>
+          {(product.name.toLowerCase().includes('copo') && product.name.includes('1200')) && (
+            <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1 italic">
+              Copo personalizado de alta capacidade para eventos, empresas e presentes especiais.
+            </p>
+          )}
+          {(product.name.toLowerCase().includes('garrafa') && product.name.includes('1L')) && (
+            <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1 italic">
+              Garrafa térmica premium com personalização para valorizar sua marca no dia a dia.
+            </p>
+          )}
           <div className="mt-2">
             <div className="flex items-baseline gap-2">
               <span className="text-lg font-bold text-primary">

@@ -131,6 +131,9 @@ export default function Loja() {
           <h1 className="text-3xl font-bold">
             {activeCategory ? activeCategory.name : 'Todos os Produtos'}
           </h1>
+          <p className="text-muted-foreground mt-2 max-w-2xl">
+            Escolha o produto ideal para personalizar com sua marca. Trabalhamos com itens úteis, bonitos e pensados para empresas, eventos, equipes e presentes especiais. Se precisar de ajuda, fale conosco pelo WhatsApp.
+          </p>
           {searchQuery && (
             <p className="text-muted-foreground mt-2">
               Resultados para "{searchQuery}"

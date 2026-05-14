@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
-import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2 } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2, CheckCircle } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AuthModal } from '@/components/auth/AuthModal';
@@ -649,9 +649,52 @@ export default function Produto() {
               />
             </div>
 
+            {/* Descrição Comercial */}
+            {(product.name.toLowerCase().includes('copo') && product.name.includes('1200')) && (
+              <div className="space-y-4 py-4 border-y border-border/50">
+                <p className="text-muted-foreground leading-relaxed text-sm">
+                  O Copo 1200ml personalizado é ideal para quem quer unir praticidade, estilo e presença de marca no dia a dia. Com grande capacidade e visual moderno, ele é uma excelente opção para brindes corporativos, eventos, presentes personalizados e ações promocionais.
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {[
+                    "Capacidade de 1200ml para acompanhar a rotina.",
+                    "Personalização incluída para sua identidade.",
+                    "Ideal para empresas, eventos e equipes.",
+                    "Brinde útil, moderno e memorável."
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-2 text-[13px] text-muted-foreground">
+                      <CheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(product.name.toLowerCase().includes('garrafa') && product.name.includes('1L')) && (
+              <div className="space-y-4 py-4 border-y border-border/50">
+                <p className="text-muted-foreground leading-relaxed text-sm">
+                  A Garrafa Térmica 1L personalizada combina acabamento premium, alta durabilidade e excelente desempenho térmico. Produzida em aço inoxidável com parede dupla e isolamento a vácuo, mantém bebidas frias por até 24 horas e quentes por até 8 horas.
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {[
+                    "Isolamento a vácuo de alto desempenho.",
+                    "Personalização premium incluída.",
+                    "Aço inoxidável de alta durabilidade.",
+                    "Ideal para kits corporativos sofisticados."
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-2 text-[13px] text-muted-foreground">
+                      <CheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Quantity + Add to cart */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center border rounded-lg">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4">
+              <div className="flex items-center border rounded-lg bg-card h-12 self-start sm:self-auto">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -673,12 +716,12 @@ export default function Produto() {
 
               <Button
                 size="lg"
-                className={`flex-1 transition-all ${addedToCart ? 'bg-[#1D9E75] hover:bg-[#1D9E75]' : ''}`}
+                className={`flex-1 h-12 transition-all ${addedToCart ? 'bg-[#1D9E75] hover:bg-[#1D9E75]' : ''}`}
                 onClick={handleAddToCart}
                 disabled={isOutOfStock || addToCart.isPending || addedToCart}
               >
                 {addedToCart ? (
-                  <>✓ Adicionado!</>
+                  <><CheckCircle className="mr-2 h-5 w-5" /> Adicionado!</>
                 ) : (
                   <>
                     <ShoppingCart className="mr-2 h-5 w-5" />
