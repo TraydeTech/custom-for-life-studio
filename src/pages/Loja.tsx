@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, X, SlidersHorizontal, Loader2 } from 'lucide-react';
+import { Search, Filter, X, SlidersHorizontal, Loader2, MessageCircle } from 'lucide-react';
 
 const PAGE_SIZE = 12;
 
@@ -134,6 +134,18 @@ export default function Loja() {
           <p className="text-muted-foreground mt-2 max-w-2xl">
             Escolha o produto ideal para personalizar com sua marca. Trabalhamos com itens úteis, bonitos e pensados para empresas, eventos, equipes e presentes especiais. Se precisar de ajuda, fale conosco pelo WhatsApp.
           </p>
+          <div className="mt-4">
+            <Button asChild>
+              <a 
+                href={`https://wa.me/5511993439999?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar uma ajuda para escolher brindes personalizados.')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Solicitar ajuda pelo WhatsApp
+              </a>
+            </Button>
+          </div>
           {searchQuery && (
             <p className="text-muted-foreground mt-2">
               Resultados para "{searchQuery}"

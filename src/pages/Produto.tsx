@@ -639,6 +639,9 @@ export default function Produto() {
               <Label htmlFor="customization" className="text-sm font-medium">
                 Personalização — gravação a laser incluída no preço
               </Label>
+              <p className="text-[13px] text-muted-foreground mb-2">
+                Digite o nome, frase ou referência da arte. Para logotipos e pedidos corporativos, fale conosco pelo WhatsApp após adicionar ao carrinho ou solicite orçamento.
+              </p>
               <Textarea
                 id="customization"
                 value={engravingText}
@@ -653,14 +656,14 @@ export default function Produto() {
             {(product.name.toLowerCase().includes('copo') && product.name.includes('1200')) && (
               <div className="space-y-4 py-4 border-y border-border/50">
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  O Copo 1200ml personalizado é ideal para quem quer unir praticidade, estilo e presença de marca no dia a dia. Com grande capacidade e visual moderno, ele é uma excelente opção para brindes corporativos, eventos, presentes personalizados e ações promocionais.
+                  O Copo 1200ml personalizado é ideal para quem quer unir praticidade, estilo e presença de marca no dia a dia. Com grande capacidade e visual moderno, ele é uma excelente opção para brindes corporativos, eventos, presentes personalizados e ações promocionais. A personalização com nome, frase ou marca torna cada peça única e reforça sua identidade em um produto útil, bonito e memorável.
                 </p>
                 <div className="grid grid-cols-1 gap-2">
                   {[
-                    "Capacidade de 1200ml para acompanhar a rotina.",
-                    "Personalização incluída para sua identidade.",
-                    "Ideal para empresas, eventos e equipes.",
-                    "Brinde útil, moderno e memorável."
+                    "Capacidade de 1200ml para acompanhar a rotina com mais praticidade.",
+                    "Personalização incluída para deixar o produto com a sua identidade.",
+                    "Ideal para empresas, eventos, presentes, equipes e ações promocionais.",
+                    "Um brinde útil, moderno e com alto potencial de lembrança da marca."
                   ].map((item, i) => (
                     <div key={i} className="flex items-start gap-2 text-[13px] text-muted-foreground">
                       <CheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
@@ -781,7 +784,12 @@ export default function Produto() {
                     {section.items.map((item, iIdx) => (
                       <div key={iIdx} className="flex justify-between gap-4 text-sm">
                         <span className="text-muted-foreground font-medium">{item.label}</span>
-                        <span className="text-right">{item.value}</span>
+                        <span className="text-right">
+                          {item.label.includes('mínima') ? 'consulte opções para pedidos unitários, empresas e eventos' : 
+                           item.label.includes('entrega') ? 'varia conforme quantidade e personalização; solicite previsão pelo WhatsApp' :
+                           item.label.includes('Garantia') ? 'contra defeitos de fabricação, conforme avaliação do pedido' :
+                           item.value}
+                        </span>
                       </div>
                     ))}
                   </div>
