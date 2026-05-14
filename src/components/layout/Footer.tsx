@@ -19,7 +19,7 @@ export function Footer() {
             </p>
             <div className="flex gap-4">
               <a 
-                href="https://instagram.com/customforlife.brindes" 
+                href="https://www.instagram.com/custom_forlife/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary transition-colors"
