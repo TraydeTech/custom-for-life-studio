@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, X, SlidersHorizontal, Loader2 } from 'lucide-react';
+import { Search, Filter, X, SlidersHorizontal, Loader2, MessageCircle } from 'lucide-react';
 
 const PAGE_SIZE = 12;
 
