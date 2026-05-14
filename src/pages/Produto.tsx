@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
-import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2 } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2, CheckCircle } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AuthModal } from '@/components/auth/AuthModal';
