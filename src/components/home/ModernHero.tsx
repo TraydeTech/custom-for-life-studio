@@ -32,7 +32,9 @@ export const ModernHero: React.FC<ModernHeroProps> = ({
           {/* Text Content */}
           <div className="flex-1 text-center lg:text-left z-10">
             <div className="flex flex-col items-center lg:items-start mb-6 animate-fade-in">
-              <img src={logoImage} alt="Custom For Life" className="h-12 w-auto mb-4 opacity-90 hover:opacity-100 transition-opacity" />
+              <div className="bg-white p-3 rounded-xl mb-6 shadow-sm inline-block">
+                <img src={logoImage} alt="Custom For Life" className="h-10 w-auto" />
+              </div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
                 <Star className="w-4 h-4 fill-primary" />
                 <span>Brindes Premium para Empresas e Eventos</span>
