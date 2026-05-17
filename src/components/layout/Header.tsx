@@ -59,7 +59,7 @@ export function Header() {
       <div className="container flex min-h-[90px] lg:min-h-[100px] items-center justify-between py-2 transition-all duration-300">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group transition-transform hover:scale-105 active:scale-95">
-          <img src={logoImage} alt="Custom For Life" className="h-[60px] md:h-[75px] lg:h-[85px] w-auto drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]" />
+          <img src={logoImage} alt="Custom For Life" className="h-[60px] md:h-[75px] lg:h-[85px] w-auto invert mix-blend-screen" />
         </Link>
 
         {/* Search Bar - Desktop */}
