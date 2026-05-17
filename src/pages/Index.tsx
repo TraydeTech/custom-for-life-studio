@@ -95,7 +95,7 @@ const diferenciais = [
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background overflow-x-hidden bg-grid-white">
       <SEOMeta
         title="Brindes Personalizados que Valorizam sua Marca"
         description="Brindes personalizados que valorizam sua marca e encantam seus clientes. Copos, garrafas e kits corporativos premium."
@@ -197,7 +197,7 @@ const Index = () => {
               { step: "3", title: "Aprove a arte", desc: "Antes da produção, alinhamos os detalhes para garantir um resultado fiel à sua marca.", icon: CheckCircle },
               { step: "4", title: "Receba seu pedido", desc: "Produzimos com cuidado e entregamos seus brindes prontos para surpreender.", icon: Box },
             ].map((item, i) => (
-              <div key={i} className="relative group p-8 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all">
+              <div key={i} className="relative group p-8 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all hover:-translate-y-2 duration-300 shadow-lg hover:shadow-primary/10">
                 <div className="w-12 h-12 mb-6 bg-gradient-brand rounded-full flex items-center justify-center text-white font-bold text-xl">
                   {item.step}
                 </div>
@@ -227,7 +227,7 @@ const Index = () => {
               { title: "Clientes e parceiros", desc: "Presentes personalizados para fortalecer relacionamentos e gerar lembrança de marca.", icon: Heart },
               { title: "Presentes especiais", desc: "Itens únicos com nome, frase ou arte personalizada para surpreender em qualquer ocasião.", icon: Gift },
             ].map((item, i) => (
-              <div key={i} className="flex gap-6 p-8 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all">
+              <div key={i} className="flex gap-6 p-8 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all hover:bg-primary/5 group">
                 <div className="shrink-0 w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center">
                   <item.icon className="w-8 h-8 text-primary" />
                 </div>
