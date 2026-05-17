@@ -11,9 +11,10 @@ import { Input } from '@/components/ui/input';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
-import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2, CheckCircle } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2, CheckCircle, RotateCcw, Type } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProductCard } from '@/components/shop/ProductCard';
 import { SEOMeta } from '@/components/SEOMeta';
@@ -49,6 +50,8 @@ export default function Produto() {
   const [engravingPosY, setEngravingPosY] = useState(72);
   const [isDragging, setIsDragging] = useState(false);
   const [hasDragged, setHasDragged] = useState(false);
+  const [engravingRotation, setEngravingRotation] = useState(0);
+  const [engravingScale, setEngravingScale] = useState(1);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const dragStartRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -157,21 +160,37 @@ export default function Produto() {
   // Draw text helper (reusable)
   const drawText = useCallback((ctx: CanvasRenderingContext2D, size: number, text: string) => {
     if (!text.trim()) return;
-    const fontSize = Math.max(24, size * 0.045);
+    const baseFontSize = size * 0.045;
+    const fontSize = Math.max(12, baseFontSize * engravingScale);
+    const textX = (engravingPosX / 100) * size;
+    const textY = (engravingPosY / 100) * size;
+
     ctx.save();
+    ctx.translate(textX, textY);
+    ctx.rotate((engravingRotation * Math.PI) / 180);
+    
     ctx.font = `600 ${fontSize}px "Inter", "Segoe UI", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const textX = (engravingPosX / 100) * size;
-    const textY = (engravingPosY / 100) * size;
+    
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
     ctx.shadowBlur = 6;
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-    ctx.fillText(text, textX, textY);
+    
+    // Split text by new lines to support multi-line engraving
+    const lines = text.split('\n');
+    const lineHeight = fontSize * 1.2;
+    const totalHeight = (lines.length - 1) * lineHeight;
+    
+    lines.forEach((line, index) => {
+      const yOffset = (index * lineHeight) - (totalHeight / 2);
+      ctx.fillText(line, 0, yOffset);
+    });
+    
     ctx.restore();
-  }, [engravingPosX, engravingPosY]);
+  }, [engravingPosX, engravingPosY, engravingRotation, engravingScale]);
 
   // Draw canvas with image cache
   const drawCanvas = useCallback((url: string, text: string) => {
@@ -224,14 +243,14 @@ export default function Produto() {
   // Trigger canvas redraw when image or debounced text changes
   useEffect(() => {
     drawCanvas(mainImage, debouncedEngravingText);
-  }, [mainImage, debouncedEngravingText, drawCanvas]);
+  }, [mainImage, debouncedEngravingText, engravingRotation, engravingScale, drawCanvas]);
 
   // Also redraw immediately during drag (position changes)
   useEffect(() => {
     if (isDragging) {
       drawCanvas(mainImage, engravingText);
     }
-  }, [engravingPosX, engravingPosY, isDragging]);
+  }, [engravingPosX, engravingPosY, isDragging, engravingRotation, engravingScale]);
 
   // Selection handler — receives the FULL variant object
   function handleSelectVariation(variant: ProductVariant) {
@@ -252,7 +271,14 @@ export default function Produto() {
   const isOnText = (clientX: number, clientY: number): boolean => {
     if (!engravingText.trim()) return false;
     const coords = getCanvasCoords(clientX, clientY);
-    return Math.abs(coords.x - engravingPosX) < 15 && Math.abs(coords.y - engravingPosY) < 5;
+    // Increase hit area based on scale
+    const hitWidth = 15 * engravingScale;
+    const hitHeight = 5 * engravingScale;
+    // For simplicity, we keep a rectangular hit area even if rotated
+    // but we expand it slightly if rotated to ensure user can still grab it
+    const padding = engravingRotation % 180 !== 0 ? 10 : 0;
+    return Math.abs(coords.x - engravingPosX) < (hitWidth + padding) && 
+           Math.abs(coords.y - engravingPosY) < (hitHeight + padding);
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -635,21 +661,90 @@ export default function Produto() {
             )}
 
             {/* Customization */}
-            <div className="space-y-2">
-              <Label htmlFor="customization" className="text-sm font-medium">
-                Personalização — gravação a laser incluída no preço
-              </Label>
-              <p className="text-[13px] text-muted-foreground mb-2">
-                Digite o nome, frase ou referência da arte. Para logotipos e pedidos corporativos, fale conosco pelo WhatsApp após adicionar ao carrinho ou solicite orçamento.
-              </p>
-              <Textarea
-                id="customization"
-                value={engravingText}
-                onChange={(e) => setEngravingText(e.target.value)}
-                placeholder="Digite o nome ou texto que deseja gravar..."
-                rows={3}
-                disabled={isOutOfStock}
-              />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="customization" className="text-sm font-medium">
+                  Personalização — gravação a laser incluída no preço
+                </Label>
+                <p className="text-[13px] text-muted-foreground mb-2">
+                  Digite o nome, frase ou referência da arte. Para logotipos e pedidos corporativos, fale conosco pelo WhatsApp após adicionar ao carrinho ou solicite orçamento.
+                </p>
+                <Textarea
+                  id="customization"
+                  value={engravingText}
+                  onChange={(e) => setEngravingText(e.target.value)}
+                  placeholder="Digite o nome ou texto que deseja gravar..."
+                  rows={3}
+                  disabled={isOutOfStock}
+                  className="resize-none"
+                />
+              </div>
+
+              {engravingText.trim().length > 0 && (
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/20 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium flex items-center gap-2">
+                        <Type className="h-3.5 w-3.5" />
+                        Tamanho do Texto
+                      </Label>
+                      <span className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded">
+                        {Math.round(engravingScale * 100)}%
+                      </span>
+                    </div>
+                    <Slider
+                      value={[engravingScale]}
+                      min={0.5}
+                      max={3}
+                      step={0.1}
+                      onValueChange={([val]) => setEngravingScale(val)}
+                      className="py-2"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium flex items-center gap-2">
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        Rotação (Horizontal / Vertical)
+                      </Label>
+                      <span className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded">
+                        {engravingRotation}°
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Slider
+                        value={[engravingRotation]}
+                        min={0}
+                        max={360}
+                        step={1}
+                        onValueChange={([val]) => setEngravingRotation(val)}
+                        className="flex-1 py-2"
+                      />
+                      <div className="flex gap-1">
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => setEngravingRotation(0)}
+                          title="Horizontal"
+                        >
+                          H
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => setEngravingRotation(90)}
+                          title="Vertical"
+                        >
+                          V
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Descrição Comercial */}
