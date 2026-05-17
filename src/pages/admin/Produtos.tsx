@@ -583,10 +583,6 @@ export default function AdminProdutos() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Variações de Cor</h3>
-                      <Button type="button" variant="outline" size="sm" onClick={addColorVariant}>
-                        <Plus className="mr-1 h-3 w-3" />
-                        Adicionar Cor
-                      </Button>
                     </div>
 
                     {colorVariants.length === 0 && (
