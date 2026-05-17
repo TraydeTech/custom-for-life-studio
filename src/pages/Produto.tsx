@@ -271,7 +271,14 @@ export default function Produto() {
   const isOnText = (clientX: number, clientY: number): boolean => {
     if (!engravingText.trim()) return false;
     const coords = getCanvasCoords(clientX, clientY);
-    return Math.abs(coords.x - engravingPosX) < 15 && Math.abs(coords.y - engravingPosY) < 5;
+    // Increase hit area based on scale
+    const hitWidth = 15 * engravingScale;
+    const hitHeight = 5 * engravingScale;
+    // For simplicity, we keep a rectangular hit area even if rotated
+    // but we expand it slightly if rotated to ensure user can still grab it
+    const padding = engravingRotation % 180 !== 0 ? 10 : 0;
+    return Math.abs(coords.x - engravingPosX) < (hitWidth + padding) && 
+           Math.abs(coords.y - engravingPosY) < (hitHeight + padding);
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
