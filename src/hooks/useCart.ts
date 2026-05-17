@@ -172,6 +172,7 @@ export function useCart() {
         const { error } = await supabase.from('cart_items').insert({
           user_id: user.id, product_id: productId, quantity,
           customization_notes: customizationNotes, product_color: productColor,
+          engraving_file_url: engravingFileUrl,
         } as any);
         if (error) throw error;
       }
