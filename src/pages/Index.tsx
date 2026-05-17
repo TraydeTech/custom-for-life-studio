@@ -156,7 +156,7 @@ const Index = () => {
               </div>
             </div>
             <div className="relative">
-              <div className="gradient-border p-1 rounded-2xl bg-white">
+              <div className="gradient-border p-1 rounded-2xl bg-[#FFFFFF]">
                 <img
                   src={heroImage}
                   alt="Brindes Custom For Life"
