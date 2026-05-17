@@ -11,7 +11,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { ArcGalleryHero } from "@/components/ui/arc-gallery-hero";
+import { ModernHero } from "@/components/home/ModernHero";
 import heroImage from "@/assets/hero-brindes-novo.png";
 import brindeCopo from "@/assets/brinde-copo.jpg";
 import brindeCamiseta from "@/assets/brinde-camiseta.jpg";
@@ -101,26 +101,24 @@ const Index = () => {
       />
       <Header />
 
-      {/* Hero Section - Arc Gallery */}
-      <ArcGalleryHero
-        images={produtosReais}
-        startAngle={25}
-        endAngle={155}
-        radiusLg={450}
-        radiusMd={340}
-        radiusSm={240}
-        cardSizeLg={110}
-        cardSizeMd={90}
-        cardSizeSm={70}
+      {/* Hero Section - Modern & Impactful */}
+      <ModernHero
         title={
           <>
             Brindes personalizados que <span className="gradient-text">valorizam sua marca</span>
             <br /> e encantam seus clientes
           </>
         }
-        subtitle="Criamos copos, garrafas, camisetas e kits corporativos personalizados com acabamento premium, ideais para empresas, eventos, equipes e presentes especiais."
-        ctaPrimary={{ label: "💬 Solicitar orçamento pelo WhatsApp", href: `https://wa.me/5511993439999?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar um orçamento de brindes personalizados.')}` }}
-        ctaSecondary={{ label: "🛍️ Ver catálogo de produtos", href: "/loja" }}
+        subtitle="Especialistas em brindes corporativos premium. Elevamos o posicionamento da sua empresa com produtos exclusivos e personalização de alta qualidade."
+        ctaPrimary={{ 
+          label: "Solicitar orçamento agora", 
+          href: `https://wa.me/5511993439999?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar um orçamento de brindes personalizados.')}` 
+        }}
+        ctaSecondary={{ 
+          label: "Ver catálogo completo", 
+          href: "/loja" 
+        }}
+        image={heroImage}
       />
 
       {/* Sobre Section */}
