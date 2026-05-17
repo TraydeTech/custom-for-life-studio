@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { MessageCircle, ShoppingBag, Star, CheckCircle2, Award, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logoImage from "@/assets/logo-custom-forlife.png";
 
 interface ModernHeroProps {
   title: React.ReactNode;
