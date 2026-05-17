@@ -37,6 +37,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Tables, Constants } from '@/integrations/supabase/types';
 import { OrderReceipt } from '@/components/admin/OrderReceipt';
+import { ExternalLink } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 type Order = Tables<'orders'>;
