@@ -72,7 +72,7 @@ export default function Carrinho() {
                         <img
                           src={item.engraving_preview_image}
                           alt={item.product?.name}
-                          className="w-24 h-24 object-contain rounded-lg cursor-pointer"
+                          className="w-24 h-24 object-contain rounded-lg cursor-pointer bg-white"
                           onClick={(e) => {
                             e.preventDefault();
                             setZoomedImage(item.engraving_preview_image);
@@ -82,7 +82,7 @@ export default function Carrinho() {
                         <img
                           src={item.product?.images?.[0] || '/placeholder.svg'}
                           alt={item.product?.name}
-                          className="w-24 h-24 object-contain rounded-lg"
+                          className="w-24 h-24 object-contain rounded-lg bg-white"
                         />
                       )}
                     </Link>
