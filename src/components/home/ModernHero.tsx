@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { MessageCircle, ShoppingBag, Star, CheckCircle2, Award, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logoImage from "@/assets/logo-custom-forlife.png";
 
 interface ModernHeroProps {
   title: React.ReactNode;
@@ -30,9 +31,12 @@ export const ModernHero: React.FC<ModernHeroProps> = ({
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
           {/* Text Content */}
           <div className="flex-1 text-center lg:text-left z-10">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-6 animate-fade-in">
-              <Star className="w-4 h-4 fill-primary" />
-              <span>Brindes Premium para Empresas e Eventos</span>
+            <div className="flex flex-col items-center lg:items-start mb-6 animate-fade-in">
+              <img src={logoImage} alt="Custom For Life" className="h-12 w-auto mb-4 opacity-90 hover:opacity-100 transition-opacity invert mix-blend-screen" />
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
+                <Star className="w-4 h-4 fill-primary" />
+                <span>Brindes Premium para Empresas e Eventos</span>
+              </div>
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-heading font-bold mb-6 leading-[1.1] animate-fade-in-up">
