@@ -396,7 +396,8 @@ export default function Checkout() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-        <main className="flex-1 container py-8 max-w-3xl">
+      <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+      <main className="flex-1 container py-8 max-w-3xl">
         <h1 className="text-3xl font-bold mb-2">Finalizar Compra</h1>
 
         {/* Step indicator */}
