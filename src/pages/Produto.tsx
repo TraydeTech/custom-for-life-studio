@@ -52,6 +52,7 @@ export default function Produto() {
   const [hasDragged, setHasDragged] = useState(false);
   const [engravingRotation, setEngravingRotation] = useState(0);
   const [engravingScale, setEngravingScale] = useState(1);
+  const [engravingColor, setEngravingColor] = useState<'white' | 'black'>('white');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const dragStartRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -173,11 +174,12 @@ export default function Produto() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    // Dynamic shadow based on text color
+    ctx.shadowColor = engravingColor === 'white' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.3)';
     ctx.shadowBlur = 6;
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.fillStyle = engravingColor === 'white' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)';
     
     // Split text by new lines to support multi-line engraving
     const lines = text.split('\n');
@@ -190,7 +192,7 @@ export default function Produto() {
     });
     
     ctx.restore();
-  }, [engravingPosX, engravingPosY, engravingRotation, engravingScale]);
+  }, [engravingPosX, engravingPosY, engravingRotation, engravingScale, engravingColor]);
 
   // Draw canvas with image cache
   const drawCanvas = useCallback((url: string, text: string) => {
@@ -243,14 +245,14 @@ export default function Produto() {
   // Trigger canvas redraw when image or debounced text changes
   useEffect(() => {
     drawCanvas(mainImage, debouncedEngravingText);
-  }, [mainImage, debouncedEngravingText, engravingRotation, engravingScale, drawCanvas]);
+  }, [mainImage, debouncedEngravingText, engravingRotation, engravingScale, engravingColor, drawCanvas]);
 
   // Also redraw immediately during drag (position changes)
   useEffect(() => {
     if (isDragging) {
       drawCanvas(mainImage, engravingText);
     }
-  }, [engravingPosX, engravingPosY, isDragging, engravingRotation, engravingScale]);
+  }, [engravingPosX, engravingPosY, isDragging, engravingRotation, engravingScale, engravingColor]);
 
   // Selection handler — receives the FULL variant object
   function handleSelectVariation(variant: ProductVariant) {
