@@ -52,6 +52,7 @@ export default function Produto() {
   const [hasDragged, setHasDragged] = useState(false);
   const [engravingRotation, setEngravingRotation] = useState(0);
   const [engravingScale, setEngravingScale] = useState(1);
+  const [engravingColor, setEngravingColor] = useState<'white' | 'black'>('white');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const dragStartRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -173,11 +174,12 @@ export default function Produto() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    // Dynamic shadow based on text color
+    ctx.shadowColor = engravingColor === 'white' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.3)';
     ctx.shadowBlur = 6;
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.fillStyle = engravingColor === 'white' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)';
     
     // Split text by new lines to support multi-line engraving
     const lines = text.split('\n');
@@ -190,7 +192,7 @@ export default function Produto() {
     });
     
     ctx.restore();
-  }, [engravingPosX, engravingPosY, engravingRotation, engravingScale]);
+  }, [engravingPosX, engravingPosY, engravingRotation, engravingScale, engravingColor]);
 
   // Draw canvas with image cache
   const drawCanvas = useCallback((url: string, text: string) => {
@@ -243,14 +245,14 @@ export default function Produto() {
   // Trigger canvas redraw when image or debounced text changes
   useEffect(() => {
     drawCanvas(mainImage, debouncedEngravingText);
-  }, [mainImage, debouncedEngravingText, engravingRotation, engravingScale, drawCanvas]);
+  }, [mainImage, debouncedEngravingText, engravingRotation, engravingScale, engravingColor, drawCanvas]);
 
   // Also redraw immediately during drag (position changes)
   useEffect(() => {
     if (isDragging) {
       drawCanvas(mainImage, engravingText);
     }
-  }, [engravingPosX, engravingPosY, isDragging, engravingRotation, engravingScale]);
+  }, [engravingPosX, engravingPosY, isDragging, engravingRotation, engravingScale, engravingColor]);
 
   // Selection handler — receives the FULL variant object
   function handleSelectVariation(variant: ProductVariant) {
@@ -741,6 +743,30 @@ export default function Produto() {
                           V
                         </Button>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-xs font-medium flex items-center gap-2">
+                      Cor da Gravação
+                    </Label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setEngravingColor('white')}
+                        className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${engravingColor === 'white' ? 'border-primary scale-110 shadow-md' : 'border-border hover:border-muted-foreground'}`}
+                        style={{ backgroundColor: '#FFFFFF' }}
+                        title="Branco (Ideal para produtos escuros)"
+                      >
+                        {engravingColor === 'white' && <CheckCircle className="h-4 w-4 text-primary" />}
+                      </button>
+                      <button
+                        onClick={() => setEngravingColor('black')}
+                        className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${engravingColor === 'black' ? 'border-primary scale-110 shadow-md' : 'border-border hover:border-muted-foreground'}`}
+                        style={{ backgroundColor: '#000000' }}
+                        title="Preto (Ideal para produtos brancos)"
+                      >
+                        {engravingColor === 'black' && <CheckCircle className="h-4 w-4 text-primary" />}
+                      </button>
                     </div>
                   </div>
                 </div>
