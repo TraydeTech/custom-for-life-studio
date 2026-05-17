@@ -27,7 +27,7 @@ export function Footer() {
                 <Instagram className="h-5 w-5" />
               </a>
               <a 
-                href={`https://wa.me/5511993439999?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar um orçamento de brindes personalizados.')}`} 
+                href={`https://wa.me/5547984492049?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar um orçamento de brindes personalizados.')}`}
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary transition-colors"
@@ -101,7 +101,7 @@ export function Footer() {
               </li>
               <li className="flex items-start gap-2 text-muted-foreground">
                 <MessageCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                <span>(11) 99343-9999</span>
+                <span>(47) 98449-2049</span>
               </li>
               <li className="flex items-start gap-2 text-muted-foreground">
                 <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
