@@ -263,6 +263,11 @@ export default function Checkout() {
   const handlePixPayment = async () => {
     setIsGeneratingPayment(true);
     try {
+      // Se for convidado, abre o modal de auth antes de criar o pedido
+      if (!user) {
+        setShowAuthModal(true);
+        return;
+      }
       const order = orderId ? { id: orderId } : await createOrder();
 
       const { data, error } = await supabase.functions.invoke('create-payment', {
