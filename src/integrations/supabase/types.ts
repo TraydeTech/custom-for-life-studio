@@ -158,6 +158,7 @@ export type Database = {
         Row: {
           created_at: string
           customization_notes: string | null
+          engraving_file_url: string | null
           engraving_position_x: number | null
           engraving_position_y: number | null
           engraving_preview_image: string | null
@@ -172,6 +173,7 @@ export type Database = {
         Insert: {
           created_at?: string
           customization_notes?: string | null
+          engraving_file_url?: string | null
           engraving_position_x?: number | null
           engraving_position_y?: number | null
           engraving_preview_image?: string | null
@@ -186,6 +188,7 @@ export type Database = {
         Update: {
           created_at?: string
           customization_notes?: string | null
+          engraving_file_url?: string | null
           engraving_position_x?: number | null
           engraving_position_y?: number | null
           engraving_preview_image?: string | null
@@ -250,6 +253,7 @@ export type Database = {
         Row: {
           created_at: string
           customization_notes: string | null
+          engraving_file_url: string | null
           engraving_position_x: number | null
           engraving_position_y: number | null
           engraving_preview_url: string | null
@@ -267,6 +271,7 @@ export type Database = {
         Insert: {
           created_at?: string
           customization_notes?: string | null
+          engraving_file_url?: string | null
           engraving_position_x?: number | null
           engraving_position_y?: number | null
           engraving_preview_url?: string | null
@@ -284,6 +289,7 @@ export type Database = {
         Update: {
           created_at?: string
           customization_notes?: string | null
+          engraving_file_url?: string | null
           engraving_position_x?: number | null
           engraving_position_y?: number | null
           engraving_preview_url?: string | null
