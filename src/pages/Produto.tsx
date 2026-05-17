@@ -387,11 +387,7 @@ export default function Produto() {
   const [pendingAddToCart, setPendingAddToCart] = useState(false);
 
   const handleAddToCart = () => {
-    if (!user) {
-      setPendingAddToCart(true);
-      setShowAuthModal(true);
-      return;
-    }
+    // We allow adding to cart without auth - the cart hook handles guest state
     doAddToCart();
   };
 
