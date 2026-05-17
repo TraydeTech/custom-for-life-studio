@@ -17,6 +17,7 @@ export interface CartItem {
   engraving_position_y: number | null;
   engraving_preview_image: string | null;
   product_color: string | null;
+  engraving_file_url: string | null;
   product: {
     id: string;
     name: string;
@@ -36,6 +37,7 @@ export interface AddToCartParams {
   engravingPositionY?: number;
   engravingPreviewImage?: string;
   productColor?: string;
+  engravingFileUrl?: string;
 }
 
 export function useCart() {
@@ -53,7 +55,7 @@ export function useCart() {
         .select(`
           id, product_id, quantity, customization_notes,
           engraving_text, engraving_position_x, engraving_position_y,
-          engraving_preview_image, product_color,
+          engraving_preview_image, product_color, engraving_file_url,
           product:products (id, name, slug, price, images, stock)
         `)
         .eq('user_id', user.id);
@@ -97,7 +99,7 @@ export function useCart() {
     mutationFn: async ({
       productId, quantity = 1, customizationNotes,
       engravingText, engravingPositionX, engravingPositionY,
-      engravingPreviewImage, productColor,
+      engravingPreviewImage, productColor, engravingFileUrl,
     }: AddToCartParams) => {
       // Validação de estoque — busca estoque atual e soma com o que já está no carrinho.
       const { data: stockProduct, error: stockErr } = await supabase
@@ -132,6 +134,7 @@ export function useCart() {
           engraving_position_y: engravingPositionY || null,
           engraving_preview_image: engravingPreviewImage || null,
           product_color: productColor || null,
+          engraving_file_url: engravingFileUrl || null,
         });
         return;
       }
@@ -145,6 +148,7 @@ export function useCart() {
           engraving_position_y: engravingPositionY,
           engraving_preview_image: engravingPreviewImage,
           product_color: productColor,
+          engraving_file_url: engravingFileUrl,
         } as any);
         if (error) throw error;
         return;
