@@ -10,8 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
-import { formatCurrency } from '@/lib/utils';
-import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2, CheckCircle, RotateCcw, Type, Upload, Paperclip } from 'lucide-react';
+import { formatCurrency, cn } from '@/lib/utils';
+import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2, CheckCircle, RotateCcw, Type, Upload, Paperclip, ShieldCheck, Zap, Heart } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -19,6 +19,9 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { ProductCard } from '@/components/shop/ProductCard';
 import { SEOMeta } from '@/components/SEOMeta';
 import { getInstallmentText } from '@/lib/installments';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from '@/components/ui/card';
 
 interface ProductVariant {
   id: string;
@@ -511,479 +514,403 @@ export default function Produto() {
           <span className="text-foreground">{product.name}</span>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
-          {/* Image Gallery */}
-          <div className="space-y-4 lg:col-span-3">
-            <div
-              className="relative aspect-square rounded-xl overflow-hidden"
-              style={{ backgroundColor: '#FFFFFF' }}
-            >
-              <canvas
-                ref={canvasRef}
-                onClick={handleCanvasClick}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-                className={`w-full h-full ${isDragging ? 'cursor-grabbing' : engravingText.trim() ? 'cursor-grab' : 'cursor-zoom-in'}`}
-                style={{ backgroundColor: '#FFFFFF', touchAction: 'none' }}
-                aria-label={product.name}
-              />
-              {showDragHint && (
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/70 text-white text-xs px-3 py-1.5 rounded-full pointer-events-none animate-pulse">
-                  <Hand className="h-3.5 w-3.5" />
-                  Arraste o texto na foto para escolher onde gravar
-                </div>
-              )}
-              {product.is_featured && (
-                <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
-                  Destaque
-                </Badge>
-              )}
-              {hasDiscount && (
-                <Badge variant="destructive" className="absolute top-3 right-3">
-                  -{discountPercentage}%
-                </Badge>
-              )}
-              {isOutOfStock && (
-                <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
-                  <Badge variant="secondary" className="text-lg px-4 py-2">Esgotado</Badge>
-                </div>
-              )}
-            </div>
-
-            {/* Fullscreen zoom modal */}
-            {isZoomed && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+          {/* Image Gallery Column */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="sticky top-24">
               <div
-                className="fixed inset-0 z-50 bg-[#FFFFFF] flex items-center justify-center cursor-zoom-out"
-                onClick={() => setIsZoomed(false)}
+                className="relative aspect-square rounded-2xl overflow-hidden shadow-sm border bg-white"
               >
-                <button
-                  className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 z-50"
-                  onClick={() => setIsZoomed(false)}
-                >
-                  <X className="h-8 w-8" />
-                </button>
-                <img
-                  src={mainImage}
-                  alt={product.name}
-                  className="max-w-[90vw] max-h-[90vh] object-contain"
+                <canvas
+                  ref={canvasRef}
+                  onClick={handleCanvasClick}
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  onPointerCancel={handlePointerUp}
+                  className={cn(
+                    "w-full h-full transition-opacity duration-300",
+                    isDragging ? 'cursor-grabbing' : engravingText.trim() ? 'cursor-grab' : 'cursor-zoom-in'
+                  )}
+                  style={{ touchAction: 'none' }}
+                  aria-label={product.name}
                 />
+                {showDragHint && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/80 backdrop-blur-sm text-white text-xs font-medium px-4 py-2 rounded-full pointer-events-none animate-pulse shadow-lg">
+                    <Hand className="h-3.5 w-3.5" />
+                    Arraste o texto para posicionar
+                  </div>
+                )}
+                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                  {product.is_featured && (
+                    <Badge className="bg-primary text-primary-foreground font-semibold px-3 py-1 shadow-sm">
+                      Destaque
+                    </Badge>
+                  )}
+                  {hasDiscount && (
+                    <Badge variant="destructive" className="font-bold px-3 py-1 shadow-sm">
+                      -{discountPercentage}%
+                    </Badge>
+                  )}
+                </div>
+                {isOutOfStock && (
+                  <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
+                    <Badge variant="secondary" className="text-xl px-6 py-3 font-bold shadow-xl border-2">Esgotado</Badge>
+                  </div>
+                )}
               </div>
-            )}
 
-            {/* Image thumbnails for current variant */}
-            {images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
+              {/* Thumbnails */}
+              <div className="mt-4 flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                 {images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImageIndex(idx)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all bg-[#FFFFFF] ${
+                    className={cn(
+                      "flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 bg-white shadow-sm",
                       idx === selectedImageIndex
-                        ? 'border-primary ring-2 ring-primary/20'
-                        : 'border-transparent hover:border-muted-foreground/30'
-                    }`}
+                        ? "border-primary ring-2 ring-primary/10 scale-105"
+                        : "border-transparent hover:border-muted-foreground/30 opacity-70 hover:opacity-100"
+                    )}
                   >
-                    <img src={img} alt="" className="w-full h-full object-contain" loading="lazy" width={80} height={80} />
+                    <img src={img} alt="" className="w-full h-full object-contain p-1" loading="lazy" />
                   </button>
                 ))}
               </div>
-            )}
 
-            {/* Color variant thumbnails */}
-            {hasVariants && variants.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2 pl-3 mt-6 pt-2">
-                {variants.map((v) => (
-                  <button
-                    key={v.id}
-                    onClick={() => handleSelectVariation(v)}
-                    className="flex-shrink-0 flex flex-col items-center gap-1 cursor-pointer group"
-                  >
-                    <div
-                      className={`w-[70px] h-[70px] rounded-lg overflow-hidden transition-all bg-[#FFFFFF] ${
-                        selected?.id === v.id
-                          ? 'border-2 scale-[1.08]'
-                          : 'border-[1.5px] border-white/15 group-hover:opacity-85'
-                      }`}
-                      style={selected?.id === v.id ? { borderColor: '#EF9F27' } : undefined}
-                    >
-                      <img
-                        src={v.main_image || '/placeholder.svg'}
-                        alt={v.color_name}
-                        className="w-full h-full object-contain"
-                        loading="lazy"
-                        width={70}
-                        height={70}
-                      />
-                    </div>
-                    <span
-                      className={`text-[11px] text-center leading-tight ${
-                        selected?.id === v.id ? 'font-medium' : 'text-white/70'
-                      }`}
-                      style={selected?.id === v.id ? { color: '#EF9F27' } : undefined}
-                    >
-                      {v.color_name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
+              {/* Variant selection for desktop (visual) */}
+              {hasVariants && variants.length > 1 && (
+                <div className="mt-8">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-primary" /> Opções de Cores
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {variants.map((v) => (
+                      <button
+                        key={v.id}
+                        onClick={() => handleSelectVariation(v)}
+                        className={cn(
+                          "group relative flex flex-col items-center gap-2 p-2 rounded-xl transition-all border-2",
+                          selected?.id === v.id 
+                            ? "border-primary bg-primary/5 shadow-sm" 
+                            : "border-transparent hover:bg-muted/50"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-16 h-16 rounded-lg overflow-hidden border transition-transform duration-200",
+                          selected?.id === v.id ? "scale-105" : "group-hover:scale-105"
+                        )}>
+                          <img src={v.main_image || '/placeholder.svg'} alt={v.color_name} className="w-full h-full object-contain p-1 bg-white" />
+                        </div>
+                        <span className={cn(
+                          "text-[11px] font-medium leading-tight max-w-[64px] text-center",
+                          selected?.id === v.id ? "text-primary" : "text-muted-foreground"
+                        )}>
+                          {v.color_name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Product Info */}
-          <div className="space-y-6">
-            {product.category && (
-              <Link
-                to={`/loja?categoria=${product.category.slug}`}
-                className="text-sm text-primary font-medium hover:underline"
-              >
-                {product.category.name}
-              </Link>
-            )}
-
-            <h1 className="text-3xl font-bold">{product.name}</h1>
-
-            {/* Price */}
-            <div className="space-y-1">
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-bold text-primary">
-                  {formatCurrency(product.price)}
-                </span>
-                {hasDiscount && (
-                  <span className="text-lg text-muted-foreground line-through">
-                    {formatCurrency(product.compare_price!)}
-                  </span>
-                )}
-              </div>
-              {getInstallmentText(product.price) && (
-                <p className="text-sm text-muted-foreground">
-                  ou <span className="font-semibold text-foreground">{getInstallmentText(product.price)}</span> no cartão
-                </p>
-              )}
-            </div>
-
-            {/* Color Selector */}
-            {hasVariants && (
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">
-                  Cor: <span className="text-primary">{selected?.color_name}</span>
-                </Label>
-                <div className="flex flex-wrap gap-2">
-                  {variants.map((v) => (
-                    <button
-                      key={v.id}
-                      onClick={() => handleSelectVariation(v)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
-                        selected?.id === v.id
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border hover:border-primary/50 text-foreground'
-                      }`}
-                    >
-                      {v.color_name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Description */}
-            {product.description && (
-              <div className="prose prose-sm max-w-none text-muted-foreground">
-                <p className="whitespace-pre-line">{product.description}</p>
-              </div>
-            )}
-
-            {/* Customization */}
+          {/* Product Details Column */}
+          <div className="lg:col-span-5 flex flex-col space-y-8">
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="customization" className="text-sm font-medium">
-                  Personalização — gravação a laser incluída no preço
-                </Label>
-                <p className="text-[13px] text-muted-foreground mb-2">
-                  Digite o nome, frase ou referência da arte. Para logotipos e pedidos corporativos, fale conosco pelo WhatsApp após adicionar ao carrinho ou solicite orçamento.
-                </p>
-                <Textarea
-                  id="customization"
-                  value={engravingText}
-                  onChange={(e) => setEngravingText(e.target.value)}
-                  placeholder="Digite o nome ou texto que deseja gravar..."
-                  rows={3}
-                  disabled={isOutOfStock}
-                  className="resize-none"
-                />
-              </div>
-
-              {engravingText.trim().length > 0 && (
-                <div className="space-y-4 p-4 border rounded-lg bg-muted/20 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs font-medium flex items-center gap-2">
-                        <Type className="h-3.5 w-3.5" />
-                        Tamanho do Texto
-                      </Label>
-                      <span className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded">
-                        {Math.round(engravingScale * 100)}%
-                      </span>
-                    </div>
-                    <Slider
-                      value={[engravingScale]}
-                      min={0.5}
-                      max={3}
-                      step={0.1}
-                      onValueChange={([val]) => setEngravingScale(val)}
-                      className="py-2"
-                    />
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs font-medium flex items-center gap-2">
-                        <RotateCcw className="h-3.5 w-3.5" />
-                        Rotação (Horizontal / Vertical)
-                      </Label>
-                      <span className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded">
-                        {engravingRotation}°
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <Slider
-                        value={[engravingRotation]}
-                        min={0}
-                        max={360}
-                        step={1}
-                        onValueChange={([val]) => setEngravingRotation(val)}
-                        className="flex-1 py-2"
-                      />
-                      <div className="flex gap-1">
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => setEngravingRotation(0)}
-                          title="Horizontal"
-                        >
-                          H
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => setEngravingRotation(90)}
-                          title="Vertical"
-                        >
-                          V
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
+              <div className="flex items-center justify-between">
+                {product.category && (
+                  <Badge variant="outline" className="text-primary border-primary/20 hover:bg-primary/5 transition-colors">
+                    <Link to={`/loja?categoria=${product.category.slug}`}>{product.category.name}</Link>
+                  </Badge>
+                )}
+                <div className="flex items-center gap-2">
+                   <Button variant="ghost" size="icon" className="rounded-full hover:text-red-500 hover:bg-red-50">
+                     <Heart className="h-5 w-5" />
+                   </Button>
                 </div>
-              )}
-
-              <div className="space-y-3 pt-2 border-t border-border/50">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Upload className="h-4 w-4" />
-                  Anexar logotipo ou referência (Opcional)
-                </Label>
-                <div className="flex items-center gap-3">
-                  <Input
-                    type="file"
-                    id="engraving-file"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) setEngravingFile(file);
-                    }}
-                    accept="image/*,.pdf,.svg,.eps,.ai"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full flex items-center gap-2 h-10 border-dashed hover:border-primary hover:bg-primary/5 transition-all"
-                    onClick={() => document.getElementById('engraving-file')?.click()}
-                  >
-                    {engravingFile ? (
-                      <CheckCircle className="h-4 w-4 text-primary" />
-                    ) : (
-                      <Paperclip className="h-4 w-4" />
+              </div>
+              
+              <h1 className="text-4xl font-bold tracking-tight text-foreground leading-tight">{product.name}</h1>
+              
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-3xl font-bold text-primary">{formatCurrency(product.price)}</span>
+                    {hasDiscount && (
+                      <span className="text-xl text-muted-foreground line-through opacity-70">{formatCurrency(product.compare_price!)}</span>
                     )}
-                    {engravingFile ? 'Arquivo Selecionado' : 'Selecionar Arquivo'}
-                  </Button>
-                </div>
-                {engravingFile && (
-                  <div className="flex items-center justify-between bg-muted/30 p-2 rounded-md animate-in fade-in zoom-in-95 duration-200">
-                    <span className="text-xs truncate max-w-[200px] font-medium text-muted-foreground">
-                      {engravingFile.name}
-                    </span>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6 text-destructive hover:bg-destructive/10"
-                      onClick={() => setEngravingFile(null)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
                   </div>
-                )}
-                <p className="text-[11px] text-muted-foreground italic">
-                  Formatos aceitos: Imagens, PDF, SVG, EPS, AI.
-                </p>
+                  {getInstallmentText(product.price) && (
+                    <p className="text-sm text-muted-foreground font-medium">
+                      Ou até <span className="text-foreground font-bold">{getInstallmentText(product.price)}</span> no cartão
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Descrição Comercial */}
-            {(product.name.toLowerCase().includes('copo') && product.name.includes('1200')) && (
-              <div className="space-y-4 py-4 border-y border-border/50">
-                <p className="text-muted-foreground leading-relaxed text-sm">
-                  O Copo 1200ml personalizado é ideal para quem quer unir praticidade, estilo e presença de marca no dia a dia. Com grande capacidade e visual moderno, ele é uma excelente opção para brindes corporativos, eventos, presentes personalizados e ações promocionais. A personalização com nome, frase ou marca torna cada peça única e reforça sua identidade em um produto útil, bonito e memorável.
-                </p>
-                <div className="grid grid-cols-1 gap-2">
-                  {[
-                    "Capacidade de 1200ml para acompanhar a rotina com mais praticidade.",
-                    "Personalização incluída para deixar o produto com a sua identidade.",
-                    "Ideal para empresas, eventos, presentes, equipes e ações promocionais.",
-                    "Um brinde útil, moderno e com alto potencial de lembrança da marca."
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-start gap-2 text-[13px] text-muted-foreground">
-                      <CheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
+            <Separator />
+
+            {/* Selection Options */}
+            <div className="space-y-6">
+              {/* Color Selector */}
+              {hasVariants && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Escolha a Cor</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {variants.map((v) => (
+                      <Button
+                        key={v.id}
+                        variant={selected?.id === v.id ? 'default' : 'outline'}
+                        onClick={() => handleSelectVariation(v)}
+                        className={cn(
+                          "h-10 px-4 font-semibold transition-all",
+                          selected?.id === v.id ? "shadow-md scale-105" : "hover:border-primary/50"
+                        )}
+                      >
+                        {v.color_name}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {(product.name.toLowerCase().includes('garrafa') && product.name.includes('1L')) && (
-              <div className="space-y-4 py-4 border-y border-border/50">
-                <p className="text-muted-foreground leading-relaxed text-sm">
-                  A Garrafa Térmica 1L personalizada combina acabamento premium, alta durabilidade e excelente desempenho térmico. Produzida em aço inoxidável com parede dupla e isolamento a vácuo, mantém bebidas frias por até 24 horas e quentes por até 8 horas.
-                </p>
-                <div className="grid grid-cols-1 gap-2">
-                  {[
-                    "Isolamento a vácuo de alto desempenho.",
-                    "Personalização premium incluída.",
-                    "Aço inoxidável de alta durabilidade.",
-                    "Ideal para kits corporativos sofisticados."
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-start gap-2 text-[13px] text-muted-foreground">
-                      <CheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Quantity + Add to cart */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4">
-              <div className="flex items-center border rounded-lg bg-card h-12 self-start sm:self-auto">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={isOutOfStock}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="w-12 text-center font-medium">{quantity}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setQuantity(Math.min(product.stock || 99, quantity + 1))}
-                  disabled={isOutOfStock}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <Button
-                size="lg"
-                className={`flex-1 h-12 transition-all ${addedToCart ? 'bg-[#1D9E75] hover:bg-[#1D9E75]' : ''}`}
-                onClick={handleAddToCart}
-                disabled={isOutOfStock || addToCart.isPending || addedToCart}
-              >
-                {addedToCart ? (
-                  <><CheckCircle className="mr-2 h-5 w-5" /> Adicionado!</>
-                ) : (
-                  <>
-                    <ShoppingCart className="mr-2 h-5 w-5" />
-                    {isOutOfStock ? 'Esgotado' : 'Adicionar ao Carrinho'}
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {/* Stock info */}
-            {!isOutOfStock && product.stock && product.stock <= 10 && (
-              <p className="text-sm text-secondary font-medium">
-                ⚡ Apenas {product.stock} unidades em estoque!
-              </p>
-            )}
-
-            {/* Calculador de Frete */}
-            <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-              <p className="text-sm font-medium flex items-center gap-2">
-                <Truck className="h-4 w-4 text-primary" />
-                Calcular Frete
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  value={cepInput}
-                  onChange={e => setCepInput(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                  placeholder="00000-000"
-                  maxLength={9}
-                  className="flex-1"
-                  onKeyDown={e => e.key === 'Enter' && handleCepLookup()}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCepLookup}
-                  disabled={fetchingCep || cepInput.length < 8}
-                >
-                  {fetchingCep ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Calcular'}
-                </Button>
-              </div>
-              {shippingResult && (
-                <p className="text-sm text-muted-foreground">{shippingResult}</p>
               )}
+
+              {/* Customization Section */}
+              <Card className="border-2 border-primary/10 overflow-hidden shadow-sm">
+                <div className="p-5 space-y-6">
+                  <div className="flex items-center gap-3 text-primary">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Type className="h-5 w-5" />
+                    </div>
+                    <h3 className="font-bold text-lg">Personalize sua Peça</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-end">
+                        <Label htmlFor="customization" className="text-sm font-semibold">Texto para gravação</Label>
+                        <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter bg-muted px-2 py-0.5 rounded">Gravação a Laser Grátis</span>
+                      </div>
+                      <Textarea
+                        id="customization"
+                        value={engravingText}
+                        onChange={(e) => setEngravingText(e.target.value)}
+                        placeholder="Nome, frase ou palavra..."
+                        className="min-h-[100px] border-2 focus-visible:ring-primary/20 resize-none rounded-xl"
+                        disabled={isOutOfStock}
+                      />
+                    </div>
+
+                    {engravingText.trim().length > 0 && (
+                      <div className="p-4 bg-muted/30 rounded-xl space-y-5 border animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase">
+                            <span className="flex items-center gap-2"><Type className="h-3.5 w-3.5" /> Tamanho</span>
+                            <span>{Math.round(engravingScale * 100)}%</span>
+                          </div>
+                          <Slider value={[engravingScale]} min={0.5} max={3} step={0.1} onValueChange={([val]) => setEngravingScale(val)} />
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase">
+                            <span className="flex items-center gap-2"><RotateCcw className="h-3.5 w-3.5" /> Orientação</span>
+                            <span>{engravingRotation}°</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Slider value={[engravingRotation]} min={0} max={360} step={1} onValueChange={([val]) => setEngravingRotation(val)} className="flex-1" />
+                            <div className="flex gap-1 shrink-0">
+                               <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setEngravingRotation(0)} title="Horizontal">H</Button>
+                               <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setEngravingRotation(90)} title="Vertical">V</Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label className="text-xs font-bold text-muted-foreground uppercase">Cor da Gravação</Label>
+                          <div className="flex gap-4">
+                            {[
+                              { id: 'white', color: '#FFFFFF', label: 'Branco' },
+                              { id: 'black', color: '#000000', label: 'Preto' }
+                            ].map((c) => (
+                              <button
+                                key={c.id}
+                                onClick={() => setEngravingColor(c.id as any)}
+                                className={cn(
+                                  "relative flex flex-col items-center gap-1.5 transition-all",
+                                  engravingColor === c.id ? "scale-110" : "opacity-60 hover:opacity-100"
+                                )}
+                              >
+                                <div className={cn(
+                                  "w-8 h-8 rounded-full border-2 shadow-sm flex items-center justify-center",
+                                  engravingColor === c.id ? "border-primary ring-2 ring-primary/20" : "border-border"
+                                )} style={{ backgroundColor: c.color }}>
+                                  {engravingColor === c.id && <CheckCircle className={cn("h-4 w-4", c.id === 'white' ? 'text-black' : 'text-white')} />}
+                                </div>
+                                <span className="text-[10px] font-bold">{c.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="pt-2">
+                       <input type="file" id="engraving-file" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setEngravingFile(file); }} accept="image/*,.pdf,.svg,.eps,.ai" />
+                       <Button
+                         variant="outline"
+                         className={cn(
+                           "w-full h-12 rounded-xl border-dashed border-2 hover:bg-primary/5 hover:border-primary transition-all flex items-center gap-3",
+                           engravingFile && "bg-green-50 border-green-500 hover:bg-green-50 hover:border-green-500"
+                         )}
+                         onClick={() => document.getElementById('engraving-file')?.click()}
+                       >
+                         {engravingFile ? <CheckCircle className="h-5 w-5 text-green-600" /> : <Paperclip className="h-5 w-5" />}
+                         <span className="font-semibold">{engravingFile ? "Arquivo Adicionado" : "Anexar logotipo ou arte"}</span>
+                       </Button>
+                       {engravingFile && (
+                         <div className="mt-2 flex items-center justify-between bg-green-50/50 p-2 rounded-lg border border-green-100">
+                           <span className="text-xs font-bold text-green-700 truncate max-w-[250px]">{engravingFile.name}</span>
+                           <Button variant="ghost" size="icon" className="h-6 w-6 text-green-700 hover:bg-green-100" onClick={() => setEngravingFile(null)}><X className="h-3 w-3" /></Button>
+                         </div>
+                       )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Quantity and CTA */}
+            <div className="space-y-4 sticky bottom-4 lg:relative lg:bottom-0 bg-white/80 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-0 p-4 lg:p-0 rounded-2xl shadow-lg lg:shadow-none border lg:border-0">
+               <div className="flex items-stretch gap-4">
+                  <div className="flex items-center bg-muted rounded-xl p-1 border shadow-inner">
+                    <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-10 w-10 rounded-lg" disabled={isOutOfStock}><Minus className="h-4 w-4" /></Button>
+                    <span className="w-10 text-center font-bold">{quantity}</span>
+                    <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.min(product.stock || 99, quantity + 1))} className="h-10 w-10 rounded-lg" disabled={isOutOfStock}><Plus className="h-4 w-4" /></Button>
+                  </div>
+                  <Button
+                    size="lg"
+                    className={cn(
+                      "flex-1 h-12 text-lg font-bold rounded-xl shadow-lg transition-all duration-300",
+                      addedToCart ? "bg-green-600 hover:bg-green-600 scale-105" : "bg-primary hover:shadow-primary/30"
+                    )}
+                    onClick={handleAddToCart}
+                    disabled={isOutOfStock || addToCart.isPending || addedToCart}
+                  >
+                    {addedToCart ? <><CheckCircle className="mr-2 h-5 w-5" /> Adicionado!</> : <><ShoppingCart className="mr-2 h-5 w-5" /> Comprar Agora</>}
+                  </Button>
+               </div>
+               
+               {/* Shipping Preview */}
+               <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground px-2">
+                 <div className="flex items-center gap-1.5"><Truck className="h-3.5 w-3.5" /> Entrega em todo Brasil</div>
+                 <div className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> Compra 100% Segura</div>
+               </div>
+            </div>
+
+            {/* Shipping Calculator */}
+            <div className="bg-muted/30 p-4 rounded-xl space-y-3 border">
+              <div className="flex items-center gap-2 text-sm font-bold"><Truck className="h-4 w-4 text-primary" /> Calcular prazo e frete</div>
+              <div className="flex gap-2">
+                <Input value={cepInput} onChange={e => setCepInput(e.target.value.replace(/\D/g, '').slice(0, 8))} placeholder="00000-000" className="bg-white rounded-lg h-10" />
+                <Button variant="secondary" onClick={handleCepLookup} disabled={fetchingCep || cepInput.length < 8} className="h-10 font-bold">{fetchingCep ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Calcular'}</Button>
+              </div>
+              {shippingResult && <p className="text-xs font-medium text-primary mt-1">{shippingResult}</p>}
             </div>
           </div>
         </div>
 
-        {/* Ficha Técnica */}
-        {product.category?.technical_sheet && Array.isArray(product.category.technical_sheet) && product.category.technical_sheet.length > 0 && (
-          <div className="mt-12 border-t pt-8">
-            <h2 className="text-2xl font-bold mb-6">📋 Ficha Técnica</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {(product.category.technical_sheet as { title: string; items: { label: string; value: string }[] }[]).map((section, sIdx) => (
-                <div key={sIdx} className="border rounded-lg p-4 bg-card">
-                  <h3 className="font-semibold text-primary mb-3">{section.title}</h3>
-                  <div className="space-y-2">
-                    {section.items.map((item, iIdx) => (
-                      <div key={iIdx} className="flex justify-between gap-4 text-sm">
-                        <span className="text-muted-foreground font-medium">{item.label}</span>
-                        <span className="text-right">
-                          {item.label.includes('mínima') ? 'consulte opções para pedidos unitários, empresas e eventos' : 
-                           item.label.includes('entrega') ? 'varia conforme quantidade e personalização; solicite previsão pelo WhatsApp' :
-                           item.label.includes('Garantia') ? 'contra defeitos de fabricação, conforme avaliação do pedido' :
-                           item.value}
-                        </span>
-                      </div>
-                    ))}
+        {/* Product Info Tabs */}
+        <div className="mt-20 border-t pt-12">
+           <Tabs defaultValue="description" className="w-full">
+              <TabsList className="w-full justify-start h-14 bg-transparent border-b rounded-none p-0 mb-8 gap-8">
+                <TabsTrigger value="description" className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full font-bold px-0 text-lg">Descrição</TabsTrigger>
+                {product.category?.technical_sheet && <TabsTrigger value="specs" className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full font-bold px-0 text-lg">Ficha Técnica</TabsTrigger>}
+              </TabsList>
+              <TabsContent value="description" className="mt-0">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
+                  <div className="md:col-span-7 space-y-8">
+                     {product.description && <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed whitespace-pre-line">{product.description}</div>}
+                     
+                     {/* Dynamic Marketing Content based on name */}
+                     {(product.name.toLowerCase().includes('copo') || product.name.toLowerCase().includes('garrafa')) && (
+                       <div className="bg-primary/5 p-8 rounded-3xl border border-primary/10 space-y-6">
+                         <h3 className="text-2xl font-bold text-foreground">Por que escolher nosso {(product.name.toLowerCase().includes('copo') ? 'Copo' : 'Garrafa')}?</h3>
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {[
+                              { title: "Durabilidade Premium", desc: "Aço inoxidável de alta resistência." },
+                              { title: "Térmica Eficiente", desc: "Mantém a temperatura por horas." },
+                              { title: "Laser de Precisão", desc: "Gravação permanente que não desbota." },
+                              { title: "Eco-Friendly", desc: "Reduza o uso de descartáveis com estilo." }
+                            ].map((item, i) => (
+                              <div key={i} className="space-y-1">
+                                <div className="flex items-center gap-2 font-bold text-primary"><CheckCircle className="h-4 w-4" /> {item.title}</div>
+                                <p className="text-sm text-muted-foreground">{item.desc}</p>
+                              </div>
+                            ))}
+                         </div>
+                       </div>
+                     )}
+                  </div>
+                  
+                  <div className="md:col-span-5 space-y-6">
+                    <Card className="p-6 bg-muted/20 border-none shadow-none rounded-3xl">
+                       <h4 className="font-bold text-lg mb-4">Dúvidas Frequentes</h4>
+                       <div className="space-y-4">
+                          {[
+                            { q: "A gravação sai com o tempo?", a: "Não, nossa gravação a laser é definitiva no metal." },
+                            { q: "Posso gravar logotipos?", a: "Sim, selecione a opção de anexo e nos envie sua arte." },
+                            { q: "Qual o prazo de produção?", a: "Geralmente entre 2 a 5 dias úteis após aprovação." }
+                          ].map((faq, i) => (
+                            <div key={i} className="space-y-1">
+                               <p className="font-bold text-sm">{faq.q}</p>
+                               <p className="text-sm text-muted-foreground">{faq.a}</p>
+                            </div>
+                          ))}
+                       </div>
+                    </Card>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </TabsContent>
+              
+              {product.category?.technical_sheet && (
+                <TabsContent value="specs" className="mt-0">
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {(product.category.technical_sheet as any[]).map((section, sIdx) => (
+                        <div key={sIdx} className="p-6 rounded-3xl border bg-card/50">
+                          <h3 className="font-bold text-primary mb-4 flex items-center gap-2">
+                             <span className="w-1.5 h-6 bg-primary rounded-full" />
+                             {section.title}
+                          </h3>
+                          <div className="space-y-3">
+                            {section.items.map((item: any, iIdx: number) => (
+                              <div key={iIdx} className="flex flex-col gap-0.5 border-b border-border/50 pb-2 last:border-0">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{item.label}</span>
+                                <span className="text-sm font-medium">
+                                  {item.label.includes('mínima') ? 'Consulte opções para pedidos unitários e empresas' : 
+                                   item.label.includes('entrega') ? 'Varia conforme quantidade e personalização' :
+                                   item.value}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                   </div>
+                </TabsContent>
+              )}
+           </Tabs>
+        </div>
 
-        {/* Produtos Relacionados */}
+        {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <div className="mt-12 border-t pt-8">
-            <h2 className="text-2xl font-bold mb-6">Você também pode gostar</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="mt-24">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl font-bold">Inspirados por este item</h2>
+              <Link to="/loja" className="text-primary font-bold hover:underline flex items-center gap-1">Ver tudo <ChevronRight className="h-4 w-4" /></Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {relatedProducts.map((rp) => (
                 <ProductCard key={rp.id} product={rp} />
               ))}
@@ -991,7 +918,7 @@ export default function Produto() {
           </div>
         )}
       </main>
-
+      
       <Footer />
 
       <AuthModal
