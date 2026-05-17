@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Eye, Package, Store, Globe, ChevronLeft, ChevronRight, CalendarIcon, X, Download, Printer } from 'lucide-react';
+import { Search, Eye, Package, Store, Globe, ChevronLeft, ChevronRight, CalendarIcon, X, Download, Printer, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -627,6 +627,19 @@ export default function AdminPedidos() {
                           {item.customization_notes && !(item as any).engraving_text && (
                             <div className="ml-[76px] text-sm text-muted-foreground">
                               Personalização: {item.customization_notes}
+                            </div>
+                          )}
+                          {(item as any).engraving_file_url && (
+                            <div className="ml-[76px] mt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs flex items-center gap-2"
+                                onClick={() => window.open((item as any).engraving_file_url, '_blank')}
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Ver Arquivo Anexo
+                              </Button>
                             </div>
                           )}
                         </div>

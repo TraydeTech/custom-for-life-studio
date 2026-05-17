@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
-import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2, CheckCircle, RotateCcw, Type } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2, CheckCircle, RotateCcw, Type, Upload, Paperclip } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -53,6 +53,8 @@ export default function Produto() {
   const [engravingRotation, setEngravingRotation] = useState(0);
   const [engravingScale, setEngravingScale] = useState(1);
   const [engravingColor, setEngravingColor] = useState<'white' | 'black'>('white');
+  const [engravingFile, setEngravingFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const dragStartRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -322,8 +324,36 @@ export default function Produto() {
   };
 
   // Perform the actual add-to-cart mutation
-  const doAddToCart = () => {
+  const doAddToCart = async () => {
     if (!product) return;
+    
+    let uploadedFileUrl = undefined;
+    if (engravingFile) {
+      setIsUploading(true);
+      try {
+        const fileExt = engravingFile.name.split('.').pop();
+        const fileName = `${user?.id || 'guest'}-${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+        const filePath = `${user?.id || 'anonymous'}/${fileName}`;
+
+        const { data, error } = await supabase.storage
+          .from('engravings')
+          .upload(filePath, engravingFile);
+
+        if (error) throw error;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('engravings')
+          .getPublicUrl(data.path);
+          
+        uploadedFileUrl = publicUrl;
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        // We continue even if upload fails, but you might want to show an error toast
+      } finally {
+        setIsUploading(false);
+      }
+    }
+
     const text = engravingText.trim() || undefined;
     let previewImage: string | undefined;
     if (text && canvasRef.current) {
@@ -339,9 +369,11 @@ export default function Produto() {
       engravingPositionY: text ? Math.round(engravingPosY * 100) / 100 : undefined,
       engravingPreviewImage: previewImage,
       productColor: selected?.color_name || undefined,
+      engravingFileUrl: uploadedFileUrl,
     }, {
       onSuccess: () => {
         setAddedToCart(true);
+        setEngravingFile(null);
         setTimeout(() => setAddedToCart(false), 2000);
       },
     });
@@ -746,31 +778,58 @@ export default function Produto() {
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <Label className="text-xs font-medium flex items-center gap-2">
-                      Cor da Gravação
-                    </Label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setEngravingColor('white')}
-                        className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${engravingColor === 'white' ? 'border-primary scale-110 shadow-md' : 'border-border hover:border-muted-foreground'}`}
-                        style={{ backgroundColor: '#FFFFFF' }}
-                        title="Branco (Ideal para produtos escuros)"
-                      >
-                        {engravingColor === 'white' && <CheckCircle className="h-4 w-4 text-primary" />}
-                      </button>
-                      <button
-                        onClick={() => setEngravingColor('black')}
-                        className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${engravingColor === 'black' ? 'border-primary scale-110 shadow-md' : 'border-border hover:border-muted-foreground'}`}
-                        style={{ backgroundColor: '#000000' }}
-                        title="Preto (Ideal para produtos brancos)"
-                      >
-                        {engravingColor === 'black' && <CheckCircle className="h-4 w-4 text-primary" />}
-                      </button>
-                    </div>
-                  </div>
                 </div>
               )}
+
+              <div className="space-y-3 pt-2 border-t border-border/50">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Anexar logotipo ou referência (Opcional)
+                </Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="file"
+                    id="engraving-file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setEngravingFile(file);
+                    }}
+                    accept="image/*,.pdf,.svg,.eps,.ai"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center gap-2 h-10 border-dashed hover:border-primary hover:bg-primary/5 transition-all"
+                    onClick={() => document.getElementById('engraving-file')?.click()}
+                  >
+                    {engravingFile ? (
+                      <CheckCircle className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Paperclip className="h-4 w-4" />
+                    )}
+                    {engravingFile ? 'Arquivo Selecionado' : 'Selecionar Arquivo'}
+                  </Button>
+                </div>
+                {engravingFile && (
+                  <div className="flex items-center justify-between bg-muted/30 p-2 rounded-md animate-in fade-in zoom-in-95 duration-200">
+                    <span className="text-xs truncate max-w-[200px] font-medium text-muted-foreground">
+                      {engravingFile.name}
+                    </span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 text-destructive hover:bg-destructive/10"
+                      onClick={() => setEngravingFile(null)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+                <p className="text-[11px] text-muted-foreground italic">
+                  Formatos aceitos: Imagens, PDF, SVG, EPS, AI.
+                </p>
+              </div>
             </div>
 
             {/* Descrição Comercial */}
