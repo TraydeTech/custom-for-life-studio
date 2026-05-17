@@ -21,6 +21,7 @@ import { SEOMeta } from '@/components/SEOMeta';
 import { getInstallmentText } from '@/lib/installments';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from '@/components/ui/card';
 
 interface ProductVariant {
   id: string;
