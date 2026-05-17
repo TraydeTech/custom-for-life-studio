@@ -156,11 +156,11 @@ const Index = () => {
               </div>
             </div>
             <div className="relative">
-              <div className="gradient-border p-1 rounded-2xl">
+              <div className="gradient-border p-1 rounded-2xl bg-[#FFFFFF]">
                 <img
                   src={heroImage}
                   alt="Brindes Custom For Life"
-                  className="rounded-xl w-full aspect-video object-cover"
+                  className="rounded-xl w-full aspect-video object-contain"
                 />
               </div>
               <div className="absolute -bottom-6 -right-6 bg-card border border-border rounded-lg p-4 shadow-xl">
@@ -266,7 +266,7 @@ const Index = () => {
             <CarouselContent className="-ml-2 md:-ml-4">
               {produtosReais.map((produto, index) => (
                 <CarouselItem key={index} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                  <div className="gradient-border overflow-hidden rounded-2xl bg-white">
+                  <div className="gradient-border overflow-hidden rounded-2xl bg-[#FFFFFF]">
                     <img
                       src={produto}
                       alt={`Produto personalizado ${index + 1}`}
@@ -303,7 +303,7 @@ const Index = () => {
                 key={index}
                 className="group gradient-border overflow-hidden cursor-pointer"
               >
-                <div className="relative aspect-square overflow-hidden bg-white">
+                <div className="relative aspect-square overflow-hidden bg-[#FFFFFF]">
                   <img
                     src={brinde.image}
                     alt={brinde.title}

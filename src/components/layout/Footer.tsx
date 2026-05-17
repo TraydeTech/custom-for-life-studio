@@ -10,7 +10,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo e Descrição */}
           <div className="space-y-4">
-            <div className="inline-block bg-white rounded-2xl p-4 shadow-sm border border-border/50">
+            <div className="inline-block bg-[#FFFFFF] rounded-2xl p-4 shadow-sm border border-border/50">
               <img src={logoImage} alt="Custom For Life" className="h-16 w-auto" />
             </div>
             <p className="text-sm text-muted-foreground">

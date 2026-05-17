@@ -623,7 +623,7 @@ export default function AdminProdutos() {
                           <div className="space-y-2">
                             <Label>Imagem Principal</Label>
                             {variant.main_image ? (
-                              <div className="relative w-32 h-32 rounded-lg overflow-hidden border bg-white">
+                              <div className="relative w-32 h-32 rounded-lg overflow-hidden border bg-[#FFFFFF]">
                                 <img src={variant.main_image} alt={variant.color_name} className="w-full h-full object-contain" />
                                 <Button
                                   type="button"
@@ -664,7 +664,7 @@ export default function AdminProdutos() {
                             <Label>Imagens Adicionais</Label>
                             <div className="flex flex-wrap gap-2">
                               {variant.additional_images.map((img, imgIdx) => (
-                                <div key={imgIdx} className="relative w-16 h-16 rounded-md overflow-hidden border bg-white">
+                                <div key={imgIdx} className="relative w-16 h-16 rounded-md overflow-hidden border bg-[#FFFFFF]">
                                   <img src={img} alt="" className="w-full h-full object-contain" />
                                   <Button
                                     type="button"
