@@ -137,7 +137,7 @@ export default function Loja() {
           <div className="mt-4">
             <Button asChild>
               <a 
-                href={`https://wa.me/5547984492049?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar uma ajuda para escolher brindes personalizados.')}`}
+                href={`https://wa.me/5547984492949?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar uma ajuda para escolher brindes personalizados.')}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
