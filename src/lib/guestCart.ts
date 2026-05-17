@@ -10,6 +10,7 @@ export interface GuestCartItem {
   engraving_position_y: number | null;
   engraving_preview_image: string | null;
   product_color: string | null;
+  engraving_file_url: string | null;
 }
 
 export function getGuestCart(): GuestCartItem[] {
