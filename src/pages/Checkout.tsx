@@ -322,6 +322,11 @@ export default function Checkout() {
 
     setIsSubmitting(true);
     try {
+      // Se for convidado, abre o modal de auth antes de criar o pedido
+      if (!user) {
+        setShowAuthModal(true);
+        return;
+      }
       const order = orderId ? { id: orderId } : await createOrder();
 
       // Tokenize via Iugu.js (loaded via script tag)
