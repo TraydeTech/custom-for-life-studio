@@ -286,6 +286,12 @@ export function Header() {
               // ⚠️ ATENÇÃO: ESTA SEÇÃO NÃO PODE SER ALTERADA ⚠️
               // Menu mobile para VISITANTES - Menu padrão obrigatório
               <>
+                <Link to="/carrinho" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start">
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Carrinho {cartCount > 0 && `(${cartCount})`}
+                  </Button>
+                </Link>
                 <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start">Entrar</Button>
                 </Link>
