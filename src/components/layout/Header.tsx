@@ -162,11 +162,20 @@ export function Header() {
               </Button>
             </div>
           ) : (
-            // ⚠️ ATENÇÃO: ESTA SEÇÃO NÃO PODE SER ALTERADA ⚠️
-            // UI para visitantes NÃO logados - Menu padrão obrigatório:
-            // Produtos | Entrar | Criar Conta | Ícone Admin
-            // Esta estrutura é FIXA e não pode ser modificada por nenhuma alteração futura
             <div className="flex items-center gap-2">
+              <Link to="/carrinho" className="relative mr-2">
+                <Button variant="ghost" size="icon" className="text-foreground hover:text-primary hover:bg-white/5">
+                  <ShoppingCart className="h-5 w-5" />
+                  {cartCount > 0 && (
+                    <span
+                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-xs flex items-center justify-center font-bold text-black"
+                      style={{ backgroundColor: '#EF9F27' }}
+                    >
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
               <Link to="/login">
                 <Button variant="ghost" className="text-foreground hover:text-primary hover:bg-white/5">Entrar</Button>
               </Link>
