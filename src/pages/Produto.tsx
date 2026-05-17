@@ -745,6 +745,30 @@ export default function Produto() {
                       </div>
                     </div>
                   </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-xs font-medium flex items-center gap-2">
+                      Cor da Gravação
+                    </Label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setEngravingColor('white')}
+                        className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${engravingColor === 'white' ? 'border-primary scale-110 shadow-md' : 'border-border hover:border-muted-foreground'}`}
+                        style={{ backgroundColor: '#FFFFFF' }}
+                        title="Branco (Ideal para produtos escuros)"
+                      >
+                        {engravingColor === 'white' && <CheckCircle className="h-4 w-4 text-primary" />}
+                      </button>
+                      <button
+                        onClick={() => setEngravingColor('black')}
+                        className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${engravingColor === 'black' ? 'border-primary scale-110 shadow-md' : 'border-border hover:border-muted-foreground'}`}
+                        style={{ backgroundColor: '#000000' }}
+                        title="Preto (Ideal para produtos brancos)"
+                      >
+                        {engravingColor === 'black' && <CheckCircle className="h-4 w-4 text-primary" />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
