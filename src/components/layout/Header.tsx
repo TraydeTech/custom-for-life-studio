@@ -58,8 +58,8 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md">
       <div className="container flex min-h-[90px] lg:min-h-[100px] items-center justify-between py-2 transition-all duration-300">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logoImage} alt="Custom For Life" className="h-[70px] lg:h-[85px] w-auto brightness-0 invert" />
+        <Link to="/" className="flex items-center gap-2 group transition-transform hover:scale-105 active:scale-95">
+          <img src={logoImage} alt="Custom For Life" className="h-[60px] md:h-[75px] lg:h-[85px] w-auto drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]" />
         </Link>
 
         {/* Search Bar - Desktop */}
