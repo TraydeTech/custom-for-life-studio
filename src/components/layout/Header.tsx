@@ -55,11 +55,11 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
-      <div className="container flex min-h-[120px] items-center justify-between py-3">
+    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md">
+      <div className="container flex min-h-[90px] lg:min-h-[100px] items-center justify-between py-2 transition-all duration-300">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <img src={logoImage} alt="Custom For Life" className="h-[100px] w-auto" />
+          <img src={logoImage} alt="Custom For Life" className="h-[70px] lg:h-[85px] w-auto brightness-0 invert" />
         </Link>
 
         {/* Search Bar - Desktop */}
@@ -77,16 +77,16 @@ export function Header() {
         </form>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-4 text-gray-800">
+        <nav className="hidden md:flex items-center gap-4 text-foreground">
           <Link to="/loja">
-            <Button variant="ghost" className="text-gray-800 hover:text-gray-900 hover:bg-gray-100">Produtos</Button>
+            <Button variant="ghost" className="text-foreground hover:text-primary hover:bg-white/5">Produtos</Button>
           </Link>
 
           {isCustomer ? (
             // UI para CLIENTES logados
             <>
               <Link to="/carrinho" className="relative">
-                <Button variant="ghost" size="icon" className="text-gray-800 hover:text-gray-900 hover:bg-gray-100">
+                <Button variant="ghost" size="icon" className="text-foreground hover:text-primary hover:bg-white/5">
                   <ShoppingCart className="h-5 w-5" />
                   {cartCount > 0 && (
                     <span
@@ -101,7 +101,7 @@ export function Header() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 text-gray-800 hover:text-gray-900 hover:bg-gray-100">
+                  <Button variant="ghost" className="flex items-center gap-2 text-foreground hover:text-primary hover:bg-white/5">
                     <User className="h-5 w-5" />
                     <span className="hidden lg:inline text-sm">Olá, {userName}</span>
                   </Button>
@@ -145,14 +145,14 @@ export function Header() {
             // UI para ADMIN logado - apenas acesso ao painel e sair
             <div className="flex items-center gap-2">
               <Link to="/admin">
-                <Button variant="ghost" size="icon" title="Painel Administrativo" className="text-gray-800 hover:text-gray-900 hover:bg-gray-100">
+                <Button variant="ghost" size="icon" title="Painel Administrativo" className="text-foreground hover:text-primary hover:bg-white/5">
                   <Settings className="h-5 w-5" />
                 </Button>
               </Link>
               <Button 
                 variant="ghost" 
                 size="icon"
-                className="text-gray-800 hover:text-gray-900 hover:bg-gray-100"
+                className="text-foreground hover:text-primary hover:bg-white/5"
                 onClick={handleSignOut}
                 title="Sair"
               >
@@ -166,14 +166,14 @@ export function Header() {
             // Esta estrutura é FIXA e não pode ser modificada por nenhuma alteração futura
             <div className="flex items-center gap-2">
               <Link to="/login">
-                <Button variant="ghost" className="text-gray-800 hover:text-gray-900 hover:bg-gray-100">Entrar</Button>
+                <Button variant="ghost" className="text-foreground hover:text-primary hover:bg-white/5">Entrar</Button>
               </Link>
               <Link to="/cadastro">
                 <Button variant="hero">Criar Conta</Button>
               </Link>
               <Link 
                 to="/admin/login" 
-                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-2 text-muted-foreground hover:text-primary transition-colors"
                 title="Acesso Administrativo"
               >
                 <Settings className="h-4 w-4" />
@@ -186,7 +186,7 @@ export function Header() {
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden text-gray-800 hover:bg-gray-100"
+          className="md:hidden text-foreground hover:bg-white/5"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
           {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -195,7 +195,7 @@ export function Header() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t bg-white p-4 space-y-4 text-gray-800">
+        <div className="md:hidden border-t border-border/50 bg-background p-4 space-y-4 text-foreground animate-fade-in">
           <form onSubmit={handleSearch}>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -211,7 +211,7 @@ export function Header() {
 
           <nav className="flex flex-col gap-2">
             <Link to="/loja" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start">Produtos</Button>
+              <Button variant="ghost" className="w-full justify-start text-foreground">Produtos</Button>
             </Link>
             
             {isCustomer ? (
