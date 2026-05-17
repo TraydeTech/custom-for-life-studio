@@ -637,7 +637,7 @@ export default function AdminPedidos() {
                                 className="h-8 text-xs flex items-center gap-2"
                                 onClick={() => window.open((item as any).engraving_file_url, '_blank')}
                               >
-                                <Paperclip className="h-3 w-3" />
+                                <ExternalLink className="h-3 w-3" />
                                 Ver Arquivo Anexo
                               </Button>
                             </div>
