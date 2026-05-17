@@ -373,11 +373,11 @@ export default function Produto() {
           <Skeleton className="h-4 w-64 mb-6" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div className="space-y-4">
-              <Skeleton className="aspect-square rounded-xl" />
+              <Skeleton className="aspect-square rounded-xl bg-white" />
               <div className="flex gap-2">
-                <Skeleton className="w-[70px] h-[70px] rounded-lg" />
-                <Skeleton className="w-[70px] h-[70px] rounded-lg" />
-                <Skeleton className="w-[70px] h-[70px] rounded-lg" />
+                 <Skeleton className="w-[70px] h-[70px] rounded-lg bg-white" />
+                 <Skeleton className="w-[70px] h-[70px] rounded-lg bg-white" />
+                 <Skeleton className="w-[70px] h-[70px] rounded-lg bg-white" />
               </div>
             </div>
             <div className="space-y-4">
