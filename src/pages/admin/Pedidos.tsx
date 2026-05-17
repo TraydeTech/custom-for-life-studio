@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Eye, Package, Store, Globe, ChevronLeft, ChevronRight, CalendarIcon, X, Download, Printer } from 'lucide-react';
+import { Search, Eye, Package, Store, Globe, ChevronLeft, ChevronRight, CalendarIcon, X, Download, Printer, Paperclip } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
