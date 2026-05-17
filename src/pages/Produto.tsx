@@ -373,11 +373,11 @@ export default function Produto() {
           <Skeleton className="h-4 w-64 mb-6" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div className="space-y-4">
-              <Skeleton className="aspect-square rounded-xl bg-white" />
+              <Skeleton className="aspect-square rounded-xl bg-[#FFFFFF]" />
               <div className="flex gap-2">
-                 <Skeleton className="w-[70px] h-[70px] rounded-lg bg-white" />
-                 <Skeleton className="w-[70px] h-[70px] rounded-lg bg-white" />
-                 <Skeleton className="w-[70px] h-[70px] rounded-lg bg-white" />
+                 <Skeleton className="w-[70px] h-[70px] rounded-lg bg-[#FFFFFF]" />
+                 <Skeleton className="w-[70px] h-[70px] rounded-lg bg-[#FFFFFF]" />
+                 <Skeleton className="w-[70px] h-[70px] rounded-lg bg-[#FFFFFF]" />
               </div>
             </div>
             <div className="space-y-4">
@@ -519,7 +519,7 @@ export default function Produto() {
                   <button
                     key={idx}
                     onClick={() => setSelectedImageIndex(idx)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all bg-[#FFFFFF] ${
                       idx === selectedImageIndex
                         ? 'border-primary ring-2 ring-primary/20'
                         : 'border-transparent hover:border-muted-foreground/30'
@@ -541,7 +541,7 @@ export default function Produto() {
                     className="flex-shrink-0 flex flex-col items-center gap-1 cursor-pointer group"
                   >
                     <div
-                      className={`w-[70px] h-[70px] rounded-lg overflow-hidden transition-all ${
+                      className={`w-[70px] h-[70px] rounded-lg overflow-hidden transition-all bg-[#FFFFFF] ${
                         selected?.id === v.id
                           ? 'border-2 scale-[1.08]'
                           : 'border-[1.5px] border-white/15 group-hover:opacity-85'
