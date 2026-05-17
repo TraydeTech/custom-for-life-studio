@@ -12,6 +12,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { ModernHero } from "@/components/home/ModernHero";
+import { FeatureStrip } from "@/components/home/FeatureStrip";
 import heroImage from "@/assets/hero-brindes-novo.png";
 import brindeCopo from "@/assets/brinde-copo.jpg";
 import brindeCamiseta from "@/assets/brinde-camiseta.jpg";
@@ -120,6 +121,8 @@ const Index = () => {
         }}
         image={heroImage}
       />
+
+      <FeatureStrip />
 
       {/* Sobre Section */}
       <section className="py-24 relative">
