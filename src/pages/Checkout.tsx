@@ -150,19 +150,8 @@ export default function Checkout() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [pixData]);
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 container py-12 text-center">
-          <p className="text-muted-foreground mb-4">Faça login para finalizar sua compra.</p>
-          <Button onClick={() => setShowAuthModal(true)}>Entrar</Button>
-        </main>
-        <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
-        <Footer />
-      </div>
-    );
-  }
+  // We allow visitors to proceed, but they'll see the auth modal if they aren't logged in when finishing
+  const isGuest = !user;
 
   if (cartItems.length === 0 && !orderId) {
     navigate('/carrinho');
