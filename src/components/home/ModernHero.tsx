@@ -32,7 +32,7 @@ export const ModernHero: React.FC<ModernHeroProps> = ({
           {/* Text Content */}
           <div className="flex-1 text-center lg:text-left z-10">
             <div className="flex flex-col items-center lg:items-start mb-6 animate-fade-in">
-              <div className="bg-white p-3 rounded-xl mb-6 shadow-sm inline-block">
+              <div className="bg-[#FFFFFF] p-3 rounded-xl mb-6 shadow-sm inline-block">
                 <img src={logoImage} alt="Custom For Life" className="h-10 w-auto" />
               </div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
@@ -84,7 +84,7 @@ export const ModernHero: React.FC<ModernHeroProps> = ({
 
           {/* Image Side */}
           <div className="flex-1 relative animate-fade-in" style={{ animationDelay: "0.3s" }}>
-            <div className="relative z-10 gradient-border p-1.5 rounded-[2.5rem] bg-background/50 backdrop-blur-sm shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-700 overflow-hidden group">
+            <div className="relative z-10 gradient-border p-1.5 rounded-[2.5rem] bg-white shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-700 overflow-hidden group">
               <img
                 src={image}
                 alt="Produtos Personalizados Premium"

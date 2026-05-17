@@ -156,11 +156,11 @@ const Index = () => {
               </div>
             </div>
             <div className="relative">
-              <div className="gradient-border p-1 rounded-2xl">
+              <div className="gradient-border p-1 rounded-2xl bg-white">
                 <img
                   src={heroImage}
                   alt="Brindes Custom For Life"
-                  className="rounded-xl w-full aspect-video object-cover"
+                  className="rounded-xl w-full aspect-video object-contain"
                 />
               </div>
               <div className="absolute -bottom-6 -right-6 bg-card border border-border rounded-lg p-4 shadow-xl">
