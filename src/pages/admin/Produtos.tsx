@@ -700,6 +700,10 @@ export default function AdminProdutos() {
                         )}
                       </div>
                     ))}
+                    <Button type="button" variant="outline" className="w-full" onClick={addColorVariant}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Adicionar Cor
+                    </Button>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-4 border-t">
