@@ -262,47 +262,35 @@ export default function AdminPedidos() {
                 )}
               </div>
               
-              <div className="p-6 bg-slate-50 border-t space-y-4">
-                <div className="flex flex-wrap gap-4 items-center justify-between">
-                  <div className="space-y-1">
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    {zoomedItem?.engraving_file_url && (
-                      <Button 
-                        size="sm"
-                        variant={zoomedImageType === 'original' ? 'default' : 'outline'}
-                        onClick={() => setZoomedImageType(zoomedImageType === 'preview' ? 'original' : 'preview')}
-                        className={`gap-2 font-semibold ${zoomedImageType === 'preview' ? 'border-primary text-primary hover:bg-primary hover:text-white' : ''}`}
-                      >
-                        <FileImage className="h-4 w-4" />
-                        {zoomedImageType === 'preview' ? 'Ver Arquivo Original' : 'Voltar para Prévia'}
-                      </Button>
-                    )}
-                    
+              <div className="p-4 bg-white border-t">
+                <div className="flex justify-center gap-2">
+                  {zoomedItem?.engraving_file_url && (
                     <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="gap-2 bg-white border-primary text-primary hover:bg-primary hover:text-white transition-all font-semibold"
-                      onClick={() => {
-                        const url = zoomedImageType === 'preview' 
-                          ? (zoomedItem?.engraving_preview_url || zoomedItem?.product_image) 
-                          : zoomedItem?.engraving_file_url;
-                        if (url) handleDownload(url, `arquivo-${zoomedItem?.id?.substring(0, 8) || 'item'}-${zoomedImageType}.png`);
-                      }}
+                      size="sm"
+                      variant={zoomedImageType === 'original' ? 'default' : 'outline'}
+                      onClick={() => setZoomedImageType(zoomedImageType === 'preview' ? 'original' : 'preview')}
+                      className={`gap-2 font-semibold ${zoomedImageType === 'preview' ? 'border-primary text-primary hover:bg-primary hover:text-white' : ''}`}
                     >
-                      <Download className="h-4 w-4" />
-                      Download {zoomedImageType === 'preview' ? 'Prévia' : 'Arquivo'}
+                      <FileImage className="h-4 w-4" />
+                      {zoomedImageType === 'preview' ? 'Ver Arquivo Original' : 'Voltar para Prévia'}
                     </Button>
-                  </div>
+                  )}
+                  
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="gap-2 bg-white border-primary text-primary hover:bg-primary hover:text-white transition-all font-semibold"
+                    onClick={() => {
+                      const url = zoomedImageType === 'preview' 
+                        ? (zoomedItem?.engraving_preview_url || zoomedItem?.product_image) 
+                        : zoomedItem?.engraving_file_url;
+                      if (url) handleDownload(url, `arquivo-${zoomedItem?.id?.substring(0, 8) || 'item'}-${zoomedImageType}.png`);
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
+                    Download {zoomedImageType === 'preview' ? 'Prévia' : 'Arquivo'}
+                  </Button>
                 </div>
-
-                {zoomedItem?.engraving_text && (
-                  <div className="p-4 bg-white rounded-xl border-2 border-primary/10 shadow-sm">
-                    <p className="text-[10px] text-primary uppercase font-black tracking-widest mb-1">Texto para Gravação</p>
-                    <p className="text-2xl font-black text-slate-900 leading-tight">"{zoomedItem.engraving_text}"</p>
-                  </div>
-                )}
               </div>
             </div>
           </DialogContent>
