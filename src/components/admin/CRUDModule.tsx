@@ -44,7 +44,7 @@ interface CRUDModuleProps<T> {
   onBeforeSave?: (data: any) => any;
   customActions?: (item: T) => React.ReactNode;
   hideAddButton?: boolean;
-  onItemClick?: (item: T) => void;
+  onItemClick?: (item: T) => Promise<any> | void;
   formClassName?: string;
   customForm?: (formData: any, setFormData: (data: any) => void) => React.ReactNode;
 }
