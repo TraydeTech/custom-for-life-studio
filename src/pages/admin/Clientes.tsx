@@ -217,18 +217,44 @@ export default function AdminClientes() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
+        <Dialog open={!!zoomedItem} onOpenChange={() => setZoomedItem(null)}>
           <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white">
             <DialogHeader className="p-4 border-b">
-              <DialogTitle>Visualização da Imagem</DialogTitle>
+              <DialogTitle>Visualização da Imagem e Detalhes da Gravação</DialogTitle>
             </DialogHeader>
-            <div className="flex items-center justify-center p-4 bg-white">
-              {zoomedImage && (
-                <img 
-                  src={zoomedImage} 
-                  alt="Zoom" 
-                  className="max-w-full max-h-[70vh] object-contain" 
-                />
+            <div className="p-6 bg-white space-y-4">
+              <div className="flex items-center justify-center bg-white border rounded-xl overflow-hidden">
+                {zoomedItem && (
+                  <img 
+                    src={zoomedItem.engraving_preview_url || zoomedItem.product_image || ''} 
+                    alt="Zoom" 
+                    className="max-w-full max-h-[60vh] object-contain" 
+                  />
+                )}
+              </div>
+              
+              {zoomedItem && (zoomedItem.engraving_text || zoomedItem.engraving_file_url) && (
+                <div className="p-4 bg-muted/30 rounded-lg border space-y-3 text-foreground">
+                  {zoomedItem.engraving_text && (
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Texto para Gravação:</p>
+                      <p className="text-lg font-bold text-primary">"{zoomedItem.engraving_text}"</p>
+                    </div>
+                  )}
+                  {zoomedItem.engraving_file_url && (
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Arquivo Original (Arte/Logo):</p>
+                      <a 
+                        href={zoomedItem.engraving_file_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline mt-1 font-medium"
+                      >
+                        <Eye className="h-4 w-4" /> Abrir arquivo original em alta resolução
+                      </a>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </DialogContent>
