@@ -59,6 +59,11 @@ export function CRUDModule<T extends { id: string }>({
   searchPlaceholder = "Buscar...",
   searchFields = [],
   onBeforeSave,
+  customActions,
+  hideAddButton = false,
+  onItemClick,
+  formClassName = "sm:max-w-[425px]",
+  customForm,
 }: CRUDModuleProps<T>) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
