@@ -326,14 +326,14 @@ function GestaoPedidosContent() {
                       )}
                       {item.engraving_file_url && (
                         <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/30 rounded">
-                          <p className="text-[10px] text-blue-500 uppercase font-bold">Imagem Anexada:</p>
+                          <p className="text-[10px] text-blue-500 uppercase font-bold">Arquivo Anexado (Logo/Arte):</p>
                           <a 
                             href={item.engraving_file_url} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-xs text-blue-400 hover:underline flex items-center gap-1 mt-1"
                           >
-                            <ImageIcon className="h-3 w-3" /> Visualizar Arquivo Original
+                            <ImageIcon className="h-3 w-3" /> Abrir Arquivo Original
                           </a>
                         </div>
                       )}

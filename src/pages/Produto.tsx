@@ -334,7 +334,8 @@ export default function Produto() {
   const doAddToCart = async () => {
     if (!product) return;
     
-    let uploadedFileUrl = undefined;
+    let uploadedFileUrl = null;
+    
     if (engravingFile) {
       setIsUploading(true);
       try {
@@ -343,19 +344,18 @@ export default function Produto() {
         const filePath = `${user?.id || 'anonymous'}/${fileName}`;
 
         const { data, error } = await supabase.storage
-          .from('engravings')
+          .from('product-images')
           .upload(filePath, engravingFile);
 
         if (error) throw error;
         
         const { data: { publicUrl } } = supabase.storage
-          .from('engravings')
+          .from('product-images')
           .getPublicUrl(data.path);
           
         uploadedFileUrl = publicUrl;
       } catch (error) {
         console.error('Error uploading file:', error);
-        // We continue even if upload fails, but you might want to show an error toast
       } finally {
         setIsUploading(false);
       }
@@ -376,7 +376,7 @@ export default function Produto() {
       engravingPositionY: text ? Math.round(engravingPosY * 100) / 100 : undefined,
       engravingPreviewImage: previewImage,
       productColor: selected?.color_name || undefined,
-      engravingFileUrl: uploadedFileUrl,
+      engravingFileUrl: uploadedFileUrl || undefined,
     }, {
       onSuccess: () => {
         setAddedToCart(true);
