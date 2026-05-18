@@ -5,7 +5,7 @@ import { ProtectedAdminRoute } from '@/components/admin/ProtectedAdminRoute';
 import { Tables, Constants } from '@/integrations/supabase/types';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { ShoppingBag, Eye, Printer, Globe, Store, Package } from 'lucide-react';
+import { ShoppingBag, Eye, Printer, Globe, Store, Package, Download, FileImage } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -40,6 +40,25 @@ export default function AdminPedidos() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [zoomedItem, setZoomedItem] = useState<OrderItem | null>(null);
+  const [zoomedImageType, setZoomedImageType] = useState<'preview' | 'original'>('preview');
+
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(url, '_blank');
+    }
+  };
   const queryClient = useQueryClient();
 
   const updateStatusMutation = useMutation({
@@ -151,22 +170,58 @@ export default function AdminPedidos() {
                   <h3 className="font-semibold flex items-center gap-2"><Package className="h-4 w-4" /> Itens</h3>
                   <div className="border rounded-lg divide-y">
                     {orderItems.map((item) => (
-                      <div key={item.id} className="p-3 flex gap-3">
-                        {item.product_image ? (
-                          <img 
-                            src={item.product_image} 
-                            className="w-12 h-12 object-contain bg-white rounded border cursor-pointer hover:opacity-80 transition-opacity" 
-                            onClick={() => setZoomedItem(item)}
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-white rounded border flex items-center justify-center"><Package className="h-6 w-6 text-muted-foreground" /></div>
-                        )}
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{item.product_name}</p>
-                          
-                          <p className="text-[10px] text-muted-foreground mt-1">{item.quantity}x {formatCurrency(Number(item.unit_price))}</p>
+                      <div key={item.id} className="p-3 flex gap-4 items-start bg-muted/20 rounded-lg mb-2">
+                        <div className="flex gap-2 shrink-0">
+                          {/* Produto/Prévia */}
+                          <div className="flex flex-col items-center gap-1">
+                            <div className="w-16 h-16 bg-white rounded border overflow-hidden">
+                              {item.engraving_preview_url || item.product_image ? (
+                                <img 
+                                  src={item.engraving_preview_url || item.product_image || ''} 
+                                  className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => {
+                                    setZoomedItem(item);
+                                    setZoomedImageType('preview');
+                                  }}
+                                  title="Ver Prévia"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-muted"><Package className="h-6 w-6 text-muted-foreground" /></div>
+                              )}
+                            </div>
+                            <span className="text-[9px] text-muted-foreground uppercase font-semibold">Produto</span>
+                          </div>
+
+                          {/* Arquivo do Cliente */}
+                          {item.engraving_file_url && (
+                            <div className="flex flex-col items-center gap-1">
+                              <div className="w-16 h-16 bg-white rounded border overflow-hidden relative group">
+                                <img 
+                                  src={item.engraving_file_url} 
+                                  className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => {
+                                    setZoomedItem(item);
+                                    setZoomedImageType('original');
+                                  }}
+                                  title="Ver Arquivo Original"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                  <Eye className="h-4 w-4 text-white" />
+                                </div>
+                              </div>
+                              <span className="text-[9px] text-muted-foreground uppercase font-semibold">Arquivo</span>
+                            </div>
+                          )}
                         </div>
-                        <p className="font-bold text-sm">{formatCurrency(Number(item.total_price))}</p>
+
+                        <div className="flex-1 min-w-0 pt-1">
+                          <p className="font-medium text-sm truncate">{item.product_name}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{item.quantity}x {formatCurrency(Number(item.unit_price))}</p>
+                          {item.engraving_text && (
+                            <p className="text-xs text-primary font-medium mt-1">Texto: "{item.engraving_text}"</p>
+                          )}
+                        </div>
+                        <p className="font-bold text-sm pt-1">{formatCurrency(Number(item.total_price))}</p>
                       </div>
                     ))}
                   </div>
@@ -188,44 +243,69 @@ export default function AdminPedidos() {
         </Dialog>
 
         <Dialog open={!!zoomedItem} onOpenChange={() => setZoomedItem(null)}>
-          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white">
-            <DialogHeader className="p-4 border-b">
-              <DialogTitle>Visualização da Imagem e Detalhes da Gravação</DialogTitle>
+          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white border-none shadow-2xl">
+            <DialogHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0">
+              <DialogTitle className="text-lg">
+                {zoomedImageType === 'preview' ? 'Prévia do Produto' : 'Arquivo Original do Cliente'}
+              </DialogTitle>
             </DialogHeader>
-            <div className="p-6 bg-white space-y-4">
-              <div className="flex items-center justify-center bg-white border rounded-xl overflow-hidden">
+            <div className="p-0 bg-white">
+              <div className="flex items-center justify-center bg-white min-h-[40vh] relative group">
                 {zoomedItem && (
                   <img 
-                    src={zoomedItem.engraving_preview_url || zoomedItem.product_image || ''} 
+                    src={zoomedImageType === 'preview' 
+                      ? (zoomedItem.engraving_preview_url || zoomedItem.product_image || '') 
+                      : (zoomedItem.engraving_file_url || '')} 
                     alt="Zoom" 
-                    className="max-w-full max-h-[60vh] object-contain" 
+                    className="max-w-full max-h-[70vh] object-contain transition-transform duration-300" 
                   />
                 )}
               </div>
               
-              {zoomedItem && (zoomedItem.engraving_text || zoomedItem.engraving_file_url) && (
-                <div className="p-4 bg-muted/30 rounded-lg border space-y-3 text-foreground">
-                  {zoomedItem.engraving_text && (
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Texto para Gravação:</p>
-                      <p className="text-lg font-bold text-primary">"{zoomedItem.engraving_text}"</p>
-                    </div>
-                  )}
-                  {zoomedItem.engraving_file_url && (
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Arquivo Original (Arte/Logo):</p>
-                      <a 
-                        href={zoomedItem.engraving_file_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline mt-1 font-medium"
+              <div className="p-6 bg-slate-50 border-t space-y-4">
+                <div className="flex flex-wrap gap-4 items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Item Selecionado</p>
+                    <p className="font-semibold text-slate-900">{zoomedItem?.product_name}</p>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    {zoomedItem?.engraving_file_url && (
+                      <Button 
+                        size="sm"
+                        variant={zoomedImageType === 'original' ? 'default' : 'outline'}
+                        onClick={() => setZoomedImageType(zoomedImageType === 'preview' ? 'original' : 'preview')}
+                        className="gap-2"
                       >
-                        <Globe className="h-4 w-4" /> Abrir arquivo original em alta resolução
-                      </a>
-                    </div>
-                  )}
+                        <FileImage className="h-4 w-4" />
+                        Alternar p/ {zoomedImageType === 'preview' ? 'Arquivo' : 'Prévia'}
+                      </Button>
+                    )}
+                    
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="gap-2 bg-white hover:bg-primary hover:text-white transition-all"
+                      onClick={() => {
+                        const url = zoomedImageType === 'preview' 
+                          ? (zoomedItem?.engraving_preview_url || zoomedItem?.product_image) 
+                          : zoomedItem?.engraving_file_url;
+                        if (url) handleDownload(url, `arquivo-${zoomedItem?.id?.substring(0, 8) || 'item'}-${zoomedImageType}.png`);
+                      }}
+                    >
+                      <Download className="h-4 w-4" />
+                      Download {zoomedImageType === 'preview' ? 'Prévia' : 'Original'}
+                    </Button>
+                  </div>
                 </div>
-              )}
+
+                {zoomedItem?.engraving_text && (
+                  <div className="p-4 bg-white rounded-xl border-2 border-primary/10 shadow-sm">
+                    <p className="text-[10px] text-primary uppercase font-black tracking-widest mb-1">Texto para Gravação</p>
+                    <p className="text-2xl font-black text-slate-900 leading-tight">"{zoomedItem.engraving_text}"</p>
+                  </div>
+                )}
+              </div>
             </div>
           </DialogContent>
         </Dialog>
