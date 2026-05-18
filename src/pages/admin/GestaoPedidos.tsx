@@ -319,9 +319,23 @@ function GestaoPedidosContent() {
                     <div className="flex-1">
                       <p className="font-medium">{item.product_name}{item.product_color && ` — ${item.product_color}`}</p>
                       {item.engraving_text && (
-                        <p className="text-sm mt-1 p-2 bg-amber-500/10 border border-amber-500/30 rounded text-amber-400 font-bold">
-                          Gravar exatamente: "{item.engraving_text}"
-                        </p>
+                        <div className="mt-2 p-2 bg-amber-500/10 border border-amber-500/30 rounded">
+                          <p className="text-[10px] text-amber-500 uppercase font-bold">Texto para Gravação:</p>
+                          <p className="text-sm text-amber-400 font-bold">"{item.engraving_text}"</p>
+                        </div>
+                      )}
+                      {item.engraving_file_url && (
+                        <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/30 rounded">
+                          <p className="text-[10px] text-blue-500 uppercase font-bold">Imagem Anexada:</p>
+                          <a 
+                            href={item.engraving_file_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-400 hover:underline flex items-center gap-1 mt-1"
+                          >
+                            <ImageIcon className="h-3 w-3" /> Visualizar Arquivo Original
+                          </a>
+                        </div>
                       )}
                       <p className="text-sm text-muted-foreground mt-1">
                         {item.quantity}x {formatCurrency(Number(item.unit_price))} = {formatCurrency(Number(item.total_price))}
