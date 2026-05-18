@@ -1,32 +1,7 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { CRUDModule } from '@/components/admin/CRUDModule';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ProtectedAdminRoute } from '@/components/admin/ProtectedAdminRoute';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, FileText, X } from 'lucide-react';
-import { toast } from 'sonner';
 import { Tables } from '@/integrations/supabase/types';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 type Category = Tables<'categories'>;
 
