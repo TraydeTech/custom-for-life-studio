@@ -38,6 +38,7 @@ interface ColorVariant {
   main_image: string;
   additional_images: string[];
   sort_order: number;
+  stock: number;
 }
 
 export default function AdminProdutos() {
@@ -176,6 +177,7 @@ export default function AdminProdutos() {
       main_image: '',
       additional_images: [],
       sort_order: prev.length,
+      stock: 0,
     }]);
   };
 
@@ -211,6 +213,7 @@ export default function AdminProdutos() {
             main_image: v.main_image || null,
             additional_images: v.additional_images,
             sort_order: i,
+            stock: v.stock || 0,
           }));
 
         if (variantsToInsert.length > 0) {
@@ -260,6 +263,7 @@ export default function AdminProdutos() {
             main_image: v.main_image || null,
             additional_images: v.additional_images,
             sort_order: i,
+            stock: v.stock || 0,
           }));
 
         if (variantsToInsert.length > 0) {
@@ -343,6 +347,7 @@ export default function AdminProdutos() {
         main_image: v.main_image || '',
         additional_images: v.additional_images || [],
         sort_order: v.sort_order || 0,
+        stock: v.stock || 0,
       })));
     } else {
       setColorVariants([]);
@@ -353,6 +358,8 @@ export default function AdminProdutos() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const totalStock = colorVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
+    
     const data = {
       name: formData.name,
       slug: formData.slug || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
@@ -361,7 +368,7 @@ export default function AdminProdutos() {
       price: parseFloat(formData.price),
       cost_price: formData.cost_price ? parseFloat(formData.cost_price) : 0,
       compare_price: formData.compare_price ? parseFloat(formData.compare_price) : null,
-      stock: formData.stock ? parseInt(formData.stock) : 0,
+      stock: totalStock,
       min_quantity: parseInt(formData.min_quantity) || 1,
       category_id: formData.category_id || null,
       supplier_id: formData.supplier_id || null,
@@ -537,12 +544,13 @@ export default function AdminProdutos() {
 
                     <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="stock">Quantidade em Estoque</Label>
+                        <Label htmlFor="stock">Total em Estoque (Soma das cores)</Label>
                         <Input
                           id="stock"
                           type="number"
-                          value={formData.stock}
-                          onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                          value={colorVariants.reduce((sum, v) => sum + (v.stock || 0), 0)}
+                          disabled
+                          className="bg-muted"
                         />
                       </div>
                       <div className="space-y-2">
@@ -603,15 +611,27 @@ export default function AdminProdutos() {
                           <X className="h-4 w-4" />
                         </Button>
 
-                        <div className="space-y-2">
-                          <Label>Nome da Cor *</Label>
-                          <Input
-                            value={variant.color_name}
-                            onChange={(e) => setColorVariants(prev =>
-                              prev.map((v, i) => i === index ? { ...v, color_name: e.target.value } : v)
-                            )}
-                            placeholder="Ex: Laranja, Azul Marinho, Rosa..."
-                          />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Nome da Cor *</Label>
+                            <Input
+                              value={variant.color_name}
+                              onChange={(e) => setColorVariants(prev =>
+                                prev.map((v, i) => i === index ? { ...v, color_name: e.target.value } : v)
+                              )}
+                              placeholder="Ex: Laranja, Azul Marinho, Rosa..."
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Estoque desta Cor</Label>
+                            <Input
+                              type="number"
+                              value={variant.stock}
+                              onChange={(e) => setColorVariants(prev =>
+                                prev.map((v, i) => i === index ? { ...v, stock: parseInt(e.target.value) || 0 } : v)
+                              )}
+                            />
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
