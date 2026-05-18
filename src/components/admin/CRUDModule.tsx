@@ -248,7 +248,7 @@ export function CRUDModule<T extends { id: string }>({
             <DialogTitle>{editingItem ? 'Editar' : 'Novo'} {title}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-            {customForm ? customForm(formData, setFormData) : formFields.map((field) => (
+            {customForm ? customForm(formData, setFormData) : formFields?.map((field) => (
               <div key={field.key} className="space-y-2">
                 <Label htmlFor={field.key}>{field.label} {field.required && '*'}</Label>
                 {field.type === 'textarea' ? (
