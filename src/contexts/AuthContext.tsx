@@ -162,7 +162,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAdmin(adminStatus);
       setAdminChecked(true);
       // Mover carrinho de visitante para o banco após login
-      syncGuestCartToSupabase(data.user.id).catch((err) => {
+      import('@/hooks/useCart').then(({ syncGuestCartToSupabase }) =>
+        syncGuestCartToSupabase(data.user.id)
+      ).catch((err) => {
         console.error('[Auth] Falha ao sincronizar carrinho de visitante:', err);
         toast.error('Não foi possível sincronizar todos os itens do carrinho. Confira seu carrinho antes de finalizar a compra.');
       });
