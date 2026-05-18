@@ -29,9 +29,26 @@ export default function PedidoConfirmado() {
               )}
             </div>
 
-            <p className="text-muted-foreground">
-              Seu pedido foi recebido. Se você já realizou o pagamento via PIX, entraremos em contato em breve pelo WhatsApp para confirmar e iniciar a produção da sua gravação personalizada. Caso contrário, realize o pagamento para que possamos prosseguir.
-            </p>
+            <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3">
+              <p className="text-sm font-semibold text-primary">Atenção ao Comprovante</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Para que seu pedido seja liberado e entre em produção, é <strong>obrigatório</strong> o envio do comprovante de pagamento via WhatsApp.
+              </p>
+              <Button 
+                variant="default" 
+                className="w-full bg-green-600 hover:bg-green-700 gap-2"
+                asChild
+              >
+                <a 
+                  href={`https://wa.me/5547984492949?text=${encodeURIComponent(`Olá! Acabei de realizar o pagamento do pedido ${orderNumber}. Segue o comprovante em anexo.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Enviar Comprovante via WhatsApp
+                </a>
+              </Button>
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
               <Link to="/loja">
