@@ -305,13 +305,13 @@ function GestaoPedidosContent() {
                 {orderItems.map((item: any) => (
                   <div key={item.id} className="flex gap-3 p-3 bg-muted/50 rounded-lg">
                     {item.engraving_preview_url ? (
-                      <img src={item.engraving_preview_url} alt="Prévia" className="w-20 h-20 object-contain rounded cursor-pointer border bg-white" onClick={() => setEngravingZoom(item.engraving_preview_url)} />
+                      <img src={item.engraving_preview_url} alt="Prévia" className="w-20 h-20 object-contain rounded cursor-pointer border bg-white" onClick={() => setEngravingZoomItem(item)} />
                     ) : item.product_image ? (
                       <img 
                         src={item.product_image} 
                         alt={item.product_name} 
                         className="w-20 h-20 object-contain rounded cursor-pointer border bg-white" 
-                        onClick={() => setEngravingZoom(item.product_image)}
+                        onClick={() => setEngravingZoomItem(item)}
                       />
                     ) : (
                       <div className="w-20 h-20 bg-white rounded border flex items-center justify-center"><Package className="h-6 w-6 text-muted-foreground" /></div>
