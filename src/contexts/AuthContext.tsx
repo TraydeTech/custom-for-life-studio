@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { syncGuestCartToSupabase } from '@/hooks/useCart';
+
 
 interface AuthContextType {
   user: User | null;
@@ -79,8 +79,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (isMounted) {
                 setIsAdmin(adminStatus);
                 setAdminChecked(true);
-                // Sincronizar carrinho se houver itens de visitante
-                syncGuestCartToSupabase(newSession.user.id).catch((err) => {
+                // Sincronizar carrinho se houver itens de visitante (import dinâmico evita ciclo)
+                import('@/hooks/useCart').then(({ syncGuestCartToSupabase }) =>
+                  syncGuestCartToSupabase(newSession.user.id)
+                ).catch((err) => {
                   console.error('[Auth] Falha ao sincronizar carrinho de visitante no listener:', err);
                 });
               }
@@ -160,7 +162,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAdmin(adminStatus);
       setAdminChecked(true);
       // Mover carrinho de visitante para o banco após login
-      syncGuestCartToSupabase(data.user.id).catch((err) => {
+      import('@/hooks/useCart').then(({ syncGuestCartToSupabase }) =>
+        syncGuestCartToSupabase(data.user.id)
+      ).catch((err) => {
         console.error('[Auth] Falha ao sincronizar carrinho de visitante:', err);
         toast.error('Não foi possível sincronizar todos os itens do carrinho. Confira seu carrinho antes de finalizar a compra.');
       });
