@@ -18,7 +18,7 @@ type Order = Tables<'orders'>;
 
 interface CustomerDetails extends Profile {
   addresses: Address[];
-  orders: Order[];
+  orders: (Order & { items: Tables<'order_items'>[] })[];
 }
 
 export default function AdminClientes() {
