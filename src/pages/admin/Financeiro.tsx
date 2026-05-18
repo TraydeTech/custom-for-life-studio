@@ -451,8 +451,17 @@ function FinanceiroContent() {
                 <h4 className="font-semibold flex items-center gap-2"><Package className="h-4 w-4" />Produtos</h4>
                 {orderDetails.order_items.map((item: any) => (
                   <div key={item.id} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
-                    <div className="w-16 h-16 bg-background rounded-lg overflow-hidden flex-shrink-0">
-                      {item.product_image ? <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Package className="h-6 w-6" /></div>}
+                    <div className="w-16 h-16 bg-white rounded-lg overflow-hidden flex-shrink-0 border">
+                      {item.product_image ? (
+                        <img 
+                          src={item.product_image} 
+                          alt={item.product_name} 
+                          className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" 
+                          onClick={() => setZoomedImage(item.product_image)}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Package className="h-6 w-6" /></div>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0"><p className="font-medium truncate">{item.product_name}</p><p className="text-sm text-muted-foreground">{item.quantity}x {formatCurrency(Number(item.unit_price))}</p></div>
                     <div className="text-right"><p className="font-semibold text-primary">{formatCurrency(Number(item.total_price))}</p></div>
