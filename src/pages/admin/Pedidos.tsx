@@ -185,6 +185,23 @@ export default function AdminPedidos() {
             )}
           </DialogContent>
         </Dialog>
+
+        <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
+          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white">
+            <DialogHeader className="p-4 border-b">
+              <DialogTitle>Visualização da Imagem</DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-center p-4 bg-white">
+              {zoomedImage && (
+                <img 
+                  src={zoomedImage} 
+                  alt="Zoom" 
+                  className="max-w-full max-h-[70vh] object-contain" 
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </AdminLayout>
     </ProtectedAdminRoute>
   );
