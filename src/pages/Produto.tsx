@@ -338,24 +338,25 @@ export default function Produto() {
     if (engravingFile || engravingText.trim().length > 0) {
       setIsUploading(true);
       try {
-        const fileExt = engravingFile.name.split('.').pop();
-        const fileName = `${user?.id || 'guest'}-${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-        const filePath = `${user?.id || 'anonymous'}/${fileName}`;
+        if (engravingFile) {
+          const fileExt = engravingFile.name.split('.').pop();
+          const fileName = `${user?.id || 'guest'}-${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+          const filePath = `${user?.id || 'anonymous'}/${fileName}`;
 
-        const { data, error } = await supabase.storage
-          .from('engravings')
-          .upload(filePath, engravingFile);
+          const { data, error } = await supabase.storage
+            .from('engravings')
+            .upload(filePath, engravingFile);
 
-        if (error) throw error;
-        
-        const { data: { publicUrl } } = supabase.storage
-          .from('engravings')
-          .getPublicUrl(data.path);
+          if (error) throw error;
           
-        uploadedFileUrl = publicUrl;
+          const { data: { publicUrl } } = supabase.storage
+            .from('engravings')
+            .getPublicUrl(data.path);
+            
+          uploadedFileUrl = publicUrl;
+        }
       } catch (error) {
         console.error('Error uploading file:', error);
-        // We continue even if upload fails, but you might want to show an error toast
       } finally {
         setIsUploading(false);
       }
