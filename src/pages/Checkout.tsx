@@ -207,6 +207,47 @@ export default function Checkout() {
   };
 
   const createOrder = async () => {
+    // 1. Atualizar CRM (Perfil)
+    if (user) {
+      await supabase.from('profiles').upsert({
+        user_id: user.id,
+        full_name: customer.name,
+        phone: customer.phone,
+        cpf: unmaskCPF(customer.cpf),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+
+      // 2. Salvar/Atualizar Endereço no CRM
+      const addressPayload = {
+        user_id: user.id,
+        zip_code: address.zip_code,
+        street: address.street,
+        number: address.number,
+        complement: address.complement,
+        neighborhood: address.neighborhood,
+        city: address.city,
+        state: address.state,
+        is_default: selectedAddressId === 'new' && userAddresses.length === 0,
+      };
+
+      if (selectedAddressId !== 'new') {
+        await supabase.from('addresses').update(addressPayload).eq('id', selectedAddressId);
+      } else {
+        // Verifica se este endereço já existe para evitar duplicatas básicas
+        const { data: existingAddr } = await supabase
+          .from('addresses')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('zip_code', address.zip_code)
+          .eq('number', address.number)
+          .maybeSingle();
+        
+        if (!existingAddr) {
+          await supabase.from('addresses').insert(addressPayload);
+        }
+      }
+    }
+
     const shippingAddress = {
       name: customer.name, phone: customer.phone,
       street: address.street, number: address.number,
@@ -214,9 +255,6 @@ export default function Checkout() {
       city: address.city, state: address.state, zip_code: address.zip_code,
     };
 
-    // order_number é gerado automaticamente pelo trigger BEFORE INSERT
-    // (public.generate_order_number). Enviamos placeholder apenas para
-    // satisfazer NOT NULL — o banco sobrescreve com o número definitivo.
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
