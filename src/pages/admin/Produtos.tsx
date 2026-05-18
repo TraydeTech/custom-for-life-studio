@@ -31,6 +31,7 @@ interface ColorVariant {
 
 export default function AdminProdutos() {
   const [uploadingVariant, setUploadingVariant] = useState<number | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
