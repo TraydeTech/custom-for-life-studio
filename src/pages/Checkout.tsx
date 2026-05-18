@@ -32,6 +32,7 @@ interface CustomerData {
 }
 
 interface AddressData {
+  id?: string;
   zip_code: string;
   street: string;
   number: string;
