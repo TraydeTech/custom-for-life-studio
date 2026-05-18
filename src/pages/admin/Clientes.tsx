@@ -180,7 +180,7 @@ export default function AdminClientes() {
                                     <img 
                                       src={item.engraving_preview_url || item.product_image || ''} 
                                       className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity"
-                                      onClick={() => setZoomedImage(item.engraving_preview_url || item.product_image)}
+                                      onClick={() => setZoomedItem(item)}
                                     />
                                   ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-muted"><Package className="h-6 w-6 text-muted-foreground" /></div>
