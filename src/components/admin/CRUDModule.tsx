@@ -243,7 +243,7 @@ export function CRUDModule<T extends { id: string }>({
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className={formClassName}>
           <DialogHeader>
             <DialogTitle>{editingItem ? 'Editar' : 'Novo'} {title}</DialogTitle>
           </DialogHeader>
