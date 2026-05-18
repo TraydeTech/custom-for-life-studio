@@ -30,6 +30,7 @@ interface ProductVariant {
   main_image: string | null;
   additional_images: string[];
   sort_order: number;
+  stock: number;
 }
 
 export default function Produto() {
@@ -114,7 +115,9 @@ export default function Produto() {
   // Set initial selected variant
   useEffect(() => {
     if (variants.length > 0 && !selected) {
-      setSelected(variants[0]);
+      // Prefer selecting a variant that is in stock
+      const inStockVariant = variants.find(v => (v.stock || 0) > 0) || variants[0];
+      setSelected(inStockVariant);
     }
   }, [variants]);
 
@@ -478,7 +481,7 @@ export default function Produto() {
   const discountPercentage = hasDiscount
     ? Math.round((1 - product.price / product.compare_price!) * 100)
     : 0;
-  const isOutOfStock = (product.stock ?? 0) <= 0;
+  const isOutOfStock = selected ? (selected.stock || 0) <= 0 : (product.stock ?? 0) <= 0;
   const hasVariants = variants.length > 0;
   const showDragHint = engravingText.trim().length > 0 && !hasDragged;
 
@@ -589,7 +592,8 @@ export default function Produto() {
                           "group relative flex flex-col items-center gap-2 p-2 rounded-xl transition-all border-2",
                           selected?.id === v.id 
                             ? "border-primary bg-primary/5 shadow-sm" 
-                            : "border-transparent hover:bg-muted/50"
+                            : "border-transparent hover:bg-muted/50",
+                          (v.stock || 0) <= 0 && "opacity-50 grayscale"
                         )}
                       >
                         <div className={cn(
@@ -603,6 +607,7 @@ export default function Produto() {
                           selected?.id === v.id ? "text-primary" : "text-muted-foreground"
                         )}>
                           {v.color_name}
+                          {(v.stock || 0) <= 0 && <span className="block text-[9px] text-destructive">Esgotado</span>}
                         </span>
                       </button>
                     ))}
@@ -662,11 +667,15 @@ export default function Produto() {
                         variant={selected?.id === v.id ? 'default' : 'outline'}
                         onClick={() => handleSelectVariation(v)}
                         className={cn(
-                          "h-10 px-4 font-semibold transition-all",
-                          selected?.id === v.id ? "shadow-md scale-105" : "hover:border-primary/50"
+                          "h-10 px-4 font-semibold transition-all relative overflow-hidden",
+                          selected?.id === v.id ? "shadow-md scale-105" : "hover:border-primary/50",
+                          (v.stock || 0) <= 0 && "opacity-60"
                         )}
                       >
                         {v.color_name}
+                        {(v.stock || 0) <= 0 && (
+                          <span className="absolute -top-1 -right-1 text-[8px] bg-destructive text-white px-1 font-bold">OUT</span>
+                        )}
                       </Button>
                     ))}
                   </div>
@@ -783,7 +792,7 @@ export default function Produto() {
                   <div className="flex items-center bg-muted rounded-xl p-1 border shadow-inner">
                     <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-10 w-10 rounded-lg" disabled={isOutOfStock}><Minus className="h-4 w-4" /></Button>
                     <span className="w-10 text-center font-bold">{quantity}</span>
-                    <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.min(product.stock || 99, quantity + 1))} className="h-10 w-10 rounded-lg" disabled={isOutOfStock}><Plus className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.min(selected?.stock || product.stock || 99, quantity + 1))} className="h-10 w-10 rounded-lg" disabled={isOutOfStock}><Plus className="h-4 w-4" /></Button>
                   </div>
                   <Button
                     size="lg"
