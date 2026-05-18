@@ -58,7 +58,7 @@ export default function AdminProdutos() {
     cost_price: '',
     compare_price: '',
     stock: '',
-    min_quantity: '1',
+    min_quantity: '',
     category_id: '',
     supplier_id: '',
     is_active: true,
@@ -177,7 +177,7 @@ export default function AdminProdutos() {
       main_image: '',
       additional_images: [],
       sort_order: prev.length,
-      stock: 0,
+      stock: '' as any,
     }]);
   };
 
@@ -308,7 +308,7 @@ export default function AdminProdutos() {
     setFormData({
       name: '', slug: '', description: '', short_description: '',
       price: '', cost_price: '', compare_price: '', stock: '',
-      min_quantity: '1', category_id: '', supplier_id: '',
+      min_quantity: '', category_id: '', supplier_id: '',
       is_active: true, is_featured: false,
     });
     setEditingProduct(null);
@@ -347,7 +347,7 @@ export default function AdminProdutos() {
         main_image: v.main_image || '',
         additional_images: v.additional_images || [],
         sort_order: v.sort_order || 0,
-        stock: v.stock || 0,
+        stock: v.stock || '' as any,
       })));
     } else {
       setColorVariants([]);
@@ -515,7 +515,7 @@ export default function AdminProdutos() {
                           step="0.01"
                           value={formData.cost_price}
                           onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                          placeholder="0,00"
+                          placeholder=""
                         />
                       </div>
                       <div className="space-y-2">
@@ -628,7 +628,7 @@ export default function AdminProdutos() {
                               type="number"
                               value={variant.stock}
                               onChange={(e) => setColorVariants(prev =>
-                                prev.map((v, i) => i === index ? { ...v, stock: parseInt(e.target.value) || 0 } : v)
+                                prev.map((v, i) => i === index ? { ...v, stock: e.target.value === '' ? '' as any : parseInt(e.target.value) || 0 } : v)
                               )}
                             />
                           </div>
