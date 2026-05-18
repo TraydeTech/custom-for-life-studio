@@ -917,6 +917,20 @@ export default function Produto() {
         defaultTab="login"
         onSuccess={handleAuthSuccess}
       />
+      <Dialog open={isZoomed} onOpenChange={setIsZoomed}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle>Visualização do Produto</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4 bg-white">
+            <img 
+              src={selected?.main_image || product.images?.[selectedImageIndex] || product.images?.[0]} 
+              alt={product.name} 
+              className="max-w-full max-h-[80vh] object-contain" 
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
