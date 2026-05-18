@@ -56,7 +56,7 @@ export default function Produto() {
   const [hasDragged, setHasDragged] = useState(false);
   const [engravingRotation, setEngravingRotation] = useState(0);
   const [engravingScale, setEngravingScale] = useState(1);
-  const [engravingColor, setEngravingColor] = useState<'white' | 'black'>('white');
+  const [engravingColor, setEngravingColor] = useState<'lightgray'>('lightgray');
   const [engravingFile, setEngravingFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -183,11 +183,11 @@ export default function Produto() {
     ctx.textBaseline = 'middle';
     
     // Dynamic shadow based on text color
-    ctx.shadowColor = engravingColor === 'white' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.3)';
-    ctx.shadowBlur = 6;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = 4;
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
-    ctx.fillStyle = engravingColor === 'white' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)';
+    ctx.fillStyle = '#E5E7EB'; // Cinza claro (Gray 200)
     
     // Split text by new lines to support multi-line engraving
     const lines = text.split('\n');
@@ -735,27 +735,12 @@ export default function Produto() {
                         <div className="space-y-3">
                           <Label className="text-xs font-bold text-muted-foreground uppercase">Cor da Gravação</Label>
                           <div className="flex gap-4">
-                            {[
-                              { id: 'white', color: '#FFFFFF', label: 'Branco' },
-                              { id: 'black', color: '#000000', label: 'Preto' }
-                            ].map((c) => (
-                              <button
-                                key={c.id}
-                                onClick={() => setEngravingColor(c.id as any)}
-                                className={cn(
-                                  "relative flex flex-col items-center gap-1.5 transition-all",
-                                  engravingColor === c.id ? "scale-110" : "opacity-60 hover:opacity-100"
-                                )}
-                              >
-                                <div className={cn(
-                                  "w-8 h-8 rounded-full border-2 shadow-sm flex items-center justify-center",
-                                  engravingColor === c.id ? "border-primary ring-2 ring-primary/20" : "border-border"
-                                )} style={{ backgroundColor: c.color }}>
-                                  {engravingColor === c.id && <CheckCircle className={cn("h-4 w-4", c.id === 'white' ? 'text-black' : 'text-white')} />}
-                                </div>
-                                <span className="text-[10px] font-bold">{c.label}</span>
-                              </button>
-                            ))}
+                            <div className="flex flex-col items-center gap-1.5 transition-all">
+                              <div className="w-8 h-8 rounded-full border-2 shadow-sm flex items-center justify-center border-primary ring-2 ring-primary/20" style={{ backgroundColor: '#E5E7EB' }}>
+                                <CheckCircle className="h-4 w-4 text-gray-600" />
+                              </div>
+                              <span className="text-[10px] font-bold">Cinza Claro (Padrão)</span>
+                            </div>
                           </div>
                         </div>
                       </div>
