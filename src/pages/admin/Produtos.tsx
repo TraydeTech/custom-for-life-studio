@@ -30,7 +30,6 @@ interface ColorVariant {
 }
 
 export default function AdminProdutos() {
-  const [colorVariants, setColorVariants] = useState<ColorVariant[]>([]);
   const [uploadingVariant, setUploadingVariant] = useState<number | null>(null);
 
   const { data: categories = [] } = useQuery({
@@ -49,6 +48,18 @@ export default function AdminProdutos() {
     if (error) throw error;
     const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);
     return data.publicUrl;
+  };
+
+  const handleMainImageUpload = async (variantIndex: number, file: File, variants: ColorVariant[], setVariants: (v: ColorVariant[]) => void) => {
+    setUploadingVariant(variantIndex);
+    try {
+      const url = await uploadImage(file);
+      const updated = variants.map((v, i) => i === variantIndex ? { ...v, main_image: url } : v);
+      setVariants(updated);
+    } catch (error: any) {
+      toast.error('Erro ao fazer upload: ' + error.message);
+    }
+    setUploadingVariant(null);
   };
 
   return (
