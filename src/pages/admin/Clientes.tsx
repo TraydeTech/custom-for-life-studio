@@ -160,14 +160,52 @@ export default function AdminClientes() {
                   ) : (
                     <div className="border rounded-lg divide-y">
                       {selectedCustomer.orders.map((order) => (
-                        <div key={order.id} className="p-3 flex items-center justify-between">
-                          <div>
-                            <p className="font-mono text-sm font-bold">{order.order_number}</p>
-                            <p className="text-xs text-muted-foreground">{format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>
+                        <div key={order.id} className="p-4 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-mono text-sm font-bold">{order.order_number}</p>
+                              <p className="text-xs text-muted-foreground">{format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-primary">{formatCurrency(Number(order.total))}</p>
+                              <Badge variant="secondary" className="text-[10px] h-4">{order.status}</Badge>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold text-primary">{formatCurrency(Number(order.total))}</p>
-                            <Badge variant="secondary" className="text-[10px] h-4">{order.status}</Badge>
+
+                          <div className="space-y-2 pl-4 border-l-2 border-primary/20">
+                            {order.items.map((item) => (
+                              <div key={item.id} className="flex gap-3 text-sm items-start">
+                                <div className="w-12 h-12 bg-white rounded border overflow-hidden flex-shrink-0">
+                                  {item.engraving_preview_url || item.product_image ? (
+                                    <img 
+                                      src={item.engraving_preview_url || item.product_image || ''} 
+                                      className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                                      onClick={() => setZoomedImage(item.engraving_preview_url || item.product_image)}
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-muted"><Package className="h-6 w-6 text-muted-foreground" /></div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">{item.product_name}</p>
+                                  {item.engraving_text && (
+                                    <p className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded w-fit mt-0.5">
+                                      Gravação: <strong>"{item.engraving_text}"</strong>
+                                    </p>
+                                  )}
+                                  {item.engraving_file_url && (
+                                    <a 
+                                      href={item.engraving_file_url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-[10px] text-blue-600 flex items-center gap-1 hover:underline mt-0.5"
+                                    >
+                                      <Eye className="h-2.5 w-2.5" /> Ver Imagem Original
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       ))}
