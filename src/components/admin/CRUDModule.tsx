@@ -69,7 +69,7 @@ export function CRUDModule<T extends { id: string }>({
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as T[];
+      return (data as unknown) as T[];
     },
   });
 
