@@ -54,7 +54,7 @@ function GestaoPedidosContent() {
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [trackingCode, setTrackingCode] = useState('');
-  const [engravingZoom, setEngravingZoom] = useState<string | null>(null);
+  const [engravingZoomItem, setEngravingZoomItem] = useState<any>(null);
 
   // Fetch orders with realtime
   const { data: orders = [], isLoading } = useQuery({
