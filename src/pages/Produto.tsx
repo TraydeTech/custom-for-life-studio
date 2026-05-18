@@ -335,26 +335,25 @@ export default function Produto() {
     if (!product) return;
     
     let uploadedFileUrl = null;
-    if (engravingFile || engravingText.trim().length > 0) {
+    
+    if (engravingFile) {
       setIsUploading(true);
       try {
-        if (engravingFile) {
-          const fileExt = engravingFile.name.split('.').pop();
-          const fileName = `${user?.id || 'guest'}-${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-          const filePath = `${user?.id || 'anonymous'}/${fileName}`;
+        const fileExt = engravingFile.name.split('.').pop();
+        const fileName = `${user?.id || 'guest'}-${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+        const filePath = `${user?.id || 'anonymous'}/${fileName}`;
 
-          const { data, error } = await supabase.storage
-            .from('engravings')
-            .upload(filePath, engravingFile);
+        const { data, error } = await supabase.storage
+          .from('engravings')
+          .upload(filePath, engravingFile);
 
-          if (error) throw error;
+        if (error) throw error;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('engravings')
+          .getPublicUrl(data.path);
           
-          const { data: { publicUrl } } = supabase.storage
-            .from('engravings')
-            .getPublicUrl(data.path);
-            
-          uploadedFileUrl = publicUrl;
-        }
+        uploadedFileUrl = publicUrl;
       } catch (error) {
         console.error('Error uploading file:', error);
       } finally {
