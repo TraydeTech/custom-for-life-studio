@@ -517,11 +517,6 @@ export default function Checkout() {
                         <div className="bg-white p-4 rounded-lg inline-block">
                           <QRCodeSVG value={pixData.qrCodeText} size={192} />
                         </div>
-                        <div className="flex items-center gap-2 justify-center">
-                          <Clock className="h-4 w-4 text-amber-500" />
-                          <span className="text-amber-500 font-mono font-bold">{formatTime(pixTimer)}</span>
-                          <span className="text-xs text-muted-foreground">para expirar</span>
-                        </div>
                         <div className="bg-muted p-3 rounded-lg">
                           <p className="text-xs text-muted-foreground mb-2">Código PIX copia e cola:</p>
                           <div className="flex gap-2">
@@ -529,46 +524,45 @@ export default function Checkout() {
                             <Button variant="outline" size="icon" onClick={copyPixCode}><Copy className="h-4 w-4" /></Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 justify-center text-primary">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="text-sm">Aguardando confirmação do pagamento PIX...</span>
+                        <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 flex gap-3 text-left">
+                          <CheckCircle className="h-5 w-5 text-primary shrink-0" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-bold text-primary">PIX Gerado!</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              Após realizar o pagamento, clique no botão abaixo para concluir seu pedido. Entraremos em contato para confirmar a produção.
+                            </p>
+                          </div>
                         </div>
+                        <Button 
+                          className="w-full h-12 text-lg font-bold bg-green-600 hover:bg-green-700" 
+                          onClick={handleFinishOrder}
+                        >
+                          Já realizei o pagamento
+                        </Button>
                       </div>
                     )}
                   </TabsContent>
 
                   {/* Credit Card Tab */}
                   <TabsContent value="credit" className="space-y-4 pt-4">
-                    <CardForm
-                      cardNumber={cardNumber} setCardNumber={setCardNumber}
-                      cardName={cardName} setCardName={setCardName}
-                      cardExpiry={cardExpiry} setCardExpiry={setCardExpiry}
-                      cardCvv={cardCvv} setCardCvv={setCardCvv}
-                      formatCardNumber={formatCardNumber} formatExpiry={formatExpiry}
-                      isCredit
-                      installments={installments} setInstallments={setInstallments}
-                      installmentOptions={installmentOptions}
-                      isSubmitting={isSubmitting}
-                      onSubmit={() => handleCardPayment('credit_card')}
-                      total={cartTotal}
-                    />
+                    <div className="bg-muted/50 p-8 rounded-xl border border-dashed text-center space-y-2">
+                      <CreditCard className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                      <h3 className="font-bold text-muted-foreground">Pagamento via Cartão indisponível</h3>
+                      <p className="text-sm text-muted-foreground">
+                        No momento aceitamos apenas PIX. Pagamentos via cartão de crédito estarão disponíveis em breve.
+                      </p>
+                    </div>
                   </TabsContent>
 
                   {/* Debit Card Tab */}
                   <TabsContent value="debit" className="space-y-4 pt-4">
-                    <CardForm
-                      cardNumber={cardNumber} setCardNumber={setCardNumber}
-                      cardName={cardName} setCardName={setCardName}
-                      cardExpiry={cardExpiry} setCardExpiry={setCardExpiry}
-                      cardCvv={cardCvv} setCardCvv={setCardCvv}
-                      formatCardNumber={formatCardNumber} formatExpiry={formatExpiry}
-                      isCredit={false}
-                      installments={installments} setInstallments={setInstallments}
-                      installmentOptions={installmentOptions}
-                      isSubmitting={isSubmitting}
-                      onSubmit={() => handleCardPayment('debit_card')}
-                      total={cartTotal}
-                    />
+                    <div className="bg-muted/50 p-8 rounded-xl border border-dashed text-center space-y-2">
+                      <Banknote className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                      <h3 className="font-bold text-muted-foreground">Pagamento via Débito indisponível</h3>
+                      <p className="text-sm text-muted-foreground">
+                        No momento aceitamos apenas PIX. Pagamentos via cartão de débito estarão disponíveis em breve.
+                      </p>
+                    </div>
                   </TabsContent>
                 </Tabs>
 
