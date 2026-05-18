@@ -142,7 +142,7 @@ export function CRUDModule<T extends { id: string }>({
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingItem) {
       updateMutation.mutate({ id: editingItem.id, data: formData });
