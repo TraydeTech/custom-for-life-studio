@@ -454,7 +454,7 @@ function GestaoPedidosContent() {
                   <Button 
                     size="sm" 
                     variant="outline"
-                    className="gap-2 bg-white hover:bg-primary hover:text-white transition-all"
+                    className="gap-2 bg-white border-primary text-primary hover:bg-primary hover:text-white transition-all font-semibold"
                     onClick={() => {
                       const url = zoomedImageType === 'preview' 
                         ? (engravingZoomItem?.engraving_preview_url || engravingZoomItem?.product_image) 

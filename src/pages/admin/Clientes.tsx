@@ -299,7 +299,7 @@ export default function AdminClientes() {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      className="gap-2 bg-white hover:bg-primary hover:text-white transition-all"
+                      className="gap-2 bg-white border-primary text-primary hover:bg-primary hover:text-white transition-all font-semibold"
                       onClick={() => {
                         const url = zoomedImageType === 'preview' 
                           ? (zoomedItem?.engraving_preview_url || zoomedItem?.product_image) 
