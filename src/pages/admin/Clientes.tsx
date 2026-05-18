@@ -5,7 +5,7 @@ import { ProtectedAdminRoute } from '@/components/admin/ProtectedAdminRoute';
 import { Tables } from '@/integrations/supabase/types';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { User, MapPin, ShoppingBag, Mail, Phone, Eye } from 'lucide-react';
+import { User, MapPin, ShoppingBag, Mail, Phone, Eye, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -18,12 +18,13 @@ type Order = Tables<'orders'>;
 
 interface CustomerDetails extends Profile {
   addresses: Address[];
-  orders: Order[];
+  orders: (Order & { items: Tables<'order_items'>[] })[];
 }
 
 export default function AdminClientes() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDetails | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   const handleViewDetails = async (profile: Profile) => {
     const [addrRes, ordersRes] = await Promise.all([
@@ -31,10 +32,18 @@ export default function AdminClientes() {
       supabase.from('orders').select('*').eq('user_id', profile.user_id).order('created_at', { ascending: false }),
     ]);
 
+    const orders = ordersRes.data || [];
+    const ordersWithItems = await Promise.all(
+      orders.map(async (order) => {
+        const { data: items } = await supabase.from('order_items').select('*').eq('order_id', order.id);
+        return { ...order, items: items || [] };
+      })
+    );
+
     setSelectedCustomer({
       ...profile,
       addresses: addrRes.data || [],
-      orders: ordersRes.data || [],
+      orders: ordersWithItems,
     });
     setIsDetailsOpen(true);
   };
@@ -151,14 +160,52 @@ export default function AdminClientes() {
                   ) : (
                     <div className="border rounded-lg divide-y">
                       {selectedCustomer.orders.map((order) => (
-                        <div key={order.id} className="p-3 flex items-center justify-between">
-                          <div>
-                            <p className="font-mono text-sm font-bold">{order.order_number}</p>
-                            <p className="text-xs text-muted-foreground">{format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>
+                        <div key={order.id} className="p-4 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-mono text-sm font-bold">{order.order_number}</p>
+                              <p className="text-xs text-muted-foreground">{format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-primary">{formatCurrency(Number(order.total))}</p>
+                              <Badge variant="secondary" className="text-[10px] h-4">{order.status}</Badge>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold text-primary">{formatCurrency(Number(order.total))}</p>
-                            <Badge variant="secondary" className="text-[10px] h-4">{order.status}</Badge>
+
+                          <div className="space-y-2 pl-4 border-l-2 border-primary/20">
+                            {order.items.map((item) => (
+                              <div key={item.id} className="flex gap-3 text-sm items-start">
+                                <div className="w-12 h-12 bg-white rounded border overflow-hidden flex-shrink-0">
+                                  {item.engraving_preview_url || item.product_image ? (
+                                    <img 
+                                      src={item.engraving_preview_url || item.product_image || ''} 
+                                      className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                                      onClick={() => setZoomedImage(item.engraving_preview_url || item.product_image)}
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-muted"><Package className="h-6 w-6 text-muted-foreground" /></div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">{item.product_name}</p>
+                                  {item.engraving_text && (
+                                    <p className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded w-fit mt-0.5">
+                                      Gravação: <strong>"{item.engraving_text}"</strong>
+                                    </p>
+                                  )}
+                                  {item.engraving_file_url && (
+                                    <a 
+                                      href={item.engraving_file_url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-[10px] text-blue-600 flex items-center gap-1 hover:underline mt-0.5"
+                                    >
+                                      <Eye className="h-2.5 w-2.5" /> Ver Imagem Original
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       ))}
@@ -167,6 +214,23 @@ export default function AdminClientes() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
+          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white">
+            <DialogHeader className="p-4 border-b">
+              <DialogTitle>Visualização da Imagem</DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-center p-4 bg-white">
+              {zoomedImage && (
+                <img 
+                  src={zoomedImage} 
+                  alt="Zoom" 
+                  className="max-w-full max-h-[70vh] object-contain" 
+                />
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       </AdminLayout>
