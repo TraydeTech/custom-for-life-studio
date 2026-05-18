@@ -134,20 +134,7 @@ export default function Checkout() {
     };
   }, []);
 
-  // PIX timer
-  useEffect(() => {
-    if (!pixData) return;
-    timerRef.current = window.setInterval(() => {
-      setPixTimer(prev => {
-        if (prev <= 0) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [pixData]);
+  // PIX timer removed as we are using static PIX for now
 
   // We allow visitors to proceed, but they'll see the auth modal if they aren't logged in when finishing
   const isGuest = !user;
