@@ -7,8 +7,8 @@
 @layer base {
   :root {
     /* Custom For Life - Vibrant Brand Colors */
-    --background: 240 10% 6%;
-    --foreground: 0 0% 98%;
+    --background: 240 10% 95%;
+    --foreground: 240 10% 10%;
 
     --card: 240 10% 10%;
     --card-foreground: 0 0% 98%;
