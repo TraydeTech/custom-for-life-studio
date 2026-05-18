@@ -216,7 +216,8 @@ export function CRUDModule<T extends { id: string }>({
                     </TableCell>
                   ))}
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                      {customActions?.(item)}
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
