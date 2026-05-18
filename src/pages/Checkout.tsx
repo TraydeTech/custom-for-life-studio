@@ -44,7 +44,9 @@ interface AddressData {
 export default function Checkout() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { cartItems, cartTotal, clearCart } = useCart();
+  const { cartItems, cartTotal: liveCartTotal, clearCart } = useCart();
+  const [fixedTotal, setFixedTotal] = useState<number | null>(null);
+  const cartTotal = fixedTotal ?? liveCartTotal;
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
@@ -253,6 +255,8 @@ export default function Checkout() {
         setShowAuthModal(true);
         return;
       }
+      // Fix the total before clearing the cart
+      setFixedTotal(liveCartTotal);
       const order = orderId ? { id: orderId } : await createOrder();
       const orderNumber = (order as any).order_number;
 
