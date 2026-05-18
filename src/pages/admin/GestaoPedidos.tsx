@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Separator } from '@/components/ui/separator';
 import {
   Search, ChevronRight, Clock, Package, Truck, CheckCircle,
-  CreditCard, QrCode, Banknote, Eye, ArrowRight, Image as ImageIcon
+  CreditCard, QrCode, Banknote, Eye, ArrowRight, Image as ImageIcon, Download, FileImage
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -55,6 +55,25 @@ function GestaoPedidosContent() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [trackingCode, setTrackingCode] = useState('');
   const [engravingZoomItem, setEngravingZoomItem] = useState<any>(null);
+  const [zoomedImageType, setZoomedImageType] = useState<'preview' | 'original'>('preview');
+
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(url, '_blank');
+    }
+  };
 
   // Fetch orders with realtime
   const { data: orders = [], isLoading } = useQuery({
@@ -303,24 +322,58 @@ function GestaoPedidosContent() {
               <div className="space-y-3">
                 <h4 className="font-semibold">Itens do Pedido</h4>
                 {orderItems.map((item: any) => (
-                  <div key={item.id} className="flex gap-3 p-3 bg-muted/50 rounded-lg">
-                    {item.engraving_preview_url ? (
-                      <img src={item.engraving_preview_url} alt="Prévia" className="w-20 h-20 object-contain rounded cursor-pointer border bg-white" onClick={() => setEngravingZoomItem(item)} />
-                    ) : item.product_image ? (
-                      <img 
-                        src={item.product_image} 
-                        alt={item.product_name} 
-                        className="w-20 h-20 object-contain rounded cursor-pointer border bg-white" 
-                        onClick={() => setEngravingZoomItem(item)}
-                      />
-                    ) : (
-                      <div className="w-20 h-20 bg-white rounded border flex items-center justify-center"><Package className="h-6 w-6 text-muted-foreground" /></div>
-                    )}
-                    <div className="flex-1">
-                      <p className="font-medium">{item.product_name}{item.product_color && ` — ${item.product_color}`}</p>
-                      <p className="text-sm text-muted-foreground mt-1">
+                  <div key={item.id} className="flex gap-4 p-3 bg-muted/50 rounded-lg items-start">
+                    <div className="flex gap-2 shrink-0">
+                      {/* Produto/Prévia */}
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="w-16 h-16 bg-white rounded border overflow-hidden">
+                          {item.engraving_preview_url || item.product_image ? (
+                            <img 
+                              src={item.engraving_preview_url || item.product_image || ''} 
+                              className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                setEngravingZoomItem(item);
+                                setZoomedImageType('preview');
+                              }}
+                              title="Ver Prévia"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-muted"><Package className="h-6 w-6 text-muted-foreground" /></div>
+                          )}
+                        </div>
+                        <span className="text-[9px] text-muted-foreground uppercase font-semibold">Produto</span>
+                      </div>
+
+                      {/* Arquivo do Cliente */}
+                      {item.engraving_file_url && (
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="w-16 h-16 bg-white rounded border overflow-hidden relative group">
+                            <img 
+                              src={item.engraving_file_url} 
+                              className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                setEngravingZoomItem(item);
+                                setZoomedImageType('original');
+                              }}
+                              title="Ver Arquivo Original"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                              <Eye className="h-4 w-4 text-white" />
+                            </div>
+                          </div>
+                          <span className="text-[9px] text-muted-foreground uppercase font-semibold">Arquivo</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 pt-1">
+                      <p className="font-medium text-sm">{item.product_name}{item.product_color && ` — ${item.product_color}`}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {item.quantity}x {formatCurrency(Number(item.unit_price))} = {formatCurrency(Number(item.total_price))}
                       </p>
+                      {item.engraving_text && (
+                        <p className="text-xs text-primary font-medium mt-1">Texto: "{item.engraving_text}"</p>
+                      )}
                     </div>
                   </div>
                 ))}
