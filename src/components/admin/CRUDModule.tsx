@@ -30,7 +30,7 @@ interface CRUDModuleProps<T> {
     key: keyof T;
     render?: (value: any, item: T) => React.ReactNode;
   }[];
-  formFields: {
+  formFields?: {
     label: string;
     key: string;
     type?: 'text' | 'number' | 'email' | 'textarea' | 'select' | 'switch';
@@ -42,6 +42,11 @@ interface CRUDModuleProps<T> {
   searchPlaceholder?: string;
   searchFields?: (keyof T)[];
   onBeforeSave?: (data: any) => any;
+  customActions?: (item: T) => React.ReactNode;
+  hideAddButton?: boolean;
+  onItemClick?: (item: T) => void;
+  formClassName?: string;
+  customForm?: (formData: any, setFormData: (data: any) => void) => React.ReactNode;
 }
 
 export function CRUDModule<T extends { id: string }>({
@@ -54,6 +59,11 @@ export function CRUDModule<T extends { id: string }>({
   searchPlaceholder = "Buscar...",
   searchFields = [],
   onBeforeSave,
+  customActions,
+  hideAddButton = false,
+  onItemClick,
+  formClassName = "sm:max-w-[425px]",
+  customForm,
 }: CRUDModuleProps<T>) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -156,10 +166,12 @@ export function CRUDModule<T extends { id: string }>({
           <h1 className="text-3xl font-heading font-bold">{title}</h1>
           <p className="text-muted-foreground">Gerenciamento de {title.toLowerCase()}</p>
         </div>
-        <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Registro
-        </Button>
+        {!hideAddButton && (
+          <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Registro
+          </Button>
+        )}
       </div>
 
       <div className="relative max-w-sm">
@@ -197,14 +209,15 @@ export function CRUDModule<T extends { id: string }>({
               </TableRow>
             ) : (
               filteredItems?.map((item) => (
-                <TableRow key={item.id}>
+                <TableRow key={item.id} className={onItemClick ? "cursor-pointer" : ""} onClick={() => onItemClick?.(item)}>
                   {columns.map((col, i) => (
                     <TableCell key={i}>
                       {col.render ? col.render(item[col.key], item) : String(item[col.key] || '-')}
                     </TableCell>
                   ))}
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                      {customActions?.(item)}
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -230,12 +243,12 @@ export function CRUDModule<T extends { id: string }>({
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className={formClassName}>
           <DialogHeader>
             <DialogTitle>{editingItem ? 'Editar' : 'Novo'} {title}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-            {formFields.map((field) => (
+            {customForm ? customForm(formData, setFormData) : formFields?.map((field) => (
               <div key={field.key} className="space-y-2">
                 <Label htmlFor={field.key}>{field.label} {field.required && '*'}</Label>
                 {field.type === 'textarea' ? (
