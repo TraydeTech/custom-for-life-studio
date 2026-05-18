@@ -279,7 +279,6 @@ export default function AdminClientes() {
               <div className="p-6 bg-slate-50 border-t space-y-4">
                 <div className="flex flex-wrap gap-4 items-center justify-between">
                   <div className="space-y-1">
-                    <p className="font-semibold text-slate-900">{zoomedItem?.product_name}</p>
                   </div>
                   
                   <div className="flex gap-2">
