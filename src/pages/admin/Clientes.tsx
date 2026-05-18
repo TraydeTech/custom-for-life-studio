@@ -258,11 +258,11 @@ export default function AdminClientes() {
 
         <Dialog open={!!zoomedItem} onOpenChange={() => setZoomedItem(null)}>
           <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white border-none shadow-2xl [&>button]:text-slate-900 [&>button]:opacity-100 [&>button:hover]:bg-slate-100">
-            <DialogHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0">
-              <DialogTitle className="text-lg font-mono">
-                {selectedCustomer?.orders.find(o => o.items.some(i => i.id === zoomedItem?.id))?.order_number || 'Visualização'}
-              </DialogTitle>
-            </DialogHeader>
+            <div className="absolute top-4 left-6 z-10">
+              <span className="text-lg font-mono font-bold text-slate-900">
+                {selectedCustomer?.orders.find(o => o.items.some(i => i.id === zoomedItem?.id))?.order_number}
+              </span>
+            </div>
             <div className="p-0 bg-white">
               <div className="flex items-center justify-center bg-white min-h-[40vh] relative group">
                 {zoomedItem && (
