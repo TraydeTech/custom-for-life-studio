@@ -96,7 +96,7 @@ export function CRUDModule<T extends { id: string }>({
       if (variants && Array.isArray(variants) && newItem) {
         const variantsWithProductId = variants.map((v: any, idx: number) => ({
           ...v,
-          product_id: newItem.id,
+          product_id: (newItem as any).id,
           sort_order: idx
         }));
         const { error: vError } = await supabase.from('product_variants').insert(variantsWithProductId);
