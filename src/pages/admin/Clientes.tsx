@@ -24,7 +24,7 @@ interface CustomerDetails extends Profile {
 export default function AdminClientes() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDetails | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [zoomedItem, setZoomedItem] = useState<Tables<'order_items'> | null>(null);
 
   const handleViewDetails = async (profile: Profile) => {
     const [addrRes, ordersRes] = await Promise.all([
