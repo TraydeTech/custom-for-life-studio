@@ -275,10 +275,10 @@ export default function AdminPedidos() {
                         size="sm"
                         variant={zoomedImageType === 'original' ? 'default' : 'outline'}
                         onClick={() => setZoomedImageType(zoomedImageType === 'preview' ? 'original' : 'preview')}
-                        className="gap-2"
+                        className={`gap-2 font-semibold ${zoomedImageType === 'preview' ? 'border-primary text-primary hover:bg-primary hover:text-white' : ''}`}
                       >
                         <FileImage className="h-4 w-4" />
-                        Alternar p/ {zoomedImageType === 'preview' ? 'Arquivo' : 'Prévia'}
+                        {zoomedImageType === 'preview' ? 'Ver Arquivo Original' : 'Voltar para Prévia'}
                       </Button>
                     )}
                     
@@ -294,7 +294,7 @@ export default function AdminPedidos() {
                       }}
                     >
                       <Download className="h-4 w-4" />
-                      Download {zoomedImageType === 'preview' ? 'Prévia' : 'Original'}
+                      Download {zoomedImageType === 'preview' ? 'Prévia' : 'Arquivo'}
                     </Button>
                   </div>
                 </div>
