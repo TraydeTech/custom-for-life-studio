@@ -305,11 +305,16 @@ function GestaoPedidosContent() {
                 {orderItems.map((item: any) => (
                   <div key={item.id} className="flex gap-3 p-3 bg-muted/50 rounded-lg">
                     {item.engraving_preview_url ? (
-                      <img src={item.engraving_preview_url} alt="Prévia" className="w-20 h-20 object-contain rounded cursor-pointer border" onClick={() => setEngravingZoom(item.engraving_preview_url)} />
+                      <img src={item.engraving_preview_url} alt="Prévia" className="w-20 h-20 object-contain rounded cursor-pointer border bg-white" onClick={() => setEngravingZoom(item.engraving_preview_url)} />
                     ) : item.product_image ? (
-                      <img src={item.product_image} alt={item.product_name} className="w-20 h-20 object-cover rounded" />
+                      <img 
+                        src={item.product_image} 
+                        alt={item.product_name} 
+                        className="w-20 h-20 object-contain rounded cursor-pointer border bg-white" 
+                        onClick={() => setEngravingZoom(item.product_image)}
+                      />
                     ) : (
-                      <div className="w-20 h-20 bg-muted rounded flex items-center justify-center"><Package className="h-6 w-6" /></div>
+                      <div className="w-20 h-20 bg-white rounded border flex items-center justify-center"><Package className="h-6 w-6 text-muted-foreground" /></div>
                     )}
                     <div className="flex-1">
                       <p className="font-medium">{item.product_name}{item.product_color && ` — ${item.product_color}`}</p>
@@ -359,9 +364,13 @@ function GestaoPedidosContent() {
 
       {/* Engraving Zoom */}
       <Dialog open={!!engravingZoom} onOpenChange={() => setEngravingZoom(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Prévia da Gravação</DialogTitle></DialogHeader>
-          {engravingZoom && <img src={engravingZoom} alt="Gravação" className="w-full rounded-lg" />}
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle>Visualização da Imagem</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4 bg-white">
+            {engravingZoom && <img src={engravingZoom} alt="Imagem" className="max-w-full max-h-[70vh] object-contain" />}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

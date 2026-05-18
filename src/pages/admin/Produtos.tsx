@@ -8,6 +8,7 @@ import { formatCurrency } from '@/lib/utils';
 import { Package, Image as ImageIcon, Plus, X, Upload, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,6 +32,7 @@ interface ColorVariant {
 
 export default function AdminProdutos() {
   const [uploadingVariant, setUploadingVariant] = useState<number | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -88,9 +90,13 @@ export default function AdminProdutos() {
               render: (val, item) => (
                 <div className="flex items-center gap-3">
                   {item.images?.[0] ? (
-                    <img src={item.images[0]} className="w-10 h-10 object-contain bg-white rounded border" />
+                    <img 
+                      src={item.images[0]} 
+                      className="w-10 h-10 object-contain bg-white rounded border cursor-pointer hover:opacity-80 transition-opacity" 
+                      onClick={() => setZoomedImage(item.images[0])}
+                    />
                   ) : (
-                    <div className="w-10 h-10 bg-muted rounded border flex items-center justify-center"><Package className="h-5 w-5 text-muted-foreground" /></div>
+                    <div className="w-10 h-10 bg-white rounded border flex items-center justify-center"><Package className="h-5 w-5 text-muted-foreground" /></div>
                   )}
                   <span className="font-medium">{val}</span>
                 </div>
@@ -176,7 +182,11 @@ export default function AdminProdutos() {
                         <div key={idx} className="flex gap-4 items-start p-3 border rounded-lg bg-muted/20">
                           <div className="w-16 h-16 border rounded bg-white flex-shrink-0 overflow-hidden relative group">
                             {v.main_image ? (
-                              <img src={v.main_image} className="w-full h-full object-contain" />
+                              <img 
+                                src={v.main_image} 
+                                className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" 
+                                onClick={() => setZoomedImage(v.main_image)}
+                              />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">Sem imagem</div>
                             )}
@@ -283,6 +293,23 @@ export default function AdminProdutos() {
             return { ...item, variants: variants || [] };
           }}
         />
+
+        <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
+          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white">
+            <DialogHeader className="p-4 border-b">
+              <DialogTitle>Visualização da Imagem</DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-center p-4 bg-white">
+              {zoomedImage && (
+                <img 
+                  src={zoomedImage} 
+                  alt="Zoom" 
+                  className="max-w-full max-h-[70vh] object-contain" 
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </AdminLayout>
     </ProtectedAdminRoute>
   );

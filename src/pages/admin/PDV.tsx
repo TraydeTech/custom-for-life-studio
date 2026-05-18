@@ -55,6 +55,7 @@ export default function AdminPDV() {
   const [discount, setDiscount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [amountReceived, setAmountReceived] = useState<number>(0);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['pdv-products'],
@@ -258,11 +259,15 @@ export default function AdminPDV() {
                         onClick={() => addToCart(product)}
                       >
                         <CardContent className="p-3">
-                          <div className="aspect-square rounded-md overflow-hidden bg-muted mb-2">
+                          <div className="aspect-square rounded-md overflow-hidden bg-white mb-2 border">
                             <img
                               src={product.images?.[0] || '/placeholder.svg'}
                               alt={product.name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setZoomedImage(product.images?.[0] || '/placeholder.svg');
+                              }}
                             />
                           </div>
                           <h3 className="font-medium text-sm line-clamp-2 mb-1">
@@ -316,7 +321,8 @@ export default function AdminPDV() {
                           <img
                             src={item.product.images?.[0] || '/placeholder.svg'}
                             alt={item.product.name}
-                            className="w-12 h-12 object-cover rounded"
+                            className="w-12 h-12 object-contain bg-white rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => setZoomedImage(item.product.images?.[0] || '/placeholder.svg')}
                           />
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">
@@ -408,6 +414,23 @@ export default function AdminPDV() {
             </Card>
           </div>
         </div>
+
+        <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
+          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white">
+            <DialogHeader className="p-4 border-b">
+              <DialogTitle>Visualização da Imagem</DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-center p-4 bg-white">
+              {zoomedImage && (
+                <img 
+                  src={zoomedImage} 
+                  alt="Zoom" 
+                  className="max-w-full max-h-[70vh] object-contain" 
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Checkout Dialog */}
         <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>

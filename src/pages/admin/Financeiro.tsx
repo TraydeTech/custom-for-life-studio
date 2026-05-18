@@ -30,6 +30,7 @@ const PIE_COLORS = ['hsl(var(--primary))', '#8b5cf6', '#3b82f6', '#10b981'];
 function FinanceiroContent() {
   const queryClient = useQueryClient();
   const [isPayableDialogOpen, setIsPayableDialogOpen] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [newPayable, setNewPayable] = useState({
@@ -450,8 +451,17 @@ function FinanceiroContent() {
                 <h4 className="font-semibold flex items-center gap-2"><Package className="h-4 w-4" />Produtos</h4>
                 {orderDetails.order_items.map((item: any) => (
                   <div key={item.id} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
-                    <div className="w-16 h-16 bg-background rounded-lg overflow-hidden flex-shrink-0">
-                      {item.product_image ? <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Package className="h-6 w-6" /></div>}
+                    <div className="w-16 h-16 bg-white rounded-lg overflow-hidden flex-shrink-0 border">
+                      {item.product_image ? (
+                        <img 
+                          src={item.product_image} 
+                          alt={item.product_name} 
+                          className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" 
+                          onClick={() => setZoomedImage(item.product_image)}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Package className="h-6 w-6" /></div>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0"><p className="font-medium truncate">{item.product_name}</p><p className="text-sm text-muted-foreground">{item.quantity}x {formatCurrency(Number(item.unit_price))}</p></div>
                     <div className="text-right"><p className="font-semibold text-primary">{formatCurrency(Number(item.total_price))}</p></div>
@@ -464,6 +474,23 @@ function FinanceiroContent() {
               </div>
             </div>
           ) : <p className="text-center py-8 text-muted-foreground">Detalhes não encontrados</p>}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle>Visualização da Imagem</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4 bg-white">
+            {zoomedImage && (
+              <img 
+                src={zoomedImage} 
+                alt="Zoom" 
+                className="max-w-full max-h-[70vh] object-contain" 
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
