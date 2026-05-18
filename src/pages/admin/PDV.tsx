@@ -321,7 +321,8 @@ export default function AdminPDV() {
                           <img
                             src={item.product.images?.[0] || '/placeholder.svg'}
                             alt={item.product.name}
-                            className="w-12 h-12 object-cover rounded"
+                            className="w-12 h-12 object-contain bg-white rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => setZoomedImage(item.product.images?.[0] || '/placeholder.svg')}
                           />
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">
