@@ -164,13 +164,6 @@ export default function AdminPedidos() {
                         <div className="flex-1">
                           <p className="font-medium text-sm">{item.product_name}</p>
                           
-                          {item.engraving_text && (
-                            <div className="mt-1 p-1.5 bg-amber-500/10 border border-amber-500/20 rounded">
-                              <p className="text-[9px] text-amber-600 uppercase font-bold">Gravação:</p>
-                              <p className="text-xs text-amber-700 font-medium">"{item.engraving_text}"</p>
-                            </div>
-                          )}
-
                           {item.engraving_file_url && (
                             <div className="mt-1 p-1.5 bg-blue-500/10 border border-blue-500/20 rounded">
                               <p className="text-[9px] text-blue-600 uppercase font-bold">Arquivo Anexo (Logo/Arte):</p>
