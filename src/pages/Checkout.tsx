@@ -493,6 +493,25 @@ export default function Checkout() {
               <CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" />Endereço de Entrega</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {user && userAddresses.length > 0 && (
+                <div className="mb-6">
+                  <Label>Selecione um endereço salvo</Label>
+                  <Select value={selectedAddressId} onValueChange={handleAddressSelect}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Escolha um endereço" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userAddresses.map((addr) => (
+                        <SelectItem key={addr.id} value={addr.id!}>
+                          {addr.street}, {addr.number} - {addr.city}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="new">+ Adicionar novo endereço</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Separator className="mt-4" />
+                </div>
+              )}
               <div className="flex gap-2">
                 <div className="flex-1"><Label htmlFor="cep">CEP *</Label><Input id="cep" value={address.zip_code} onChange={e => setAddress(prev => ({ ...prev, zip_code: e.target.value }))} onBlur={handleCepBlur} placeholder="00000-000" maxLength={9} /></div>
                 {isFetchingCep && <Loader2 className="h-5 w-5 animate-spin mt-8" />}
