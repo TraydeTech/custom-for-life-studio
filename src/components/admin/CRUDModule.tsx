@@ -136,9 +136,14 @@ export function CRUDModule<T extends { id: string }>({
     setEditingProduct(null);
   };
 
-  const handleEdit = (item: T) => {
-    setEditingProduct(item);
-    setFormData(item);
+  const handleEdit = async (item: T) => {
+    let dataToEdit = item;
+    if (onItemClick) {
+      const result = await onItemClick(item);
+      if (result) dataToEdit = result;
+    }
+    setEditingProduct(dataToEdit);
+    setFormData(dataToEdit);
     setIsDialogOpen(true);
   };
 
