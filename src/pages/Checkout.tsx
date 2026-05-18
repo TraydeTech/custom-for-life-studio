@@ -32,6 +32,7 @@ interface CustomerData {
 }
 
 interface AddressData {
+  id?: string;
   zip_code: string;
   street: string;
   number: string;
@@ -63,6 +64,8 @@ export default function Checkout() {
     neighborhood: '', city: '', state: '',
   });
 
+  const [userAddresses, setUserAddresses] = useState<AddressData[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
   const [showAuthModal, setShowAuthModal] = useState(!user);
 
   // Payment state
@@ -110,18 +113,26 @@ export default function Checkout() {
           cpf: profile.cpf || prev.cpf,
         }));
       }
-      const { data: addr } = await supabase
+      
+      const { data: addrList } = await supabase
         .from('addresses')
         .select('*')
         .eq('user_id', user.id)
-        .eq('is_default', true)
-        .maybeSingle();
-      if (addr) {
+        .order('is_default', { ascending: false });
+      
+      if (addrList && addrList.length > 0) {
+        setUserAddresses(addrList);
+        const defaultAddr = addrList.find(a => a.is_default) || addrList[0];
+        setSelectedAddressId(defaultAddr.id);
         setAddress({
-          zip_code: addr.zip_code || '', street: addr.street || '',
-          number: addr.number || '', complement: addr.complement || '',
-          neighborhood: addr.neighborhood || '', city: addr.city || '',
-          state: addr.state || '',
+          id: defaultAddr.id,
+          zip_code: defaultAddr.zip_code || '', 
+          street: defaultAddr.street || '',
+          number: defaultAddr.number || '', 
+          complement: defaultAddr.complement || '',
+          neighborhood: defaultAddr.neighborhood || '', 
+          city: defaultAddr.city || '',
+          state: defaultAddr.state || '',
         });
       }
     };
@@ -145,6 +156,21 @@ export default function Checkout() {
     navigate('/carrinho');
     return null;
   }
+
+  const handleAddressSelect = (id: string) => {
+    setSelectedAddressId(id);
+    if (id === 'new') {
+      setAddress({
+        zip_code: '', street: '', number: '', complement: '',
+        neighborhood: '', city: '', state: '',
+      });
+    } else {
+      const addr = userAddresses.find(a => a.id === id);
+      if (addr) {
+        setAddress({ ...addr });
+      }
+    }
+  };
 
   const handleCepBlur = async () => {
     const cep = address.zip_code.replace(/\D/g, '');
@@ -181,6 +207,47 @@ export default function Checkout() {
   };
 
   const createOrder = async () => {
+    // 1. Atualizar CRM (Perfil)
+    if (user) {
+      await supabase.from('profiles').upsert({
+        user_id: user.id,
+        full_name: customer.name,
+        phone: customer.phone,
+        cpf: unmaskCPF(customer.cpf),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+
+      // 2. Salvar/Atualizar Endereço no CRM
+      const addressPayload = {
+        user_id: user.id,
+        zip_code: address.zip_code,
+        street: address.street,
+        number: address.number,
+        complement: address.complement,
+        neighborhood: address.neighborhood,
+        city: address.city,
+        state: address.state,
+        is_default: selectedAddressId === 'new' && userAddresses.length === 0,
+      };
+
+      if (selectedAddressId !== 'new') {
+        await supabase.from('addresses').update(addressPayload).eq('id', selectedAddressId);
+      } else {
+        // Verifica se este endereço já existe para evitar duplicatas básicas
+        const { data: existingAddr } = await supabase
+          .from('addresses')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('zip_code', address.zip_code)
+          .eq('number', address.number)
+          .maybeSingle();
+        
+        if (!existingAddr) {
+          await supabase.from('addresses').insert(addressPayload);
+        }
+      }
+    }
+
     const shippingAddress = {
       name: customer.name, phone: customer.phone,
       street: address.street, number: address.number,
@@ -188,9 +255,6 @@ export default function Checkout() {
       city: address.city, state: address.state, zip_code: address.zip_code,
     };
 
-    // order_number é gerado automaticamente pelo trigger BEFORE INSERT
-    // (public.generate_order_number). Enviamos placeholder apenas para
-    // satisfazer NOT NULL — o banco sobrescreve com o número definitivo.
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -429,6 +493,25 @@ export default function Checkout() {
               <CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" />Endereço de Entrega</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {user && userAddresses.length > 0 && (
+                <div className="mb-6">
+                  <Label>Selecione um endereço salvo</Label>
+                  <Select value={selectedAddressId} onValueChange={handleAddressSelect}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Escolha um endereço" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userAddresses.map((addr) => (
+                        <SelectItem key={addr.id} value={addr.id!}>
+                          {addr.street}, {addr.number} - {addr.city}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="new">+ Adicionar novo endereço</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Separator className="mt-4" />
+                </div>
+              )}
               <div className="flex gap-2">
                 <div className="flex-1"><Label htmlFor="cep">CEP *</Label><Input id="cep" value={address.zip_code} onChange={e => setAddress(prev => ({ ...prev, zip_code: e.target.value }))} onBlur={handleCepBlur} placeholder="00000-000" maxLength={9} /></div>
                 {isFetchingCep && <Loader2 className="h-5 w-5 animate-spin mt-8" />}

@@ -87,12 +87,17 @@ export function useCart() {
         }))
         .filter(item => !!item.product) as CartItem[];
     },
-    enabled: !user,
+    // Removido o 'enabled: !user' para que os itens de visitante continuem
+    // acessíveis durante a transição de login/sincronização.
     staleTime: 0,
   });
 
-  const cartItems = user ? dbCartItems : guestCartItems;
-  const isLoading = user ? dbLoading : guestLoading;
+  // Durante a transição de login, se o carrinho do banco estiver vazio mas o de
+  // visitante não, mostramos o de visitante para evitar que o carrinho "suma".
+  const cartItems = user 
+    ? (dbCartItems.length > 0 ? dbCartItems : guestCartItems) 
+    : guestCartItems;
+  const isLoading = user ? (dbLoading && guestCartItems.length === 0) : guestLoading;
 
   // ── addToCart ───────────────────────────────────────────────────────────────
   const addToCart = useMutation({
@@ -257,18 +262,22 @@ export async function syncGuestCartToSupabase(userId: string): Promise<void> {
   const guestItems = getGuestCart();
   if (guestItems.length === 0) return;
 
+  const itemsToInsert = [];
+  
   for (const item of guestItems) {
     try {
       if (item.engraving_text) {
-        await supabase.from('cart_items').insert({
-          user_id: userId, product_id: item.product_id, quantity: item.quantity,
+        itemsToInsert.push({
+          user_id: userId,
+          product_id: item.product_id,
+          quantity: item.quantity,
           customization_notes: item.customization_notes,
           engraving_text: item.engraving_text,
           engraving_position_x: item.engraving_position_x,
           engraving_position_y: item.engraving_position_y,
           engraving_preview_image: item.engraving_preview_image,
           product_color: item.product_color,
-        } as any);
+        });
         continue;
       }
 
@@ -286,13 +295,22 @@ export async function syncGuestCartToSupabase(userId: string): Promise<void> {
           .update({ quantity: existing.quantity + item.quantity })
           .eq('id', existing.id);
       } else {
-        await supabase.from('cart_items').insert({
-          user_id: userId, product_id: item.product_id, quantity: item.quantity,
+        itemsToInsert.push({
+          user_id: userId,
+          product_id: item.product_id,
+          quantity: item.quantity,
           customization_notes: item.customization_notes,
           product_color: item.product_color,
-        } as any);
+        });
       }
-    } catch {}
+    } catch (err) {
+      console.error('[CartSync] Erro ao processar item:', item, err);
+    }
+  }
+
+  if (itemsToInsert.length > 0) {
+    const { error } = await supabase.from('cart_items').insert(itemsToInsert as any);
+    if (error) console.error('[CartSync] Erro no bulk insert:', error);
   }
 
   clearGuestCart();

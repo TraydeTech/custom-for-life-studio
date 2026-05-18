@@ -79,6 +79,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (isMounted) {
                 setIsAdmin(adminStatus);
                 setAdminChecked(true);
+                // Sincronizar carrinho se houver itens de visitante
+                syncGuestCartToSupabase(newSession.user.id).catch((err) => {
+                  console.error('[Auth] Falha ao sincronizar carrinho de visitante no listener:', err);
+                });
               }
             });
           }, 0);
