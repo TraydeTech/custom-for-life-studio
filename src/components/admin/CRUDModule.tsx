@@ -85,9 +85,23 @@ export function CRUDModule<T extends { id: string }>({
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const finalData = onBeforeSave ? onBeforeSave(data) : data;
-      const { error } = await supabase.from(tableName as any).insert([finalData]);
+      const finalData = onBeforeSave ? await onBeforeSave(data) : data;
+      // Removendo campos que não pertencem à tabela (como 'variants') antes de salvar
+      const { variants, ...dbData } = finalData;
+      
+      const { data: newItem, error } = await supabase.from(tableName as any).insert([dbData]).select().single();
       if (error) throw error;
+
+      // Se houver variantes para salvar
+      if (variants && Array.isArray(variants) && newItem) {
+        const variantsWithProductId = variants.map((v: any, idx: number) => ({
+          ...v,
+          product_id: newItem.id,
+          sort_order: idx
+        }));
+        const { error: vError } = await supabase.from('product_variants').insert(variantsWithProductId);
+        if (vError) throw vError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKey] });
@@ -102,9 +116,30 @@ export function CRUDModule<T extends { id: string }>({
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const finalData = onBeforeSave ? onBeforeSave(data) : data;
-      const { error } = await supabase.from(tableName as any).update(finalData).eq('id', id);
+      const finalData = onBeforeSave ? await onBeforeSave(data) : data;
+      const { variants, ...dbData } = finalData;
+
+      const { error } = await supabase.from(tableName as any).update(dbData).eq('id', id);
       if (error) throw error;
+
+      // Se houver variantes para atualizar (delete + insert simplificado)
+      if (variants && Array.isArray(variants)) {
+        await supabase.from('product_variants').delete().eq('product_id', id);
+        
+        const variantsWithProductId = variants.map((v: any, idx: number) => {
+          const { id: _, created_at: ca, updated_at: ua, ...vData } = v; // Remove IDs e datas antigas
+          return {
+            ...vData,
+            product_id: id,
+            sort_order: idx
+          };
+        });
+        
+        if (variantsWithProductId.length > 0) {
+          const { error: vError } = await supabase.from('product_variants').insert(variantsWithProductId);
+          if (vError) throw vError;
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKey] });
