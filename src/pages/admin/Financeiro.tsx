@@ -30,6 +30,7 @@ const PIE_COLORS = ['hsl(var(--primary))', '#8b5cf6', '#3b82f6', '#10b981'];
 function FinanceiroContent() {
   const queryClient = useQueryClient();
   const [isPayableDialogOpen, setIsPayableDialogOpen] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [newPayable, setNewPayable] = useState({
