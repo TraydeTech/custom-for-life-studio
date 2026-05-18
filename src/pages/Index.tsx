@@ -13,62 +13,13 @@ import {
 } from "@/components/ui/carousel";
 import { ModernHero } from "@/components/home/ModernHero";
 import { FeatureStrip } from "@/components/home/FeatureStrip";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { formatCurrency } from "@/lib/utils";
 import heroImage from "@/assets/hero-brindes-novo.png";
-import brindeCopo from "@/assets/brinde-copo.jpg";
-import brindeCamiseta from "@/assets/brinde-camiseta.jpg";
-import brindeKit from "@/assets/brinde-kit.jpg";
-import brindeEcobag from "@/assets/brinde-ecobag.jpg";
-import brindeCaderno from "@/assets/brinde-caderno.jpg";
 
-// Imagens de produtos reais
-import produtoCanecaSandra from "@/assets/produto-caneca-sandra.png";
-import produtoCopoMarca from "@/assets/produto-copo-marca.png";
-import produtoStanleyVermelho from "@/assets/produto-stanley-vermelho.png";
-import produtoCopoAzul from "@/assets/produto-copo-azul.png";
-import produtoStanleyHope from "@/assets/produto-stanley-hope.png";
-import produtoConjuntoCafe from "@/assets/produto-conjunto-cafe.png";
-import produtoCoposCores from "@/assets/produto-copos-cores.png";
-import produtoChurrasco from "@/assets/produto-churrasco.png";
-import produtoChinelo from "@/assets/produto-chinelo.png";
 
-const produtosReais = [
-  produtoCanecaSandra,
-  produtoCopoMarca,
-  produtoStanleyVermelho,
-  produtoCopoAzul,
-  produtoStanleyHope,
-  produtoConjuntoCafe,
-  produtoCoposCores,
-  produtoChurrasco,
-  produtoChinelo,
-];
-const brindes = [
-  {
-    title: "Copos Personalizados",
-    description: "Copos modernos e funcionais para levar sua marca ao dia a dia dos clientes.",
-    image: brindeCopo,
-  },
-  {
-    title: "Camisetas",
-    description: "Peças personalizadas para equipes, eventos, ações promocionais e identidade de marca.",
-    image: brindeCamiseta,
-  },
-  {
-    title: "Kits Corporativos",
-    description: "Combinações completas para presentear clientes, colaboradores e parceiros com mais impacto.",
-    image: brindeKit,
-  },
-  {
-    title: "Ecobags",
-    description: "Brindes sustentáveis, úteis e com grande área de personalização para sua marca.",
-    image: brindeEcobag,
-  },
-  {
-    title: "Cadernos Premium",
-    description: "Materiais elegantes para reuniões, eventos, treinamentos e presentes corporativos.",
-    image: brindeCaderno,
-  },
-];
+// Removidas categorias fixas para usar produtos do banco de dados
 
 const diferenciais = [
   { 
@@ -94,6 +45,35 @@ const diferenciais = [
 ];
 
 const Index = () => {
+  const { data: featuredProducts = [], isLoading: loadingProducts } = useQuery({
+    queryKey: ['featured-products'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .limit(6);
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  const { data: recentWorks = [] } = useQuery({
+    queryKey: ['recent-works'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(9);
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   return (
     <div className="min-h-screen bg-background overflow-x-hidden bg-grid-white">
       <SEOMeta
@@ -264,15 +244,20 @@ const Index = () => {
             className="w-full"
           >
             <CarouselContent className="-ml-2 md:-ml-4">
-              {produtosReais.map((produto, index) => (
-                <CarouselItem key={index} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                  <div className="gradient-border overflow-hidden rounded-2xl bg-[#FFFFFF]">
-                    <img
-                      src={produto}
-                      alt={`Produto personalizado ${index + 1}`}
-                      className="w-full aspect-square object-contain hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
+              {recentWorks.map((produto, index) => (
+                <CarouselItem key={produto.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                  <Link to={`/produto/${produto.slug}`}>
+                    <div className="gradient-border overflow-hidden rounded-2xl bg-[#FFFFFF]">
+                      <img
+                        src={produto.images?.[0] || '/placeholder.svg'}
+                        alt={produto.name}
+                        className="w-full aspect-square object-contain hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                    <div className="mt-2 text-center">
+                      <p className="font-bold text-sm truncate">{produto.name}</p>
+                    </div>
+                  </Link>
                 </CarouselItem>
               ))}
             </CarouselContent>
@@ -298,24 +283,28 @@ const Index = () => {
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {brindes.map((brinde, index) => (
-              <div
-                key={index}
+            {loadingProducts ? (
+              <div className="col-span-full text-center py-12">Carregando produtos...</div>
+            ) : featuredProducts.map((produto) => (
+              <Link
+                key={produto.id}
+                to={`/produto/${produto.slug}`}
                 className="group gradient-border overflow-hidden cursor-pointer"
               >
                 <div className="relative aspect-square overflow-hidden bg-[#FFFFFF]">
                   <img
-                    src={brinde.image}
-                    alt={brinde.title}
+                    src={produto.images?.[0] || '/placeholder.svg'}
+                    alt={produto.name}
                     className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="p-6 bg-card">
-                  <h3 className="text-xl font-heading font-bold mb-2">{brinde.title}</h3>
-                  <p className="text-muted-foreground">{brinde.description}</p>
+                  <h3 className="text-xl font-heading font-bold mb-2 truncate">{produto.name}</h3>
+                  <p className="text-muted-foreground line-clamp-2">{produto.description}</p>
+                  <p className="mt-4 font-bold text-primary">{formatCurrency(Number(produto.price))}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
