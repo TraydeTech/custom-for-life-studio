@@ -335,7 +335,7 @@ export default function Produto() {
     if (!product) return;
     
     let uploadedFileUrl = null;
-    if (engravingFile) {
+    if (engravingFile || engravingText.trim().length > 0) {
       setIsUploading(true);
       try {
         const fileExt = engravingFile.name.split('.').pop();
