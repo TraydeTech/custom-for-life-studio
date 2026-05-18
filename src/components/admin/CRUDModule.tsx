@@ -30,7 +30,7 @@ interface CRUDModuleProps<T> {
     key: keyof T;
     render?: (value: any, item: T) => React.ReactNode;
   }[];
-  formFields: {
+  formFields?: {
     label: string;
     key: string;
     type?: 'text' | 'number' | 'email' | 'textarea' | 'select' | 'switch';
