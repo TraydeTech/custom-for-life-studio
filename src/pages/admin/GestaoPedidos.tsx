@@ -364,9 +364,13 @@ function GestaoPedidosContent() {
 
       {/* Engraving Zoom */}
       <Dialog open={!!engravingZoom} onOpenChange={() => setEngravingZoom(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Prévia da Gravação</DialogTitle></DialogHeader>
-          {engravingZoom && <img src={engravingZoom} alt="Gravação" className="w-full rounded-lg" />}
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle>Visualização da Imagem</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4 bg-white">
+            {engravingZoom && <img src={engravingZoom} alt="Imagem" className="max-w-full max-h-[70vh] object-contain" />}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
