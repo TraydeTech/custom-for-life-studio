@@ -113,18 +113,26 @@ export default function Checkout() {
           cpf: profile.cpf || prev.cpf,
         }));
       }
-      const { data: addr } = await supabase
+      
+      const { data: addrList } = await supabase
         .from('addresses')
         .select('*')
         .eq('user_id', user.id)
-        .eq('is_default', true)
-        .maybeSingle();
-      if (addr) {
+        .order('is_default', { ascending: false });
+      
+      if (addrList && addrList.length > 0) {
+        setUserAddresses(addrList);
+        const defaultAddr = addrList.find(a => a.is_default) || addrList[0];
+        setSelectedAddressId(defaultAddr.id);
         setAddress({
-          zip_code: addr.zip_code || '', street: addr.street || '',
-          number: addr.number || '', complement: addr.complement || '',
-          neighborhood: addr.neighborhood || '', city: addr.city || '',
-          state: addr.state || '',
+          id: defaultAddr.id,
+          zip_code: defaultAddr.zip_code || '', 
+          street: defaultAddr.street || '',
+          number: defaultAddr.number || '', 
+          complement: defaultAddr.complement || '',
+          neighborhood: defaultAddr.neighborhood || '', 
+          city: defaultAddr.city || '',
+          state: defaultAddr.state || '',
         });
       }
     };
