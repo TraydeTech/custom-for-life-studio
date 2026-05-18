@@ -31,10 +31,18 @@ export default function AdminClientes() {
       supabase.from('orders').select('*').eq('user_id', profile.user_id).order('created_at', { ascending: false }),
     ]);
 
+    const orders = ordersRes.data || [];
+    const ordersWithItems = await Promise.all(
+      orders.map(async (order) => {
+        const { data: items } = await supabase.from('order_items').select('*').eq('order_id', order.id);
+        return { ...order, items: items || [] };
+      })
+    );
+
     setSelectedCustomer({
       ...profile,
       addresses: addrRes.data || [],
-      orders: ordersRes.data || [],
+      orders: ordersWithItems,
     });
     setIsDetailsOpen(true);
   };
