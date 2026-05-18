@@ -64,6 +64,8 @@ export default function Checkout() {
     neighborhood: '', city: '', state: '',
   });
 
+  const [userAddresses, setUserAddresses] = useState<AddressData[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
   const [showAuthModal, setShowAuthModal] = useState(!user);
 
   // Payment state
