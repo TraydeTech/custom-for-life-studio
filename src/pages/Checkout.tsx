@@ -355,7 +355,25 @@ export default function Checkout() {
 
   const handleFinishOrder = () => {
     if (pixData) {
-      navigate(`/pedido-confirmado?pedido=${pixData.orderNumber}`);
+      toast.info(
+        "Atenção: Para liberar seu pedido, você deve enviar o comprovante de pagamento via WhatsApp.",
+        {
+          duration: 6000,
+          action: {
+            label: "Enviar Agora",
+            onClick: () => {
+              const message = `Olá! Acabei de realizar o pagamento do pedido ${pixData.orderNumber}. Segue o comprovante em anexo.`;
+              window.open(`https://wa.me/5547984492949?text=${encodeURIComponent(message)}`, '_blank');
+              navigate(`/pedido-confirmado?pedido=${pixData.orderNumber}`);
+            }
+          }
+        }
+      );
+      
+      // Também navega após um pequeno delay para garantir que o toast foi visto se o usuário não clicar na ação
+      setTimeout(() => {
+        navigate(`/pedido-confirmado?pedido=${pixData.orderNumber}`);
+      }, 4000);
     }
   };
 
