@@ -256,15 +256,31 @@ export default function AdminProdutos() {
             );
           }}
           onBeforeSave={async (data) => {
+            const { variants, ...productData } = data;
+            
+            // Calcula estoque total
+            const totalStock = Array.isArray(variants) 
+              ? variants.reduce((sum: number, v: any) => sum + (parseInt(v.stock) || 0), 0)
+              : 0;
+
             const finalData = {
-              ...data,
+              ...productData,
+              stock: totalStock,
+              images: Array.isArray(variants) ? variants.map((v: any) => v.main_image).filter(Boolean) : [],
               slug: data.slug || data.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, ''),
             };
 
-            // Se for novo produto (sem ID), o CRUDModule cuidará do insert.
-            // Mas precisamos lidar com as variantes e imagens se quisermos um fluxo completo.
-            // Por enquanto, o CRUDModule salva apenas o objeto 'products'.
             return finalData;
+          }}
+          onItemClick={async (item) => {
+            // Ao clicar para editar, precisamos carregar as variantes
+            const { data: variants } = await supabase
+              .from('product_variants')
+              .select('*')
+              .eq('product_id', item.id)
+              .order('sort_order');
+            
+            return { ...item, variants: variants || [] };
           }}
         />
       </AdminLayout>
