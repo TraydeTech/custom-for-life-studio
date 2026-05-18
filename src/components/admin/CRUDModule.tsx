@@ -166,10 +166,12 @@ export function CRUDModule<T extends { id: string }>({
           <h1 className="text-3xl font-heading font-bold">{title}</h1>
           <p className="text-muted-foreground">Gerenciamento de {title.toLowerCase()}</p>
         </div>
-        <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Registro
-        </Button>
+        {!hideAddButton && (
+          <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Registro
+          </Button>
+        )}
       </div>
 
       <div className="relative max-w-sm">
