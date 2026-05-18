@@ -431,35 +431,47 @@ function GestaoPedidosContent() {
               )}
             </div>
             
-            <div className="p-4 bg-white border-t">
-              <div className="flex justify-center gap-2">
-                {engravingZoomItem?.engraving_file_url && (
-                  <Button 
-                    size="sm"
-                    variant={zoomedImageType === 'original' ? 'default' : 'outline'}
-                    onClick={() => setZoomedImageType(zoomedImageType === 'preview' ? 'original' : 'preview')}
-                    className={`gap-2 font-semibold ${zoomedImageType === 'preview' ? 'border-primary text-primary hover:bg-primary hover:text-white' : ''}`}
-                  >
-                    <FileImage className="h-4 w-4" />
-                    {zoomedImageType === 'preview' ? 'Ver Arquivo Original' : 'Voltar para Prévia'}
-                  </Button>
-                )}
+            <div className="p-6 bg-slate-50 border-t space-y-4">
+              <div className="flex flex-wrap gap-4 items-center justify-between">
+                <div className="space-y-1">
+                </div>
                 
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  className="gap-2 bg-white border-primary text-primary hover:bg-primary hover:text-white transition-all font-semibold"
-                  onClick={() => {
-                    const url = zoomedImageType === 'preview' 
-                      ? (engravingZoomItem?.engraving_preview_url || engravingZoomItem?.product_image) 
-                      : engravingZoomItem?.engraving_file_url;
-                    if (url) handleDownload(url, `arquivo-${engravingZoomItem?.id?.substring(0, 8) || 'item'}-${zoomedImageType}.png`);
-                  }}
-                >
-                  <Download className="h-4 w-4" />
-                  Download {zoomedImageType === 'preview' ? 'Prévia' : 'Arquivo'}
-                </Button>
+                <div className="flex gap-2">
+                  {engravingZoomItem?.engraving_file_url && (
+                    <Button 
+                      size="sm"
+                      variant={zoomedImageType === 'original' ? 'default' : 'outline'}
+                      onClick={() => setZoomedImageType(zoomedImageType === 'preview' ? 'original' : 'preview')}
+                      className={`gap-2 font-semibold ${zoomedImageType === 'preview' ? 'border-primary text-primary hover:bg-primary hover:text-white' : ''}`}
+                    >
+                      <FileImage className="h-4 w-4" />
+                      {zoomedImageType === 'preview' ? 'Ver Arquivo Original' : 'Voltar para Prévia'}
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="gap-2 bg-white border-primary text-primary hover:bg-primary hover:text-white transition-all font-semibold"
+                    onClick={() => {
+                      const url = zoomedImageType === 'preview' 
+                        ? (engravingZoomItem?.engraving_preview_url || engravingZoomItem?.product_image) 
+                        : engravingZoomItem?.engraving_file_url;
+                      if (url) handleDownload(url, `arquivo-${engravingZoomItem?.id?.substring(0, 8) || 'item'}-${zoomedImageType}.png`);
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
+                    Download {zoomedImageType === 'preview' ? 'Prévia' : 'Arquivo'}
+                  </Button>
+                </div>
               </div>
+
+              {engravingZoomItem?.engraving_text && (
+                <div className="p-4 bg-white rounded-xl border-2 border-primary/10 shadow-sm">
+                  <p className="text-[10px] text-primary uppercase font-black tracking-widest mb-1">Texto para Gravação</p>
+                  <p className="text-2xl font-black text-slate-900 leading-tight">"{engravingZoomItem.engraving_text}"</p>
+                </div>
+              )}
             </div>
           </div>
         </DialogContent>
