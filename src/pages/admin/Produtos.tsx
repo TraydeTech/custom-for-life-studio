@@ -162,10 +162,17 @@ export default function AdminProdutos() {
               </div>
             </ScrollArea>
           )}
-          onBeforeSave={(data) => ({
-            ...data,
-            slug: data.slug || data.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, ''),
-          })}
+          onBeforeSave={async (data) => {
+            const finalData = {
+              ...data,
+              slug: data.slug || data.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, ''),
+            };
+
+            // Se for novo produto (sem ID), o CRUDModule cuidará do insert.
+            // Mas precisamos lidar com as variantes e imagens se quisermos um fluxo completo.
+            // Por enquanto, o CRUDModule salva apenas o objeto 'products'.
+            return finalData;
+          }}
         />
       </AdminLayout>
     </ProtectedAdminRoute>
