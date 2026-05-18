@@ -55,6 +55,7 @@ export default function AdminPDV() {
   const [discount, setDiscount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [amountReceived, setAmountReceived] = useState<number>(0);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['pdv-products'],
