@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import ScrollToTop from "./components/ScrollToTop";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
@@ -40,6 +41,7 @@ function AppContent() {
   const isAdmin = location.pathname.startsWith('/admin');
   return (
     <>
+      <ScrollToTop />
       {!isAdmin && <WhatsAppButton />}
       <Routes>
         <Route path="/" element={<Index />} />
