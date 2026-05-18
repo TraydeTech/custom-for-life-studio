@@ -376,7 +376,7 @@ export default function Produto() {
       engravingPositionY: text ? Math.round(engravingPosY * 100) / 100 : undefined,
       engravingPreviewImage: previewImage,
       productColor: selected?.color_name || undefined,
-      engravingFileUrl: uploadedFileUrl,
+      engravingFileUrl: uploadedFileUrl || undefined,
     }, {
       onSuccess: () => {
         setAddedToCart(true);
