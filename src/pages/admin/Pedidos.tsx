@@ -243,7 +243,7 @@ export default function AdminPedidos() {
         </Dialog>
 
         <Dialog open={!!zoomedItem} onOpenChange={() => setZoomedItem(null)}>
-          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white border-none shadow-2xl">
+          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white border-none shadow-2xl [&>button]:text-slate-900 [&>button]:opacity-100 [&>button:hover]:bg-slate-100">
             <DialogHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0">
               <DialogTitle className="text-lg">
                 {zoomedImageType === 'preview' ? 'Prévia do Produto' : 'Arquivo Original do Cliente'}
