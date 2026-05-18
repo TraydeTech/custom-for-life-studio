@@ -245,7 +245,7 @@ const Index = () => {
           >
             <CarouselContent className="-ml-2 md:-ml-4">
               {recentWorks.map((produto, index) => (
-                <CarouselItem key={produto.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                <CarouselItem key={produto.id} className="pl-2 md:pl-4 basis-[70%] sm:basis-[35%] lg:basis-[23%]">
                   <Link to={`/produto/${produto.slug}`}>
                     <div className="gradient-border overflow-hidden rounded-2xl bg-[#FFFFFF]">
                       <img
@@ -282,7 +282,7 @@ const Index = () => {
               Cada categoria pensada para criar experiências únicas e fortalecer sua marca
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
             {loadingProducts ? (
               <div className="col-span-full text-center py-12">Carregando produtos...</div>
             ) : featuredProducts.map((produto) => (
@@ -299,10 +299,10 @@ const Index = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
-                <div className="p-6 bg-card">
-                  <h3 className="text-xl font-heading font-bold mb-2 truncate">{produto.name}</h3>
-                  <p className="text-muted-foreground line-clamp-2">{produto.description}</p>
-                  <p className="mt-4 font-bold text-primary">{formatCurrency(Number(produto.price))}</p>
+                <div className="p-4 bg-card">
+                  <h3 className="text-lg font-heading font-bold mb-1 truncate">{produto.name}</h3>
+                  <p className="text-muted-foreground text-xs line-clamp-1">{produto.description}</p>
+                  <p className="mt-2 font-bold text-primary text-sm">{formatCurrency(Number(produto.price))}</p>
                 </div>
               </Link>
             ))}
