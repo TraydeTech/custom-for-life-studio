@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ProductCard } from '@/components/shop/ProductCard';
 import { SEOMeta } from '@/components/SEOMeta';
 import { getInstallmentText } from '@/lib/installments';
