@@ -399,6 +399,7 @@ export type Database = {
           main_image: string | null
           product_id: string
           sort_order: number | null
+          stock: number
           updated_at: string
         }
         Insert: {
@@ -409,6 +410,7 @@ export type Database = {
           main_image?: string | null
           product_id: string
           sort_order?: number | null
+          stock?: number
           updated_at?: string
         }
         Update: {
@@ -419,6 +421,7 @@ export type Database = {
           main_image?: string | null
           product_id?: string
           sort_order?: number | null
+          stock?: number
           updated_at?: string
         }
         Relationships: [
