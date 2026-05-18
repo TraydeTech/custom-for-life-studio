@@ -87,12 +87,17 @@ export function useCart() {
         }))
         .filter(item => !!item.product) as CartItem[];
     },
-    enabled: !user,
+    // Removido o 'enabled: !user' para que os itens de visitante continuem
+    // acessíveis durante a transição de login/sincronização.
     staleTime: 0,
   });
 
-  const cartItems = user ? dbCartItems : guestCartItems;
-  const isLoading = user ? dbLoading : guestLoading;
+  // Durante a transição de login, se o carrinho do banco estiver vazio mas o de
+  // visitante não, mostramos o de visitante para evitar que o carrinho "suma".
+  const cartItems = user 
+    ? (dbCartItems.length > 0 ? dbCartItems : guestCartItems) 
+    : guestCartItems;
+  const isLoading = user ? (dbLoading && guestCartItems.length === 0) : guestLoading;
 
   // ── addToCart ───────────────────────────────────────────────────────────────
   const addToCart = useMutation({
