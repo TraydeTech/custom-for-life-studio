@@ -259,11 +259,15 @@ export default function AdminPDV() {
                         onClick={() => addToCart(product)}
                       >
                         <CardContent className="p-3">
-                          <div className="aspect-square rounded-md overflow-hidden bg-muted mb-2">
+                          <div className="aspect-square rounded-md overflow-hidden bg-white mb-2 border">
                             <img
                               src={product.images?.[0] || '/placeholder.svg'}
                               alt={product.name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setZoomedImage(product.images?.[0] || '/placeholder.svg');
+                              }}
                             />
                           </div>
                           <h3 className="font-medium text-sm line-clamp-2 mb-1">
