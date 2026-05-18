@@ -15,6 +15,7 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
+import { generatePixPayload } from '@/lib/pix';
 import {
   ChevronLeft, ChevronRight, MapPin, User, CreditCard, Loader2,
   QrCode, Lock, Copy, CheckCircle, Clock, Banknote
@@ -65,12 +66,10 @@ export default function Checkout() {
   // Payment state
   const [paymentTab, setPaymentTab] = useState('pix');
   const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
-  const [pixData, setPixData] = useState<{ qrCode: string; qrCodeText: string; invoiceId: string } | null>(null);
-  const [pixTimer, setPixTimer] = useState(1800); // 30 min
-  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [pixData, setPixData] = useState<{ qrCodeText: string; orderNumber: string } | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
 
-  // Card state
+  // Card state (disabled for now)
   const [cardNumber, setCardNumber] = useState('');
   const [cardName, setCardName] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
@@ -263,59 +262,43 @@ export default function Checkout() {
   const handlePixPayment = async () => {
     setIsGeneratingPayment(true);
     try {
-      // Se for convidado, abre o modal de auth antes de criar o pedido
       if (!user) {
         setShowAuthModal(true);
         return;
       }
       const order = orderId ? { id: orderId } : await createOrder();
+      const orderNumber = (order as any).order_number;
 
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          orderId: order.id,
-          paymentMethod: 'pix',
-          customerName: customer.name,
-          customerEmail: customer.email,
-          customerCpf: unmaskCPF(customer.cpf),
-        },
+      // Chave PIX informada: 008.697.879-93
+      const pixKey = '008.697.879-93';
+      const payload = generatePixPayload(
+        pixKey,
+        'Custom For Life',
+        'TIMBO',
+        cartTotal,
+        orderNumber
+      );
+
+      setPixData({
+        qrCodeText: payload,
+        orderNumber: orderNumber,
       });
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      if (data.pixQrCode && data.pixQrCodeText) {
-        setPixData({
-          qrCode: data.pixQrCode,
-          qrCodeText: data.pixQrCodeText,
-          invoiceId: data.invoiceId,
-        });
-
-        // Start polling
-        checkIntervalRef.current = window.setInterval(async () => {
-          try {
-            const { data: statusData } = await supabase.functions.invoke('check-payment-status', {
-              body: { invoiceId: data.invoiceId },
-            });
-            if (statusData?.paid) {
-              if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-              await clearCart.mutateAsync();
-              toast.success('Pagamento PIX confirmado!');
-              navigate(`/pedido-confirmado?pedido=${data.invoiceId}`);
-            }
-          } catch (e) { console.error('Poll error:', e); }
-        }, 5000);
-      } else {
-        // No PIX data, fallback to WhatsApp
-        await clearCart.mutateAsync();
-        toast.success('Pedido criado! Finalize pelo link de pagamento.');
-        if (data.invoiceUrl) window.open(data.invoiceUrl, '_blank');
-        navigate(`/pedido-confirmado?pedido=${(order as any).order_number || ''}`);
-      }
+      // Clear cart after generating PIX to prevent double orders
+      await clearCart.mutateAsync();
+      
+      toast.success('Pedido criado! Realize o pagamento via PIX para processarmos seu pedido.');
     } catch (error: any) {
       console.error('PIX error:', error);
       toast.error(error.message || 'Erro ao gerar PIX');
     } finally {
       setIsGeneratingPayment(false);
+    }
+  };
+
+  const handleFinishOrder = () => {
+    if (pixData) {
+      navigate(`/pedido-confirmado?pedido=${pixData.orderNumber}`);
     }
   };
 
