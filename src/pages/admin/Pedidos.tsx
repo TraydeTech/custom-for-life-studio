@@ -173,14 +173,14 @@ export default function AdminPedidos() {
 
                           {item.engraving_file_url && (
                             <div className="mt-1 p-1.5 bg-blue-500/10 border border-blue-500/20 rounded">
-                              <p className="text-[9px] text-blue-600 uppercase font-bold">Imagem Anexa:</p>
+                              <p className="text-[9px] text-blue-600 uppercase font-bold">Arquivo Anexo (Logo/Arte):</p>
                               <a 
                                 href={item.engraving_file_url} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-[10px] text-blue-700 hover:underline flex items-center gap-1 mt-0.5"
                               >
-                                <Globe className="h-2.5 w-2.5" /> Ver Arquivo Original
+                                <Globe className="h-2.5 w-2.5" /> Abrir Arquivo Original
                               </a>
                             </div>
                           )}
