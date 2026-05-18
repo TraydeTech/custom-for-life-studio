@@ -157,6 +157,21 @@ export default function Checkout() {
     return null;
   }
 
+  const handleAddressSelect = (id: string) => {
+    setSelectedAddressId(id);
+    if (id === 'new') {
+      setAddress({
+        zip_code: '', street: '', number: '', complement: '',
+        neighborhood: '', city: '', state: '',
+      });
+    } else {
+      const addr = userAddresses.find(a => a.id === id);
+      if (addr) {
+        setAddress({ ...addr });
+      }
+    }
+  };
+
   const handleCepBlur = async () => {
     const cep = address.zip_code.replace(/\D/g, '');
     if (cep.length !== 8) return;
