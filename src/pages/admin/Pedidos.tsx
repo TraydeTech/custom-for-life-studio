@@ -153,9 +153,13 @@ export default function AdminPedidos() {
                     {orderItems.map((item) => (
                       <div key={item.id} className="p-3 flex gap-3">
                         {item.product_image ? (
-                          <img src={item.product_image} className="w-12 h-12 object-cover rounded border" />
+                          <img 
+                            src={item.product_image} 
+                            className="w-12 h-12 object-contain bg-white rounded border cursor-pointer hover:opacity-80 transition-opacity" 
+                            onClick={() => setZoomedImage(item.product_image)}
+                          />
                         ) : (
-                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center"><Package className="h-6 w-6 text-muted-foreground" /></div>
+                          <div className="w-12 h-12 bg-white rounded border flex items-center justify-center"><Package className="h-6 w-6 text-muted-foreground" /></div>
                         )}
                         <div className="flex-1">
                           <p className="font-medium text-sm">{item.product_name}</p>
