@@ -182,7 +182,11 @@ export default function AdminProdutos() {
                         <div key={idx} className="flex gap-4 items-start p-3 border rounded-lg bg-muted/20">
                           <div className="w-16 h-16 border rounded bg-white flex-shrink-0 overflow-hidden relative group">
                             {v.main_image ? (
-                              <img src={v.main_image} className="w-full h-full object-contain" />
+                              <img 
+                                src={v.main_image} 
+                                className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" 
+                                onClick={() => setZoomedImage(v.main_image)}
+                              />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">Sem imagem</div>
                             )}
