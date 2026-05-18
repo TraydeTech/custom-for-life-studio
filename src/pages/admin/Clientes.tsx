@@ -188,21 +188,6 @@ export default function AdminClientes() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="font-medium truncate">{item.product_name}</p>
-                                  {item.engraving_text && (
-                                    <p className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded w-fit mt-0.5">
-                                      Gravação: <strong>"{item.engraving_text}"</strong>
-                                    </p>
-                                  )}
-                                  {item.engraving_file_url && (
-                                    <a 
-                                      href={item.engraving_file_url} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-[10px] text-blue-600 flex items-center gap-1 hover:underline mt-0.5"
-                                    >
-                                      <Eye className="h-2.5 w-2.5" /> Ver Imagem Original
-                                    </a>
-                                  )}
                                 </div>
                               </div>
                             ))}
