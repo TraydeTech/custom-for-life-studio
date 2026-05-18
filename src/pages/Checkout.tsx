@@ -304,6 +304,7 @@ export default function Checkout() {
         engraving_position_x: item.engraving_position_x,
         engraving_position_y: item.engraving_position_y,
         engraving_preview_url: engravingPreviewUrl,
+        engraving_file_url: item.engraving_file_url,
         product_color: item.product_color,
       });
     }
