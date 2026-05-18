@@ -42,6 +42,11 @@ interface CRUDModuleProps<T> {
   searchPlaceholder?: string;
   searchFields?: (keyof T)[];
   onBeforeSave?: (data: any) => any;
+  customActions?: (item: T) => React.ReactNode;
+  hideAddButton?: boolean;
+  onItemClick?: (item: T) => void;
+  formClassName?: string;
+  customForm?: (formData: any, setFormData: (data: any) => void) => React.ReactNode;
 }
 
 export function CRUDModule<T extends { id: string }>({
