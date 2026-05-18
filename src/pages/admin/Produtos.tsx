@@ -90,9 +90,13 @@ export default function AdminProdutos() {
               render: (val, item) => (
                 <div className="flex items-center gap-3">
                   {item.images?.[0] ? (
-                    <img src={item.images[0]} className="w-10 h-10 object-contain bg-white rounded border" />
+                    <img 
+                      src={item.images[0]} 
+                      className="w-10 h-10 object-contain bg-white rounded border cursor-pointer hover:opacity-80 transition-opacity" 
+                      onClick={() => setZoomedImage(item.images[0])}
+                    />
                   ) : (
-                    <div className="w-10 h-10 bg-muted rounded border flex items-center justify-center"><Package className="h-5 w-5 text-muted-foreground" /></div>
+                    <div className="w-10 h-10 bg-white rounded border flex items-center justify-center"><Package className="h-5 w-5 text-muted-foreground" /></div>
                   )}
                   <span className="font-medium">{val}</span>
                 </div>
