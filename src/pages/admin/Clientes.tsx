@@ -304,7 +304,7 @@ export default function AdminClientes() {
                         const url = zoomedImageType === 'preview' 
                           ? (zoomedItem?.engraving_preview_url || zoomedItem?.product_image) 
                           : zoomedItem?.engraving_file_url;
-                        if (url) handleDownload(url, `arquivo-${zoomedItem?.order_number || 'item'}-${zoomedImageType}.png`);
+                        if (url) handleDownload(url, `arquivo-${zoomedItem?.id?.substring(0, 8) || 'item'}-${zoomedImageType}.png`);
                       }}
                     >
                       <Download className="h-4 w-4" />
