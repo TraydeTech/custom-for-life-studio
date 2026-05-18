@@ -54,7 +54,7 @@ function GestaoPedidosContent() {
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [trackingCode, setTrackingCode] = useState('');
-  const [engravingZoom, setEngravingZoom] = useState<string | null>(null);
+  const [engravingZoomItem, setEngravingZoomItem] = useState<any>(null);
 
   // Fetch orders with realtime
   const { data: orders = [], isLoading } = useQuery({
@@ -305,13 +305,13 @@ function GestaoPedidosContent() {
                 {orderItems.map((item: any) => (
                   <div key={item.id} className="flex gap-3 p-3 bg-muted/50 rounded-lg">
                     {item.engraving_preview_url ? (
-                      <img src={item.engraving_preview_url} alt="Prévia" className="w-20 h-20 object-contain rounded cursor-pointer border bg-white" onClick={() => setEngravingZoom(item.engraving_preview_url)} />
+                      <img src={item.engraving_preview_url} alt="Prévia" className="w-20 h-20 object-contain rounded cursor-pointer border bg-white" onClick={() => setEngravingZoomItem(item)} />
                     ) : item.product_image ? (
                       <img 
                         src={item.product_image} 
                         alt={item.product_name} 
                         className="w-20 h-20 object-contain rounded cursor-pointer border bg-white" 
-                        onClick={() => setEngravingZoom(item.product_image)}
+                        onClick={() => setEngravingZoomItem(item)}
                       />
                     ) : (
                       <div className="w-20 h-20 bg-white rounded border flex items-center justify-center"><Package className="h-6 w-6 text-muted-foreground" /></div>
@@ -377,13 +377,45 @@ function GestaoPedidosContent() {
       </Dialog>
 
       {/* Engraving Zoom */}
-      <Dialog open={!!engravingZoom} onOpenChange={() => setEngravingZoom(null)}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white">
+      <Dialog open={!!engravingZoomItem} onOpenChange={() => setEngravingZoomItem(null)}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white text-foreground">
           <DialogHeader className="p-4 border-b">
-            <DialogTitle>Visualização da Imagem</DialogTitle>
+            <DialogTitle>Visualização da Imagem e Detalhes da Gravação</DialogTitle>
           </DialogHeader>
-          <div className="flex items-center justify-center p-4 bg-white">
-            {engravingZoom && <img src={engravingZoom} alt="Imagem" className="max-w-full max-h-[70vh] object-contain" />}
+          <div className="p-6 bg-white space-y-4">
+            <div className="flex items-center justify-center bg-white border rounded-xl overflow-hidden">
+              {engravingZoomItem && (
+                <img 
+                  src={engravingZoomItem.engraving_preview_url || engravingZoomItem.product_image || ''} 
+                  alt="Zoom" 
+                  className="max-w-full max-h-[60vh] object-contain" 
+                />
+              )}
+            </div>
+            
+            {engravingZoomItem && (engravingZoomItem.engraving_text || engravingZoomItem.engraving_file_url) && (
+              <div className="p-4 bg-muted/30 rounded-lg border space-y-3">
+                {engravingZoomItem.engraving_text && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Texto para Gravação:</p>
+                    <p className="text-lg font-bold text-primary">"{engravingZoomItem.engraving_text}"</p>
+                  </div>
+                )}
+                {engravingZoomItem.engraving_file_url && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Arquivo Original (Arte/Logo):</p>
+                    <a 
+                      href={engravingZoomItem.engraving_file_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline mt-1 font-medium"
+                    >
+                      <ImageIcon className="h-4 w-4" /> Abrir arquivo original em alta resolução
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
