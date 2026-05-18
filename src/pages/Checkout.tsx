@@ -102,7 +102,7 @@ export default function Checkout() {
     const loadProfile = async () => {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name, phone, cpf')
+        .select('full_name, phone, cpf, email')
         .eq('user_id', user.id)
         .maybeSingle();
       if (profile) {
@@ -110,7 +110,8 @@ export default function Checkout() {
           ...prev,
           name: profile.full_name || prev.name,
           phone: profile.phone || prev.phone,
-          cpf: profile.cpf || prev.cpf,
+          cpf: maskCPF(profile.cpf || '') || prev.cpf,
+          email: profile.email || prev.email,
         }));
       }
       
