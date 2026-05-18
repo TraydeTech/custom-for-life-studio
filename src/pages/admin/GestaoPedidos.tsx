@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Separator } from '@/components/ui/separator';
 import {
   Search, ChevronRight, Clock, Package, Truck, CheckCircle,
-  CreditCard, QrCode, Banknote, Eye, ArrowRight
+  CreditCard, QrCode, Banknote, Eye, ArrowRight, Image as ImageIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
