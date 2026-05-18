@@ -334,7 +334,7 @@ export default function Produto() {
   const doAddToCart = async () => {
     if (!product) return;
     
-    let uploadedFileUrl = undefined;
+    let uploadedFileUrl = null;
     if (engravingFile) {
       setIsUploading(true);
       try {
