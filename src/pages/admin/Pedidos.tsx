@@ -163,7 +163,29 @@ export default function AdminPedidos() {
                         )}
                         <div className="flex-1">
                           <p className="font-medium text-sm">{item.product_name}</p>
-                          <p className="text-xs text-muted-foreground">{item.quantity}x {formatCurrency(Number(item.unit_price))}</p>
+                          
+                          {item.engraving_text && (
+                            <div className="mt-1 p-1.5 bg-amber-500/10 border border-amber-500/20 rounded">
+                              <p className="text-[9px] text-amber-600 uppercase font-bold">Gravação:</p>
+                              <p className="text-xs text-amber-700 font-medium">"{item.engraving_text}"</p>
+                            </div>
+                          )}
+
+                          {item.engraving_file_url && (
+                            <div className="mt-1 p-1.5 bg-blue-500/10 border border-blue-500/20 rounded">
+                              <p className="text-[9px] text-blue-600 uppercase font-bold">Imagem Anexa:</p>
+                              <a 
+                                href={item.engraving_file_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-[10px] text-blue-700 hover:underline flex items-center gap-1 mt-0.5"
+                              >
+                                <Globe className="h-2.5 w-2.5" /> Ver Arquivo Original
+                              </a>
+                            </div>
+                          )}
+
+                          <p className="text-[10px] text-muted-foreground mt-1">{item.quantity}x {formatCurrency(Number(item.unit_price))}</p>
                         </div>
                         <p className="font-bold text-sm">{formatCurrency(Number(item.total_price))}</p>
                       </div>
