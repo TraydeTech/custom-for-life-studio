@@ -39,6 +39,7 @@ const statusLabels: Record<string, string> = {
 export default function AdminPedidos() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const updateStatusMutation = useMutation({
