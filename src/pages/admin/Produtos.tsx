@@ -116,63 +116,145 @@ export default function AdminProdutos() {
               )
             },
           ]}
-          customForm={(formData, setFormData) => (
-            <ScrollArea className="max-h-[75vh] pr-4">
-              <div className="space-y-6 pt-4 pb-8">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Nome do Produto *</Label>
-                    <Input value={formData.name || ''} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Categoria</Label>
-                    <Select value={formData.category_id || ''} onValueChange={(v) => setFormData({ ...formData, category_id: v })}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+          customForm={(formData, setFormData) => {
+            const variants = (formData.variants as ColorVariant[]) || [];
+            
+            const addVariant = () => {
+              const newVariants = [...variants, { color_name: '', main_image: '', additional_images: [], sort_order: variants.length, stock: 0 }];
+              setFormData({ ...formData, variants: newVariants });
+            };
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Preço de Venda *</Label>
-                    <Input type="number" step="0.01" value={formData.price || ''} onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Preço de Custo</Label>
-                    <Input type="number" step="0.01" value={formData.cost_price || ''} onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Preço Comparativo</Label>
-                    <Input type="number" step="0.01" value={formData.compare_price || ''} onChange={(e) => setFormData({ ...formData, compare_price: parseFloat(e.target.value) })} />
-                  </div>
-                </div>
+            const removeVariant = (index: number) => {
+              setFormData({ ...formData, variants: variants.filter((_, i) => i !== index) });
+            };
 
-                <div className="space-y-2">
-                  <Label>Descrição Curta</Label>
-                  <Input value={formData.short_description || ''} onChange={(e) => setFormData({ ...formData, short_description: e.target.value })} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Descrição Completa</Label>
-                  <Textarea value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
-                </div>
-
-                <div className="flex gap-6">
-                  <div className="flex items-center gap-2">
-                    <Switch checked={formData.is_active} onCheckedChange={(v) => setFormData({ ...formData, is_active: v })} />
-                    <Label>Ativo</Label>
+            return (
+              <ScrollArea className="max-h-[75vh] pr-4">
+                <div className="space-y-6 pt-4 pb-8">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Nome do Produto *</Label>
+                      <Input value={formData.name || ''} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Categoria</Label>
+                      <Select value={formData.category_id || ''} onValueChange={(v) => setFormData({ ...formData, category_id: v })}>
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent>
+                          {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Switch checked={formData.is_featured} onCheckedChange={(v) => setFormData({ ...formData, is_featured: v })} />
-                    <Label>Destaque</Label>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Preço de Venda *</Label>
+                      <Input type="number" step="0.01" value={formData.price || ''} onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Preço de Custo</Label>
+                      <Input type="number" step="0.01" value={formData.cost_price || ''} onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Preço Comparativo</Label>
+                      <Input type="number" step="0.01" value={formData.compare_price || ''} onChange={(e) => setFormData({ ...formData, compare_price: parseFloat(e.target.value) })} />
+                    </div>
+                  </div>
+
+                  {/* Gerenciamento de Cores/Variantes */}
+                  <div className="border rounded-lg p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold flex items-center gap-2"><ImageIcon className="h-4 w-4" /> Cores e Estoque</h3>
+                      <Button type="button" variant="outline" size="sm" onClick={addVariant}><Plus className="h-3 w-3 mr-1" /> Adicionar Cor</Button>
+                    </div>
+                    
+                    {variants.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Nenhuma cor cadastrada. Adicione ao menos uma para gerenciar o estoque.</p>}
+
+                    <div className="space-y-4">
+                      {variants.map((v, idx) => (
+                        <div key={idx} className="flex gap-4 items-start p-3 border rounded-lg bg-muted/20">
+                          <div className="w-16 h-16 border rounded bg-white flex-shrink-0 overflow-hidden relative group">
+                            {v.main_image ? (
+                              <img src={v.main_image} className="w-full h-full object-contain" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">Sem imagem</div>
+                            )}
+                            <Label className="absolute inset-0 cursor-pointer bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <Upload className="h-4 w-4 text-white" />
+                              <Input 
+                                type="file" 
+                                className="hidden" 
+                                accept="image/*" 
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleMainImageUpload(idx, file, variants, (v) => setFormData({ ...formData, variants: v }));
+                                }} 
+                              />
+                            </Label>
+                            {uploadingVariant === idx && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-white" /></div>}
+                          </div>
+                          
+                          <div className="flex-1 grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-[10px]">Nome da Cor</Label>
+                              <Input 
+                                className="h-8 text-xs" 
+                                value={v.color_name} 
+                                onChange={(e) => {
+                                  const updated = [...variants];
+                                  updated[idx].color_name = e.target.value;
+                                  setFormData({ ...formData, variants: updated });
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px]">Estoque</Label>
+                              <Input 
+                                type="number" 
+                                className="h-8 text-xs" 
+                                value={v.stock} 
+                                onChange={(e) => {
+                                  const updated = [...variants];
+                                  updated[idx].stock = parseInt(e.target.value) || 0;
+                                  setFormData({ ...formData, variants: updated });
+                                }}
+                              />
+                            </div>
+                          </div>
+                          
+                          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeVariant(idx)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Descrição Curta</Label>
+                    <Input value={formData.short_description || ''} onChange={(e) => setFormData({ ...formData, short_description: e.target.value })} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Descrição Completa</Label>
+                    <Textarea value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+                  </div>
+
+                  <div className="flex gap-6">
+                    <div className="flex items-center gap-2">
+                      <Switch checked={formData.is_active} onCheckedChange={(v) => setFormData({ ...formData, is_active: v })} />
+                      <Label>Ativo</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch checked={formData.is_featured} onCheckedChange={(v) => setFormData({ ...formData, is_featured: v })} />
+                      <Label>Destaque</Label>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </ScrollArea>
-          )}
+              </ScrollArea>
+            );
+          }}
           onBeforeSave={async (data) => {
             const finalData = {
               ...data,
