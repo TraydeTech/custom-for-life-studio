@@ -30,7 +30,7 @@ export default function PedidoConfirmado() {
             </div>
 
             <p className="text-muted-foreground">
-              Entraremos em contato em breve pelo WhatsApp para confirmar o pagamento e a produção da sua gravação personalizada.
+              Seu pedido foi recebido. Se você já realizou o pagamento via PIX, entraremos em contato em breve pelo WhatsApp para confirmar e iniciar a produção da sua gravação personalizada. Caso contrário, realize o pagamento para que possamos prosseguir.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">

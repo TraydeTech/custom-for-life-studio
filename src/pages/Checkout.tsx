@@ -15,6 +15,7 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
+import { generatePixPayload } from '@/lib/pix';
 import {
   ChevronLeft, ChevronRight, MapPin, User, CreditCard, Loader2,
   QrCode, Lock, Copy, CheckCircle, Clock, Banknote
@@ -65,12 +66,10 @@ export default function Checkout() {
   // Payment state
   const [paymentTab, setPaymentTab] = useState('pix');
   const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
-  const [pixData, setPixData] = useState<{ qrCode: string; qrCodeText: string; invoiceId: string } | null>(null);
-  const [pixTimer, setPixTimer] = useState(1800); // 30 min
-  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [pixData, setPixData] = useState<{ qrCodeText: string; orderNumber: string } | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
 
-  // Card state
+  // Card state (disabled for now)
   const [cardNumber, setCardNumber] = useState('');
   const [cardName, setCardName] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
@@ -135,20 +134,7 @@ export default function Checkout() {
     };
   }, []);
 
-  // PIX timer
-  useEffect(() => {
-    if (!pixData) return;
-    timerRef.current = window.setInterval(() => {
-      setPixTimer(prev => {
-        if (prev <= 0) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [pixData]);
+  // PIX timer removed as we are using static PIX for now
 
   // We allow visitors to proceed, but they'll see the auth modal if they aren't logged in when finishing
   const isGuest = !user;
@@ -263,59 +249,43 @@ export default function Checkout() {
   const handlePixPayment = async () => {
     setIsGeneratingPayment(true);
     try {
-      // Se for convidado, abre o modal de auth antes de criar o pedido
       if (!user) {
         setShowAuthModal(true);
         return;
       }
       const order = orderId ? { id: orderId } : await createOrder();
+      const orderNumber = (order as any).order_number;
 
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          orderId: order.id,
-          paymentMethod: 'pix',
-          customerName: customer.name,
-          customerEmail: customer.email,
-          customerCpf: unmaskCPF(customer.cpf),
-        },
+      // Chave PIX informada: 008.697.879-93
+      const pixKey = '008.697.879-93';
+      const payload = generatePixPayload(
+        pixKey,
+        'Custom For Life',
+        'TIMBO',
+        cartTotal,
+        orderNumber
+      );
+
+      setPixData({
+        qrCodeText: payload,
+        orderNumber: orderNumber,
       });
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      if (data.pixQrCode && data.pixQrCodeText) {
-        setPixData({
-          qrCode: data.pixQrCode,
-          qrCodeText: data.pixQrCodeText,
-          invoiceId: data.invoiceId,
-        });
-
-        // Start polling
-        checkIntervalRef.current = window.setInterval(async () => {
-          try {
-            const { data: statusData } = await supabase.functions.invoke('check-payment-status', {
-              body: { invoiceId: data.invoiceId },
-            });
-            if (statusData?.paid) {
-              if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-              await clearCart.mutateAsync();
-              toast.success('Pagamento PIX confirmado!');
-              navigate(`/pedido-confirmado?pedido=${data.invoiceId}`);
-            }
-          } catch (e) { console.error('Poll error:', e); }
-        }, 5000);
-      } else {
-        // No PIX data, fallback to WhatsApp
-        await clearCart.mutateAsync();
-        toast.success('Pedido criado! Finalize pelo link de pagamento.');
-        if (data.invoiceUrl) window.open(data.invoiceUrl, '_blank');
-        navigate(`/pedido-confirmado?pedido=${(order as any).order_number || ''}`);
-      }
+      // Clear cart after generating PIX to prevent double orders
+      await clearCart.mutateAsync();
+      
+      toast.success('Pedido criado! Realize o pagamento via PIX para processarmos seu pedido.');
     } catch (error: any) {
       console.error('PIX error:', error);
       toast.error(error.message || 'Erro ao gerar PIX');
     } finally {
       setIsGeneratingPayment(false);
+    }
+  };
+
+  const handleFinishOrder = () => {
+    if (pixData) {
+      navigate(`/pedido-confirmado?pedido=${pixData.orderNumber}`);
     }
   };
 
@@ -547,11 +517,6 @@ export default function Checkout() {
                         <div className="bg-white p-4 rounded-lg inline-block">
                           <QRCodeSVG value={pixData.qrCodeText} size={192} />
                         </div>
-                        <div className="flex items-center gap-2 justify-center">
-                          <Clock className="h-4 w-4 text-amber-500" />
-                          <span className="text-amber-500 font-mono font-bold">{formatTime(pixTimer)}</span>
-                          <span className="text-xs text-muted-foreground">para expirar</span>
-                        </div>
                         <div className="bg-muted p-3 rounded-lg">
                           <p className="text-xs text-muted-foreground mb-2">Código PIX copia e cola:</p>
                           <div className="flex gap-2">
@@ -559,46 +524,45 @@ export default function Checkout() {
                             <Button variant="outline" size="icon" onClick={copyPixCode}><Copy className="h-4 w-4" /></Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 justify-center text-primary">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="text-sm">Aguardando confirmação do pagamento PIX...</span>
+                        <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 flex gap-3 text-left">
+                          <CheckCircle className="h-5 w-5 text-primary shrink-0" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-bold text-primary">PIX Gerado!</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              Após realizar o pagamento, clique no botão abaixo para concluir seu pedido. Entraremos em contato para confirmar a produção.
+                            </p>
+                          </div>
                         </div>
+                        <Button 
+                          className="w-full h-12 text-lg font-bold bg-green-600 hover:bg-green-700" 
+                          onClick={handleFinishOrder}
+                        >
+                          Já realizei o pagamento
+                        </Button>
                       </div>
                     )}
                   </TabsContent>
 
                   {/* Credit Card Tab */}
                   <TabsContent value="credit" className="space-y-4 pt-4">
-                    <CardForm
-                      cardNumber={cardNumber} setCardNumber={setCardNumber}
-                      cardName={cardName} setCardName={setCardName}
-                      cardExpiry={cardExpiry} setCardExpiry={setCardExpiry}
-                      cardCvv={cardCvv} setCardCvv={setCardCvv}
-                      formatCardNumber={formatCardNumber} formatExpiry={formatExpiry}
-                      isCredit
-                      installments={installments} setInstallments={setInstallments}
-                      installmentOptions={installmentOptions}
-                      isSubmitting={isSubmitting}
-                      onSubmit={() => handleCardPayment('credit_card')}
-                      total={cartTotal}
-                    />
+                    <div className="bg-muted/50 p-8 rounded-xl border border-dashed text-center space-y-2">
+                      <CreditCard className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                      <h3 className="font-bold text-muted-foreground">Pagamento via Cartão indisponível</h3>
+                      <p className="text-sm text-muted-foreground">
+                        No momento aceitamos apenas PIX. Pagamentos via cartão de crédito estarão disponíveis em breve.
+                      </p>
+                    </div>
                   </TabsContent>
 
                   {/* Debit Card Tab */}
                   <TabsContent value="debit" className="space-y-4 pt-4">
-                    <CardForm
-                      cardNumber={cardNumber} setCardNumber={setCardNumber}
-                      cardName={cardName} setCardName={setCardName}
-                      cardExpiry={cardExpiry} setCardExpiry={setCardExpiry}
-                      cardCvv={cardCvv} setCardCvv={setCardCvv}
-                      formatCardNumber={formatCardNumber} formatExpiry={formatExpiry}
-                      isCredit={false}
-                      installments={installments} setInstallments={setInstallments}
-                      installmentOptions={installmentOptions}
-                      isSubmitting={isSubmitting}
-                      onSubmit={() => handleCardPayment('debit_card')}
-                      total={cartTotal}
-                    />
+                    <div className="bg-muted/50 p-8 rounded-xl border border-dashed text-center space-y-2">
+                      <Banknote className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                      <h3 className="font-bold text-muted-foreground">Pagamento via Débito indisponível</h3>
+                      <p className="text-sm text-muted-foreground">
+                        No momento aceitamos apenas PIX. Pagamentos via cartão de débito estarão disponíveis em breve.
+                      </p>
+                    </div>
                   </TabsContent>
                 </Tabs>
 
