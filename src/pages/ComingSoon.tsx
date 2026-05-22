@@ -61,7 +61,7 @@ export default function ComingSoon() {
               asChild
             >
               <a
-                href="https://wa.me/5511999999999"
+                href={`https://wa.me/5547984492949?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de saber mais sobre os brindes personalizados.')}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
