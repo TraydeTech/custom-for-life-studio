@@ -6,20 +6,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import ScrollToTop from "./components/ScrollToTop";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Cadastro from "./pages/Cadastro";
-import EsqueciSenha from "./pages/EsqueciSenha";
-import RedefinirSenha from "./pages/RedefinirSenha";
-import Loja from "./pages/Loja";
-import Produto from "./pages/Produto";
-import Carrinho from "./pages/Carrinho";
-import Checkout from "./pages/Checkout";
-import PedidoConfirmado from "./pages/PedidoConfirmado";
-import MinhaConta from "./pages/MinhaConta";
-import MeusPedidos from "./pages/MeusPedidos";
-import MeusEnderecos from "./pages/MeusEnderecos";
-import MeusChamados from "./pages/MeusChamados";
+import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -34,6 +21,7 @@ import AdminRelatorios from "./pages/admin/Relatorios";
 import AdminChamados from "./pages/admin/Chamados";
 import AdminGestaoPedidos from "./pages/admin/GestaoPedidos";
 
+
 const queryClient = new QueryClient();
 
 function AppContent() {
@@ -42,23 +30,8 @@ function AppContent() {
   return (
     <>
       <ScrollToTop />
-      {!isAdmin && <WhatsAppButton />}
       <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/cadastro" element={<Cadastro />} />
-        <Route path="/esqueci-senha" element={<EsqueciSenha />} />
-        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
-        <Route path="/loja" element={<Loja />} />
-        <Route path="/produto/:slug" element={<Produto />} />
-        <Route path="/carrinho" element={<Carrinho />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/pedido-confirmado" element={<PedidoConfirmado />} />
-        <Route path="/minha-conta" element={<MinhaConta />} />
-        <Route path="/minha-conta/pedidos" element={<MeusPedidos />} />
-        <Route path="/minha-conta/enderecos" element={<MeusEnderecos />} />
-        <Route path="/minha-conta/chamados" element={<MeusChamados />} />
-        {/* Admin Routes */}
+        {/* Admin Routes - mantidos ativos */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/pdv" element={<AdminPDV />} />
@@ -71,8 +44,10 @@ function AppContent() {
         <Route path="/admin/relatorios" element={<AdminRelatorios />} />
         <Route path="/admin/chamados" element={<AdminChamados />} />
         <Route path="/admin/gestao-pedidos" element={<AdminGestaoPedidos />} />
-        <Route path="*" element={<NotFound />} />
+        {/* Todas as outras rotas exibem o Coming Soon */}
+        <Route path="*" element={<ComingSoon />} />
       </Routes>
+
     </>
   );
 }
