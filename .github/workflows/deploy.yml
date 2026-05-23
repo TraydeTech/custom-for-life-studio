@@ -24,8 +24,9 @@ jobs:
           port: 22122
           username: customforlife3
           password: ${{ secrets.DEPLOY_PASSWORD }}
-          source: dist/*
-          target: /home/customforlife3/customforlife.com.br/www/dist/
+          source: dist/
+          target: /home/customforlife3/customforlife.com.br/www/
+          strip_components: 1
 
       - name: Copy to www
         uses: appleboy/ssh-action@v1.0.3
@@ -34,10 +35,4 @@ jobs:
           port: 22122
           username: customforlife3
           password: ${{ secrets.DEPLOY_PASSWORD }}
-          script: |
-            rm -rf ~/customforlife.com.br/www/assets ~/customforlife.com.br/www/dist
-            mkdir -p ~/customforlife.com.br/www/assets
-            cp -r /home/customforlife3/customforlife.com.br/www/dist/assets/* ~/customforlife.com.br/www/assets/
-            cp /home/customforlife3/customforlife.com.br/www/dist/index.html ~/customforlife.com.br/www/
-            cp /home/customforlife3/customforlife.com.br/www/dist/favicon.ico ~/customforlife.com.br/www/
-            cp /home/customforlife3/customforlife.com.br/www/dist/robots.txt ~/customforlife.com.br/www/
+          script: echo "deploy ok"
