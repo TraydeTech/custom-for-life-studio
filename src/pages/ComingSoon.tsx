@@ -21,7 +21,7 @@ export default function ComingSoon() {
           {/* Logo */}
           <div className="flex justify-center mb-8">
             <div className="bg-white p-5 rounded-2xl shadow-xl inline-block">
-              <img src={logoImage} alt="Custom For Life" className="h-20 md:h-24 w-auto" />
+              <img src={logoImage} alt="Custom For Life" className="h-32 md:h-36 w-auto" />
             </div>
           </div>
 
