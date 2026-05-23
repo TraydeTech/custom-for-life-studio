@@ -72,8 +72,8 @@ export default function ComingSoon() {
 
             <Button
               size="xl"
-              variant="outline"
-              className="border-2 rounded-full h-14 px-8 text-lg"
+              variant="hero"
+              className="rounded-full h-14 px-8 text-lg"
               asChild
             >
               <a
