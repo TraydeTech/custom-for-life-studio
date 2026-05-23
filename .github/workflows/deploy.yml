@@ -34,4 +34,7 @@ jobs:
           port: 22122
           username: customforlife3
           password: ${{ secrets.DEPLOY_PASSWORD }}
-          script: cp -r ~/customforlife.com.br/www/dist/* ~/customforlife.com.br/www/
+          script: |
+            rm -rf ~/customforlife.com.br/www/assets
+            rm -f ~/customforlife.com.br/www/index.html
+            cp -r ~/customforlife.com.br/www/dist/* ~/customforlife.com.br/www/
