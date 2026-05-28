@@ -5,7 +5,7 @@ import { ProtectedAdminRoute } from '@/components/admin/ProtectedAdminRoute';
 import { Tables, Constants } from '@/integrations/supabase/types';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { ShoppingBag, Eye, Printer, Globe, Store, Package, Download, FileImage } from 'lucide-react';
+import { ShoppingBag, Eye, Printer, Globe, Store, Package, Download, FileImage, CheckCircle, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -70,6 +70,24 @@ export default function AdminPedidos() {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       toast.success('Status atualizado');
     },
+  });
+
+  const confirmPixMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const { error } = await supabase
+        .from('orders')
+        .update({ payment_status: 'paid' as any, status: 'processing' as any } as any)
+        .eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      if (selectedOrder) {
+        setSelectedOrder(prev => prev ? { ...prev, payment_status: 'paid' as any, status: 'processing' as any } : prev);
+      }
+      toast.success('Pagamento PIX confirmado! Pedido movido para Processando.');
+    },
+    onError: () => toast.error('Erro ao confirmar PIX'),
   });
 
   const { data: orderItems = [] } = useQuery({
@@ -226,6 +244,58 @@ export default function AdminPedidos() {
                     ))}
                   </div>
                 </div>
+
+                {/* PIX Receipt + Confirmation */}
+                {(selectedOrder as any).payment_receipt_url || selectedOrder.payment_method === 'pix' || selectedOrder.payment_status === 'pending' ? (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4" /> Pagamento PIX
+                    </h3>
+                    <div className={`p-4 rounded-lg border-2 space-y-3 ${selectedOrder.payment_status === 'paid' ? 'border-green-500/30 bg-green-500/5' : 'border-amber-500/30 bg-amber-500/5'}`}>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">Status do pagamento</span>
+                        <span className={`font-bold ${selectedOrder.payment_status === 'paid' ? 'text-green-600' : 'text-amber-600'}`}>
+                          {selectedOrder.payment_status === 'paid' ? 'Pago ✓' : 'Aguardando confirmação'}
+                        </span>
+                      </div>
+                      {(selectedOrder as any).payment_receipt_url ? (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Comprovante enviado pelo cliente</p>
+                          <div className="relative rounded-lg overflow-hidden border bg-white">
+                            <img
+                              src={(selectedOrder as any).payment_receipt_url}
+                              alt="Comprovante PIX"
+                              className="w-full max-h-64 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => window.open((selectedOrder as any).payment_receipt_url, '_blank')}
+                            />
+                          </div>
+                          <a
+                            href={(selectedOrder as any).payment_receipt_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" /> Abrir em tamanho real
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Nenhum comprovante enviado pelo cliente ainda.</p>
+                      )}
+                      {selectedOrder.payment_status !== 'paid' && (
+                        <Button
+                          className="w-full gap-2 bg-green-600 hover:bg-green-700"
+                          onClick={() => confirmPixMutation.mutate(selectedOrder.id)}
+                          disabled={confirmPixMutation.isPending}
+                        >
+                          {confirmPixMutation.isPending
+                            ? <><CheckCircle className="h-4 w-4 animate-spin" /> Confirmando...</>
+                            : <><CheckCircle className="h-4 w-4" /> Confirmar PIX e Iniciar Produção</>
+                          }
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
 
                 {selectedOrder.shipping_address && (
                   <div className="space-y-2">

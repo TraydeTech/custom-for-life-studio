@@ -18,11 +18,19 @@ import { QRCodeSVG } from 'qrcode.react';
 import { generatePixPayload } from '@/lib/pix';
 import {
   ChevronLeft, ChevronRight, MapPin, User, CreditCard, Loader2,
-  QrCode, Lock, Copy, CheckCircle, Clock, Banknote
+  QrCode, Lock, Copy, CheckCircle, Banknote, Truck, Store, MessageCircle, Upload, FileCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { maskCPF, unmaskCPF, isValidCPF } from '@/lib/cpf';
 import { buildInstallmentOptions } from '@/lib/installments';
+
+type DeliveryMethod = 'pickup' | 'blumenau' | 'other';
+
+const SHIPPING_COSTS: Record<DeliveryMethod, number> = {
+  pickup: 0,
+  blumenau: 20,
+  other: 0,
+};
 
 interface CustomerData {
   name: string;
@@ -47,7 +55,10 @@ export default function Checkout() {
   const { user } = useAuth();
   const { cartItems, cartTotal: liveCartTotal, clearCart } = useCart();
   const [fixedTotal, setFixedTotal] = useState<number | null>(null);
-  const cartTotal = fixedTotal ?? liveCartTotal;
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('blumenau');
+  const shippingCost = SHIPPING_COSTS[deliveryMethod];
+  const cartSubtotal = fixedTotal ?? liveCartTotal;
+  const cartTotal = cartSubtotal + shippingCost;
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
@@ -74,12 +85,18 @@ export default function Checkout() {
   const [pixData, setPixData] = useState<{ qrCodeText: string; orderNumber: string } | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
 
-  // Card state (disabled for now)
+  // Card state
   const [cardNumber, setCardNumber] = useState('');
   const [cardName, setCardName] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
   const [installments, setInstallments] = useState('1');
+
+  // PIX receipt upload state
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  const [receiptUploaded, setReceiptUploaded] = useState(false);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
 
   const checkIntervalRef = useRef<number | null>(null);
   const timerRef = useRef<number | null>(null);
@@ -273,15 +290,24 @@ export default function Checkout() {
       city: address.city, state: address.state, zip_code: address.zip_code,
     };
 
+    const deliveryLabel = deliveryMethod === 'pickup'
+      ? 'Retirada no local'
+      : deliveryMethod === 'blumenau'
+        ? 'Entrega em Blumenau'
+        : 'Entrega fora de Blumenau (frete a combinar)';
+
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
         user_id: user.id,
-        subtotal: cartTotal, total: cartTotal,
-        shipping_address: shippingAddress,
+        subtotal: cartSubtotal,
+        shipping_cost: shippingCost,
+        total: cartTotal,
+        shipping_address: deliveryMethod === 'pickup' ? { name: customer.name, phone: customer.phone, street: 'Retirada no local', number: '-', neighborhood: '-', city: 'Blumenau', state: 'SC', zip_code: '-' } : shippingAddress,
         status: 'pending', payment_status: 'pending',
-        notes: `Cliente: ${customer.name} | Tel: ${customer.phone} | CPF: ${customer.cpf || 'N/A'}`,
+        notes: `Cliente: ${customer.name} | Tel: ${customer.phone} | CPF: ${customer.cpf || 'N/A'} | Entrega: ${deliveryLabel}`,
         order_number: 'temp', source: 'site',
+        delivery_method: deliveryMethod,
       } as any)
       .select()
       .single();
@@ -338,7 +364,7 @@ export default function Checkout() {
         setShowAuthModal(true);
         return;
       }
-      // Fix the total before clearing the cart
+      // Fix the subtotal before clearing the cart
       setFixedTotal(liveCartTotal);
       const order = orderId ? { id: orderId } : await createOrder();
       const orderNumber = (order as any).order_number;
@@ -367,6 +393,27 @@ export default function Checkout() {
       toast.error(error.message || 'Erro ao gerar PIX');
     } finally {
       setIsGeneratingPayment(false);
+    }
+  };
+
+  const handleReceiptUpload = async () => {
+    if (!receiptFile || !orderId) return;
+    setIsUploadingReceipt(true);
+    try {
+      const ext = receiptFile.name.split('.').pop() || 'jpg';
+      const fileName = `payment-receipts/${orderId}-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(fileName, receiptFile, { contentType: receiptFile.type });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(fileName);
+      await supabase.from('orders').update({ payment_receipt_url: urlData.publicUrl } as any).eq('id', orderId);
+      setReceiptUploaded(true);
+      toast.success('Comprovante enviado com sucesso!');
+    } catch (err: any) {
+      toast.error('Erro ao enviar comprovante: ' + err.message);
+    } finally {
+      setIsUploadingReceipt(false);
     }
   };
 
@@ -523,13 +570,84 @@ export default function Checkout() {
           </Card>
         )}
 
-        {/* Step 2 — Address */}
+        {/* Step 2 — Address + Delivery */}
         {step === 2 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" />Endereço de Entrega</CardTitle>
+              <CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" />Entrega</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Delivery method selection */}
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">Forma de Entrega *</Label>
+                <div className="grid grid-cols-1 gap-3">
+                  {/* Pickup */}
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryMethod('pickup')}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 text-left transition-all ${deliveryMethod === 'pickup' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}
+                  >
+                    <Store className={`h-5 w-5 shrink-0 ${deliveryMethod === 'pickup' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm">Retirada no local</p>
+                      <p className="text-xs text-muted-foreground">Retire seu pedido diretamente na loja</p>
+                    </div>
+                    <span className="font-bold text-sm text-green-600">Grátis</span>
+                  </button>
+                  {/* Blumenau delivery */}
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryMethod('blumenau')}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 text-left transition-all ${deliveryMethod === 'blumenau' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}
+                  >
+                    <Truck className={`h-5 w-5 shrink-0 ${deliveryMethod === 'blumenau' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm">Entrega em Blumenau</p>
+                      <p className="text-xs text-muted-foreground">Entrega na cidade de Blumenau — SC</p>
+                    </div>
+                    <span className="font-bold text-sm text-primary">R$ 20,00</span>
+                  </button>
+                  {/* Outside Blumenau */}
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryMethod('other')}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 text-left transition-all ${deliveryMethod === 'other' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}
+                  >
+                    <MessageCircle className={`h-5 w-5 shrink-0 ${deliveryMethod === 'other' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm">Fora de Blumenau</p>
+                      <p className="text-xs text-muted-foreground">Entre em contato para calcular o frete</p>
+                    </div>
+                    <span className="font-bold text-sm text-muted-foreground">A combinar</span>
+                  </button>
+                </div>
+                {deliveryMethod === 'other' && (
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
+                    <MessageCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-semibold text-amber-700 dark:text-amber-400">Frete a combinar</p>
+                      <p className="text-amber-600 dark:text-amber-500 mt-1">
+                        Entre em contato com a Custom For Life pelo WhatsApp para calcular o frete antes de finalizar seu pedido.
+                      </p>
+                      <a
+                        href="https://wa.me/5547984492949?text=Olá! Preciso calcular o frete para minha cidade antes de finalizar o pedido."
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        Consultar frete via WhatsApp
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Address fields — hidden for pickup */}
+              {deliveryMethod !== 'pickup' && (
+                <>
               {user && userAddresses.length > 0 && (
                 <div className="mb-6">
                   <Label>Selecione um endereço salvo</Label>
@@ -563,9 +681,11 @@ export default function Checkout() {
                 <div className="col-span-2"><Label htmlFor="city">Cidade *</Label><Input id="city" value={address.city} onChange={e => setAddress(prev => ({ ...prev, city: e.target.value }))} /></div>
                 <div><Label htmlFor="state">Estado *</Label><Input id="state" value={address.state} onChange={e => setAddress(prev => ({ ...prev, state: e.target.value }))} maxLength={2} placeholder="SP" /></div>
               </div>
+              </>
+              )}
               <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="mr-2 h-4 w-4" />Voltar</Button>
-                <Button onClick={() => setStep(3)} disabled={!canProceedStep2}>Próximo<ChevronRight className="ml-2 h-4 w-4" /></Button>
+                <Button onClick={() => setStep(3)} disabled={deliveryMethod !== 'pickup' && !canProceedStep2}>Próximo<ChevronRight className="ml-2 h-4 w-4" /></Button>
               </div>
             </CardContent>
           </Card>
@@ -589,6 +709,14 @@ export default function Checkout() {
                   </div>
                 ))}
                 <Separator />
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(cartSubtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Frete ({deliveryMethod === 'pickup' ? 'Retirada' : deliveryMethod === 'blumenau' ? 'Blumenau' : 'A combinar'})</span>
+                  <span>{deliveryMethod === 'other' ? 'A combinar' : formatCurrency(shippingCost)}</span>
+                </div>
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
                   <span className="text-primary">{formatCurrency(cartTotal)}</span>
@@ -657,8 +785,54 @@ export default function Checkout() {
                             </p>
                           </div>
                         </div>
-                        <Button 
-                          className="w-full h-12 text-lg font-bold bg-green-600 hover:bg-green-700" 
+                        {/* Receipt Upload */}
+                        <div className="border-2 border-dashed border-border rounded-xl p-4 space-y-3">
+                          <p className="text-sm font-semibold text-center">Anexar Comprovante PIX</p>
+                          <p className="text-xs text-muted-foreground text-center">Envie a foto/print do comprovante para agilizar a confirmação</p>
+                          <input
+                            ref={receiptInputRef}
+                            type="file"
+                            accept="image/*,application/pdf"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              setReceiptFile(file);
+                              setReceiptUploaded(false);
+                            }}
+                          />
+                          {!receiptUploaded ? (
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="flex-1 gap-2"
+                                onClick={() => receiptInputRef.current?.click()}
+                              >
+                                <Upload className="h-4 w-4" />
+                                {receiptFile ? receiptFile.name : 'Selecionar arquivo'}
+                              </Button>
+                              {receiptFile && (
+                                <Button
+                                  type="button"
+                                  className="gap-2"
+                                  onClick={handleReceiptUpload}
+                                  disabled={isUploadingReceipt}
+                                >
+                                  {isUploadingReceipt ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                  Enviar
+                                </Button>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 justify-center text-green-600 font-semibold">
+                              <FileCheck className="h-5 w-5" />
+                              Comprovante enviado com sucesso!
+                            </div>
+                          )}
+                        </div>
+
+                        <Button
+                          className="w-full h-12 text-lg font-bold bg-green-600 hover:bg-green-700"
                           onClick={handleFinishOrder}
                         >
                           Já realizei o pagamento

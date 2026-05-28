@@ -8,18 +8,20 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  Search, 
-  Plus, 
-  Minus, 
-  Trash2, 
-  ShoppingCart, 
+import {
+  Search,
+  Plus,
+  Minus,
+  Trash2,
+  ShoppingCart,
   CreditCard,
   Banknote,
   QrCode,
   Check,
   X,
-  Package
+  Package,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -37,6 +39,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tables } from '@/integrations/supabase/types';
+import { QRCodeSVG } from 'qrcode.react';
+import { generatePixPayload } from '@/lib/pix';
 
 type Product = Tables<'products'>;
 
@@ -56,6 +60,7 @@ export default function AdminPDV() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [amountReceived, setAmountReceived] = useState<number>(0);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [pixConfirmed, setPixConfirmed] = useState(false);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['pdv-products'],
@@ -128,6 +133,7 @@ export default function AdminPDV() {
     setDiscount(0);
     setCustomerName('');
     setAmountReceived(0);
+    setPixConfirmed(false);
   };
 
   const subtotal = cart.reduce(
@@ -202,6 +208,7 @@ export default function AdminPDV() {
       clearCart();
       setPaymentMethod('');
       setAmountReceived(0);
+      setPixConfirmed(false);
       setIsCheckoutOpen(false);
       
       // Refresh products to update stock
@@ -488,6 +495,42 @@ export default function AdminPDV() {
                 </Select>
               </div>
 
+              {/* PIX confirmation panel */}
+              {paymentMethod === 'pix' && (
+                <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="text-center space-y-3">
+                    <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">QR Code para o cliente pagar</p>
+                    <div className="flex justify-center">
+                      <div className="bg-white p-3 rounded-lg inline-block border">
+                        <QRCodeSVG
+                          value={generatePixPayload('008.697.879-93', 'Custom For Life', 'TIMBO', total, `PDV-${Date.now()}`)}
+                          size={160}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 font-mono font-bold">Chave PIX: 008.697.879-93</p>
+                    <p className="text-sm font-bold text-blue-800 dark:text-blue-200">Valor: {formatCurrency(total)}</p>
+                  </div>
+                  <div
+                    className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${pixConfirmed ? 'border-green-500 bg-green-50 dark:bg-green-950/30' : 'border-border hover:border-green-500/50 bg-white dark:bg-slate-900'}`}
+                    onClick={() => setPixConfirmed(!pixConfirmed)}
+                  >
+                    {pixConfirmed
+                      ? <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+                      : <AlertCircle className="h-5 w-5 text-muted-foreground shrink-0" />
+                    }
+                    <div>
+                      <p className={`font-semibold text-sm ${pixConfirmed ? 'text-green-700 dark:text-green-400' : ''}`}>
+                        {pixConfirmed ? 'PIX confirmado no valor correto!' : 'Confirmar recebimento do PIX'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {pixConfirmed ? 'Você pode finalizar a venda' : `Clique após verificar o recebimento de ${formatCurrency(total)}`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Cash change calculator */}
               {paymentMethod === 'dinheiro' && (
                 <div className="space-y-3 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
@@ -560,7 +603,11 @@ export default function AdminPDV() {
               >
                 Cancelar
               </Button>
-              <Button onClick={handleCheckout} disabled={isProcessing}>
+              <Button
+                onClick={handleCheckout}
+                disabled={isProcessing || (paymentMethod === 'pix' && !pixConfirmed)}
+                title={paymentMethod === 'pix' && !pixConfirmed ? 'Confirme o recebimento do PIX para finalizar' : ''}
+              >
                 {isProcessing ? 'Processando...' : 'Confirmar Venda'}
               </Button>
             </DialogFooter>
