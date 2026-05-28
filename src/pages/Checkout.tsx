@@ -207,7 +207,24 @@ export default function Checkout() {
     return d;
   };
 
+  const validateStockAtCheckout = async () => {
+    for (const item of cartItems) {
+      const { data: product } = await supabase
+        .from('products')
+        .select('stock, name')
+        .eq('id', item.product_id)
+        .maybeSingle();
+      if (!product) throw new Error(`Produto não encontrado: ${item.product?.name}`);
+      if (product.stock < item.quantity) {
+        throw new Error(
+          `Estoque insuficiente para "${product.name}". Disponível: ${product.stock} unidade(s).`
+        );
+      }
+    }
+  };
+
   const createOrder = async () => {
+    await validateStockAtCheckout();
     // 1. Atualizar CRM (Perfil)
     if (user) {
       await supabase.from('profiles').upsert({
@@ -652,24 +669,38 @@ export default function Checkout() {
 
                   {/* Credit Card Tab */}
                   <TabsContent value="credit" className="space-y-4 pt-4">
-                    <div className="bg-muted/50 p-8 rounded-xl border border-dashed text-center space-y-2">
-                      <CreditCard className="h-12 w-12 mx-auto text-muted-foreground/50" />
-                      <h3 className="font-bold text-muted-foreground">Pagamento via Cartão indisponível</h3>
-                      <p className="text-sm text-muted-foreground">
-                        No momento aceitamos apenas PIX. Pagamentos via cartão de crédito estarão disponíveis em breve.
-                      </p>
-                    </div>
+                    <CardForm
+                      cardNumber={cardNumber} setCardNumber={setCardNumber}
+                      cardName={cardName} setCardName={setCardName}
+                      cardExpiry={cardExpiry} setCardExpiry={setCardExpiry}
+                      cardCvv={cardCvv} setCardCvv={setCardCvv}
+                      formatCardNumber={formatCardNumber}
+                      formatExpiry={formatExpiry}
+                      isCredit={true}
+                      installments={installments} setInstallments={setInstallments}
+                      installmentOptions={installmentOptions}
+                      isSubmitting={isSubmitting}
+                      onSubmit={() => handleCardPayment('credit_card')}
+                      total={cartTotal}
+                    />
                   </TabsContent>
 
                   {/* Debit Card Tab */}
                   <TabsContent value="debit" className="space-y-4 pt-4">
-                    <div className="bg-muted/50 p-8 rounded-xl border border-dashed text-center space-y-2">
-                      <Banknote className="h-12 w-12 mx-auto text-muted-foreground/50" />
-                      <h3 className="font-bold text-muted-foreground">Pagamento via Débito indisponível</h3>
-                      <p className="text-sm text-muted-foreground">
-                        No momento aceitamos apenas PIX. Pagamentos via cartão de débito estarão disponíveis em breve.
-                      </p>
-                    </div>
+                    <CardForm
+                      cardNumber={cardNumber} setCardNumber={setCardNumber}
+                      cardName={cardName} setCardName={setCardName}
+                      cardExpiry={cardExpiry} setCardExpiry={setCardExpiry}
+                      cardCvv={cardCvv} setCardCvv={setCardCvv}
+                      formatCardNumber={formatCardNumber}
+                      formatExpiry={formatExpiry}
+                      isCredit={false}
+                      installments={installments} setInstallments={setInstallments}
+                      installmentOptions={installmentOptions}
+                      isSubmitting={isSubmitting}
+                      onSubmit={() => handleCardPayment('debit_card')}
+                      total={cartTotal}
+                    />
                   </TabsContent>
                 </Tabs>
 

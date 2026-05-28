@@ -106,6 +106,7 @@ export function RegisterForm() {
   const [loadingCep, setLoadingCep] = useState(false);
   const [loadingCnpj, setLoadingCnpj] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -655,7 +656,27 @@ export function RegisterForm() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={loading}>
+          <div className="flex items-start gap-3 w-full">
+            <input
+              type="checkbox"
+              id="acceptTerms"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-primary cursor-pointer"
+            />
+            <label htmlFor="acceptTerms" className="text-sm text-muted-foreground leading-snug cursor-pointer">
+              Li e concordo com a{' '}
+              <Link to="/politica-de-privacidade" className="text-primary hover:underline" target="_blank">
+                Política de Privacidade
+              </Link>{' '}
+              e os{' '}
+              <Link to="/termos-de-uso" className="text-primary hover:underline" target="_blank">
+                Termos de Uso
+              </Link>
+              . Autorizo o tratamento dos meus dados conforme a LGPD (Lei 13.709/2018).
+            </label>
+          </div>
+          <Button type="submit" className="w-full" disabled={loading || !acceptedTerms}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Criar Conta
           </Button>

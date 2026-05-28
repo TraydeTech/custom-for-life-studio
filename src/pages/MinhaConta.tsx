@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -19,6 +20,7 @@ export default function MinhaConta() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Redirecionar se não estiver logado
   useEffect(() => {
@@ -82,6 +84,28 @@ export default function MinhaConta() {
       toast.error('Erro ao salvar perfil');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user?.id) return;
+    setIsDeletingAccount(true);
+    try {
+      await supabase.from('cart_items').delete().eq('user_id', user.id);
+      await supabase.from('addresses').delete().eq('user_id', user.id);
+      await supabase.from('profiles').update({
+        full_name: 'Conta Excluída',
+        phone: null,
+        cpf: null,
+      }).eq('user_id', user.id);
+      await supabase.auth.signOut();
+      toast.success('Sua conta foi excluída. Seus dados pessoais foram removidos.');
+      navigate('/');
+    } catch (err) {
+      console.error('Erro ao excluir conta:', err);
+      toast.error('Erro ao excluir conta. Tente novamente ou entre em contato.');
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
@@ -200,6 +224,45 @@ export default function MinhaConta() {
               </Button>
             </form>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-destructive/30 mt-6">
+        <CardHeader>
+          <CardTitle className="text-destructive flex items-center gap-2">
+            <Trash2 className="h-5 w-5" />
+            Zona de Perigo
+          </CardTitle>
+          <CardDescription>
+            A exclusão da conta remove seus dados pessoais permanentemente (LGPD — art. 18). Pedidos anteriores são mantidos para fins fiscais.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={isDeletingAccount}>
+                {isDeletingAccount ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Excluir minha conta
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Tem certeza que deseja excluir sua conta?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação removerá seus dados pessoais (nome, CPF, telefone, endereços) de forma permanente. Você será desconectado imediatamente.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteAccount}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  Sim, excluir minha conta
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </AccountLayout>
