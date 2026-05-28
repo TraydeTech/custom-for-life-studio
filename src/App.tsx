@@ -2,36 +2,75 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import ScrollToTop from "./components/ScrollToTop";
-import ComingSoon from "./pages/ComingSoon";
-import NotFound from "./pages/NotFound";
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminDashboard from "./pages/admin/Dashboard";
-import AdminProdutos from "./pages/admin/Produtos";
-import AdminCategorias from "./pages/admin/Categorias";
-import AdminPedidos from "./pages/admin/Pedidos";
-import AdminClientes from "./pages/admin/Clientes";
-import AdminPDV from "./pages/admin/PDV";
-import AdminFinanceiro from "./pages/admin/Financeiro";
-import AdminFornecedores from "./pages/admin/Fornecedores";
-import AdminRelatorios from "./pages/admin/Relatorios";
-import AdminChamados from "./pages/admin/Chamados";
-import AdminGestaoPedidos from "./pages/admin/GestaoPedidos";
+import { lazy, Suspense } from "react";
 
+// Admin pages (lazy loaded)
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
+const AdminProdutos = lazy(() => import("./pages/admin/Produtos"));
+const AdminCategorias = lazy(() => import("./pages/admin/Categorias"));
+const AdminPedidos = lazy(() => import("./pages/admin/Pedidos"));
+const AdminClientes = lazy(() => import("./pages/admin/Clientes"));
+const AdminPDV = lazy(() => import("./pages/admin/PDV"));
+const AdminFinanceiro = lazy(() => import("./pages/admin/Financeiro"));
+const AdminFornecedores = lazy(() => import("./pages/admin/Fornecedores"));
+const AdminRelatorios = lazy(() => import("./pages/admin/Relatorios"));
+const AdminChamados = lazy(() => import("./pages/admin/Chamados"));
+const AdminGestaoPedidos = lazy(() => import("./pages/admin/GestaoPedidos"));
 
-const queryClient = new QueryClient();
+// Public pages (lazy loaded)
+const Index = lazy(() => import("./pages/Index"));
+const Loja = lazy(() => import("./pages/Loja"));
+const Produto = lazy(() => import("./pages/Produto"));
+const Carrinho = lazy(() => import("./pages/Carrinho"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const PedidoConfirmado = lazy(() => import("./pages/PedidoConfirmado"));
+const Login = lazy(() => import("./pages/Login"));
+const Cadastro = lazy(() => import("./pages/Cadastro"));
+const EsqueciSenha = lazy(() => import("./pages/EsqueciSenha"));
+const RedefinirSenha = lazy(() => import("./pages/RedefinirSenha"));
+const MinhaConta = lazy(() => import("./pages/MinhaConta"));
+const MeusPedidos = lazy(() => import("./pages/MeusPedidos"));
+const MeusEnderecos = lazy(() => import("./pages/MeusEnderecos"));
+const MeusChamados = lazy(() => import("./pages/MeusChamados"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      retry: 1,
+    },
+  },
+});
 
 function AppContent() {
-  const location = useLocation();
-  const isAdmin = location.pathname.startsWith('/admin');
   return (
-    <>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
       <ScrollToTop />
+      <WhatsAppButton />
       <Routes>
-        {/* Admin Routes - mantidos ativos */}
+        {/* Rotas públicas */}
+        <Route path="/" element={<Index />} />
+        <Route path="/loja" element={<Loja />} />
+        <Route path="/produto/:slug" element={<Produto />} />
+        <Route path="/carrinho" element={<Carrinho />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/pedido-confirmado" element={<PedidoConfirmado />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+        <Route path="/conta" element={<MinhaConta />} />
+        <Route path="/meus-pedidos" element={<MeusPedidos />} />
+        <Route path="/meus-enderecos" element={<MeusEnderecos />} />
+        <Route path="/meus-chamados" element={<MeusChamados />} />
+
+        {/* Rotas admin */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/pdv" element={<AdminPDV />} />
@@ -44,11 +83,10 @@ function AppContent() {
         <Route path="/admin/relatorios" element={<AdminRelatorios />} />
         <Route path="/admin/chamados" element={<AdminChamados />} />
         <Route path="/admin/gestao-pedidos" element={<AdminGestaoPedidos />} />
-        {/* Todas as outras rotas exibem o Coming Soon */}
-        <Route path="*" element={<ComingSoon />} />
-      </Routes>
 
-    </>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 }
 
@@ -65,5 +103,6 @@ const App = () => (
     </AuthProvider>
   </QueryClientProvider>
 );
+
 
 export default App;

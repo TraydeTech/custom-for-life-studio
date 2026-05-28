@@ -22,11 +22,10 @@ export default function AdminLogin() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          // Verificar se é admin com timeout
-          const timeoutPromise = new Promise<boolean>((resolve) => 
-            setTimeout(() => resolve(true), 3000) // Assume admin após 3s
+          const timeoutPromise = new Promise<boolean>((resolve) =>
+            setTimeout(() => resolve(false), 5000) // Nega acesso em caso de timeout
           );
-          
+
           const checkPromise = (async () => {
             try {
               const { data } = await supabase.rpc('has_role', {
@@ -35,12 +34,12 @@ export default function AdminLogin() {
               });
               return !!data;
             } catch {
-              return true; // Assume admin em caso de erro
+              return false; // Nega acesso em caso de erro de rede
             }
           })();
 
           const isAdmin = await Promise.race([checkPromise, timeoutPromise]);
-          
+
           if (isAdmin) {
             navigate('/admin', { replace: true });
           }
@@ -85,9 +84,8 @@ export default function AdminLogin() {
         return;
       }
 
-      // 2. Verificar admin com timeout de 5s - se falhar, assume que é admin
-      // (a lógica é: se o login funcionou, dar o benefício da dúvida em caso de falha de rede)
-      let isAdminUser = true; // Assume admin por padrão
+      // 2. Verificar admin com timeout de 8s — acesso negado em caso de falha ou timeout
+      let isAdminUser = false; // Padrão seguro: nega acesso
 
       try {
         const raceResult = await Promise.race([
@@ -95,18 +93,18 @@ export default function AdminLogin() {
             _user_id: data.user.id,
             _role: 'admin'
           }),
-          new Promise<{ data: null; error: { message: string } }>((resolve) => 
-            setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 5000)
+          new Promise<{ data: null; error: { message: string } }>((resolve) =>
+            setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 8000)
           )
         ]);
 
         if (raceResult.data !== null) {
           isAdminUser = !!raceResult.data;
         }
-        // Se deu timeout ou erro, mantém isAdminUser = true
+        // Se deu timeout ou erro, mantém isAdminUser = false (seguro)
       } catch {
-        // Em caso de erro de rede, mantém isAdminUser = true
-        console.log('AdminLogin: erro na verificação, assumindo admin');
+        // Em caso de erro de rede, mantém acesso negado
+        console.log('AdminLogin: erro na verificação de role, acesso negado');
       }
 
       clearTimeout(safetyTimeout);
