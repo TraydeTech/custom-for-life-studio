@@ -434,7 +434,7 @@ export default function AdminPDV() {
 
         {/* Checkout Dialog */}
         <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-          <DialogContent>
+          <DialogContent onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Finalizar Venda</DialogTitle>
             </DialogHeader>

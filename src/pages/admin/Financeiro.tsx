@@ -381,7 +381,7 @@ function FinanceiroContent() {
               <div><CardTitle>Contas a Pagar</CardTitle><p className="text-sm text-muted-foreground">Gerencie suas despesas</p></div>
               <Dialog open={isPayableDialogOpen} onOpenChange={setIsPayableDialogOpen}>
                 <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" />Nova Conta</Button></DialogTrigger>
-                <DialogContent>
+                <DialogContent onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
                   <DialogHeader><DialogTitle>Nova Conta a Pagar</DialogTitle></DialogHeader>
                   <form onSubmit={e => { e.preventDefault(); createPayableMutation.mutate(newPayable); }} className="space-y-4">
                     <div><Label>Descrição *</Label><Input value={newPayable.description} onChange={e => setNewPayable(p => ({ ...p, description: e.target.value }))} required /></div>
@@ -435,7 +435,7 @@ function FinanceiroContent() {
 
       {/* Order Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <DialogHeader><DialogTitle className="flex items-center gap-2"><Package className="h-5 w-5" />Detalhes da Venda</DialogTitle></DialogHeader>
           {loadingOrder ? (
             <div className="flex items-center justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
