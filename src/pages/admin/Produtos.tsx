@@ -52,6 +52,8 @@ export default function AdminProdutos() {
     return data.publicUrl;
   };
 
+  const [uploadingExtra, setUploadingExtra] = useState<string | null>(null); // `${variantIdx}-${imgIdx}`
+
   const handleMainImageUpload = async (variantIndex: number, file: File, variants: ColorVariant[], setVariants: (v: ColorVariant[]) => void) => {
     setUploadingVariant(variantIndex);
     try {
@@ -62,6 +64,21 @@ export default function AdminProdutos() {
       toast.error('Erro ao fazer upload: ' + error.message);
     }
     setUploadingVariant(null);
+  };
+
+  const handleAdditionalImageUpload = async (variantIndex: number, file: File, variants: ColorVariant[], setVariants: (v: ColorVariant[]) => void) => {
+    const key = `${variantIndex}-new`;
+    setUploadingExtra(key);
+    try {
+      const url = await uploadImage(file);
+      const updated = variants.map((v, i) => i === variantIndex
+        ? { ...v, additional_images: [...(v.additional_images || []), url] }
+        : v);
+      setVariants(updated);
+    } catch (error: any) {
+      toast.error('Erro ao fazer upload: ' + error.message);
+    }
+    setUploadingExtra(null);
   };
 
   return (
@@ -186,57 +203,14 @@ export default function AdminProdutos() {
 
                     <div className="space-y-4">
                       {variants.map((v, idx) => (
-                        <div key={idx} className="flex gap-4 items-start p-3 border rounded-lg bg-muted/20">
-                          <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                            <div className="w-16 h-16 border rounded bg-white overflow-hidden relative">
-                              {v.main_image ? (
-                                <img 
-                                  src={v.main_image} 
-                                  className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" 
-                                  onClick={() => setZoomedImage(v.main_image)}
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground text-center px-1">Sem imagem</div>
-                              )}
-                              {uploadingVariant === idx && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-white" /></div>}
-                            </div>
-                            <div className="flex gap-1">
-                              <Label className="cursor-pointer text-[10px] flex items-center gap-1 px-2 py-1 border rounded hover:bg-muted transition-colors">
-                                <Upload className="h-3 w-3" />
-                                {v.main_image ? 'Trocar' : 'Imagem'}
-                                <Input 
-                                  type="file" 
-                                  className="hidden" 
-                                  accept="image/*" 
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) handleMainImageUpload(idx, file, variants, (v) => setFormData({ ...formData, variants: v }));
-                                    e.target.value = '';
-                                  }} 
-                                />
-                              </Label>
-                              {v.main_image && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const updated = variants.map((vv, i) => i === idx ? { ...vv, main_image: '' } : vv);
-                                    setFormData({ ...formData, variants: updated });
-                                  }}
-                                  className="text-[10px] flex items-center gap-1 px-2 py-1 border rounded text-destructive hover:bg-destructive/10 transition-colors"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              )}
-                            </div>
-
-                          </div>
-                          
-                          <div className="flex-1 grid grid-cols-2 gap-2">
-                            <div className="space-y-1">
+                        <div key={idx} className="p-3 border rounded-lg bg-muted/20 space-y-3">
+                          {/* Header row: nome, estoque, remover */}
+                          <div className="flex gap-2 items-end">
+                            <div className="flex-1 space-y-1">
                               <Label className="text-[10px]">Nome da Cor</Label>
-                              <Input 
-                                className="h-8 text-xs" 
-                                value={v.color_name} 
+                              <Input
+                                className="h-8 text-xs"
+                                value={v.color_name}
                                 onChange={(e) => {
                                   const updated = [...variants];
                                   updated[idx].color_name = e.target.value;
@@ -244,12 +218,12 @@ export default function AdminProdutos() {
                                 }}
                               />
                             </div>
-                            <div className="space-y-1">
+                            <div className="w-24 space-y-1">
                               <Label className="text-[10px]">Estoque</Label>
-                              <Input 
-                                type="number" 
-                                className="h-8 text-xs" 
-                                value={v.stock} 
+                              <Input
+                                type="number"
+                                className="h-8 text-xs"
+                                value={v.stock}
                                 onChange={(e) => {
                                   const updated = [...variants];
                                   updated[idx].stock = parseInt(e.target.value) || 0;
@@ -257,11 +231,72 @@ export default function AdminProdutos() {
                                 }}
                               />
                             </div>
+                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive flex-shrink-0" onClick={() => removeVariant(idx)}>
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
-                          
-                          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeVariant(idx)}>
-                            <X className="h-4 w-4" />
-                          </Button>
+
+                          {/* Galeria de imagens */}
+                          <div className="flex flex-wrap gap-2">
+                            {/* Imagem principal */}
+                            <div className="flex flex-col items-center gap-1">
+                              <div className="w-16 h-16 border-2 border-primary/40 rounded bg-white overflow-hidden relative">
+                                {v.main_image ? (
+                                  <img src={v.main_image} className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setZoomedImage(v.main_image)} />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-[9px] text-muted-foreground text-center px-1">Principal</div>
+                                )}
+                                {uploadingVariant === idx && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-white" /></div>}
+                              </div>
+                              <div className="flex gap-1">
+                                <Label className="cursor-pointer text-[9px] flex items-center gap-1 px-1.5 py-0.5 border rounded hover:bg-muted transition-colors">
+                                  <Upload className="h-2.5 w-2.5" />
+                                  {v.main_image ? 'Trocar' : 'Add'}
+                                  <Input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleMainImageUpload(idx, file, variants, (v) => setFormData({ ...formData, variants: v }));
+                                    e.target.value = '';
+                                  }} />
+                                </Label>
+                                {v.main_image && (
+                                  <button type="button" onClick={() => {
+                                    const updated = variants.map((vv, i) => i === idx ? { ...vv, main_image: '' } : vv);
+                                    setFormData({ ...formData, variants: updated });
+                                  }} className="text-[9px] flex items-center px-1.5 py-0.5 border rounded text-destructive hover:bg-destructive/10 transition-colors">
+                                    <X className="h-2.5 w-2.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Imagens adicionais */}
+                            {(v.additional_images || []).map((img, imgIdx) => (
+                              <div key={imgIdx} className="flex flex-col items-center gap-1">
+                                <div className="w-16 h-16 border rounded bg-white overflow-hidden relative">
+                                  <img src={img} className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setZoomedImage(img)} />
+                                  {uploadingExtra === `${idx}-${imgIdx}` && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-white" /></div>}
+                                </div>
+                                <button type="button" onClick={() => {
+                                  const updated = variants.map((vv, i) => i === idx ? { ...vv, additional_images: vv.additional_images.filter((_, ii) => ii !== imgIdx) } : vv);
+                                  setFormData({ ...formData, variants: updated });
+                                }} className="text-[9px] flex items-center gap-0.5 px-1.5 py-0.5 border rounded text-destructive hover:bg-destructive/10 transition-colors">
+                                  <X className="h-2.5 w-2.5" /> Remover
+                                </button>
+                              </div>
+                            ))}
+
+                            {/* Botão adicionar imagem extra */}
+                            <div className="flex flex-col items-center gap-1">
+                              <Label className="cursor-pointer w-16 h-16 border-2 border-dashed rounded bg-white flex flex-col items-center justify-center gap-1 hover:bg-muted/50 transition-colors text-muted-foreground">
+                                {uploadingExtra === `${idx}-new` ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Plus className="h-5 w-5" /><span className="text-[9px]">Foto</span></>}
+                                <Input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleAdditionalImageUpload(idx, file, variants, (v) => setFormData({ ...formData, variants: v }));
+                                  e.target.value = '';
+                                }} />
+                              </Label>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
