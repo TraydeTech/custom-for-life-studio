@@ -128,6 +128,14 @@ export default function AdminProdutos() {
             const addVariant = () => {
               const newVariants = [...variants, { color_name: '', main_image: '', additional_images: [], sort_order: variants.length, stock: 0 }];
               setFormData({ ...formData, variants: newVariants });
+              
+              // Scroll para o fim após adicionar
+              setTimeout(() => {
+                const scrollArea = document.querySelector('[data-radix-scroll-area-viewport]');
+                if (scrollArea) {
+                  scrollArea.scrollTo({ top: scrollArea.scrollHeight, behavior: 'smooth' });
+                }
+              }, 100);
             };
 
             const removeVariant = (index: number) => {
