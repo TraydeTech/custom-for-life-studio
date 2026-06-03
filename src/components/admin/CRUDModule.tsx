@@ -284,10 +284,10 @@ export function CRUDModule<T extends { id: string }>({
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className={formClassName}>
-          <DialogHeader>
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>{editingItem ? 'Editar' : 'Novo'} {title}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+          <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 space-y-4 pt-4">
             {customForm ? customForm(formData, setFormData) : formFields?.map((field) => (
               <div key={field.key} className="space-y-2">
                 <Label htmlFor={field.key}>{field.label} {field.required && '*'}</Label>
