@@ -73,7 +73,7 @@ export default function AdminProdutos() {
           queryKey="admin-products"
           searchPlaceholder="Buscar produtos..."
           searchFields={['name', 'slug']}
-          formClassName="max-w-4xl max-h-[90vh]"
+          formClassName="max-w-4xl h-[90vh] flex flex-col"
           initialData={{
             name: '',
             slug: '',
