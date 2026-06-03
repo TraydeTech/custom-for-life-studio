@@ -143,7 +143,7 @@ export default function AdminProdutos() {
             };
 
             return (
-              <ScrollArea className="max-h-[75vh] pr-4">
+              <ScrollArea className="flex-1 pr-4">
                 <div className="space-y-6 pt-4 pb-8">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
