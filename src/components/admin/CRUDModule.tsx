@@ -291,8 +291,8 @@ export function CRUDModule<T extends { id: string }>({
         </Table>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className={formClassName}>
+      <Dialog open={isDialogOpen} onOpenChange={() => {}}>
+        <DialogContent className={formClassName} onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>{editingItem ? 'Editar' : 'Novo'} {title}</DialogTitle>
           </DialogHeader>
