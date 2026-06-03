@@ -180,18 +180,22 @@ export default function AdminProdutos() {
                     <div className="space-y-4">
                       {variants.map((v, idx) => (
                         <div key={idx} className="flex gap-4 items-start p-3 border rounded-lg bg-muted/20">
-                          <div className="w-16 h-16 border rounded bg-white flex-shrink-0 overflow-hidden relative group">
-                            {v.main_image ? (
-                              <img 
-                                src={v.main_image} 
-                                className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" 
-                                onClick={() => setZoomedImage(v.main_image)}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">Sem imagem</div>
-                            )}
-                            <Label className="absolute inset-0 cursor-pointer bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                              <Upload className="h-4 w-4 text-white" />
+                          <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                            <div className="w-16 h-16 border rounded bg-white overflow-hidden relative">
+                              {v.main_image ? (
+                                <img 
+                                  src={v.main_image} 
+                                  className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" 
+                                  onClick={() => setZoomedImage(v.main_image)}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground text-center px-1">Sem imagem</div>
+                              )}
+                              {uploadingVariant === idx && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-white" /></div>}
+                            </div>
+                            <Label className="cursor-pointer text-[10px] flex items-center gap-1 px-2 py-1 border rounded hover:bg-muted transition-colors">
+                              <Upload className="h-3 w-3" />
+                              {v.main_image ? 'Trocar' : 'Imagem'}
                               <Input 
                                 type="file" 
                                 className="hidden" 
@@ -202,7 +206,6 @@ export default function AdminProdutos() {
                                 }} 
                               />
                             </Label>
-                            {uploadingVariant === idx && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-white" /></div>}
                           </div>
                           
                           <div className="flex-1 grid grid-cols-2 gap-2">
@@ -239,6 +242,7 @@ export default function AdminProdutos() {
                         </div>
                       ))}
                     </div>
+
                   </div>
 
                   <div className="space-y-2">
