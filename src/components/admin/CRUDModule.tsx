@@ -70,6 +70,7 @@ export function CRUDModule<T extends { id: string }>({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingProduct] = useState<T | null>(null);
   const [formData, setFormData] = useState<any>(initialData);
+  const [isLoadingItem, setIsLoadingItem] = useState(false);
 
   const { data: items, isLoading } = useQuery({
     queryKey: [queryKey],
@@ -173,22 +174,26 @@ export function CRUDModule<T extends { id: string }>({
   };
 
   const handleEdit = async (item: T) => {
-    setIsDialogOpen(true); // Abre o modal imediatamente
-    let dataToEdit = item;
+    setFormData(initialData);
+    setEditingProduct(null);
+    setIsLoadingItem(true);
+    setIsDialogOpen(true);
     if (onItemClick) {
       try {
         const result = await onItemClick(item);
         if (result) {
           setFormData(result);
           setEditingProduct(result);
+          setIsLoadingItem(false);
           return;
         }
       } catch (error) {
         console.error("Erro ao carregar dados do item:", error);
       }
     }
-    setEditingProduct(dataToEdit);
-    setFormData(dataToEdit);
+    setEditingProduct(item);
+    setFormData(item);
+    setIsLoadingItem(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -299,8 +304,13 @@ export function CRUDModule<T extends { id: string }>({
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <DialogHeader className="flex-shrink-0">
-            <DialogTitle>{editingItem ? 'Editar' : 'Novo'} {title}</DialogTitle>
+            <DialogTitle>{isLoadingItem ? 'Carregando...' : `${editingItem ? 'Editar' : 'Novo'} ${title}`}</DialogTitle>
           </DialogHeader>
+          {isLoadingItem ? (
+            <div className="flex-1 flex items-center justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 space-y-4 pt-4">
             {customForm ? customForm(formData, setFormData) : formFields?.map((field) => (
               <div key={field.key} className="space-y-2">
@@ -335,6 +345,7 @@ export function CRUDModule<T extends { id: string }>({
               </Button>
             </div>
           </form>
+          )}
         </DialogContent>
       </Dialog>
     </div>
