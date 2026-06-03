@@ -296,7 +296,7 @@ export function CRUDModule<T extends { id: string }>({
         </Table>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={() => {}}>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { if (!open) { setIsDialogOpen(false); resetForm(); } }}>
         <DialogContent
           className={formClassName}
           onInteractOutside={(e) => e.preventDefault()}

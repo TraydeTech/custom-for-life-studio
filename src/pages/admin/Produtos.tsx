@@ -101,27 +101,34 @@ export default function AdminProdutos() {
             description: '',
           }}
           columns={[
-            { 
-              header: 'Produto', 
+            {
+              header: 'Produto',
               key: 'name',
               render: (val, item) => (
                 <div className="flex items-center gap-3">
                   {item.images?.[0] ? (
-                    <img 
-                      src={item.images[0]} 
-                      className="w-10 h-10 object-contain bg-white rounded border cursor-pointer hover:opacity-80 transition-opacity" 
+                    <img
+                      src={item.images[0]}
+                      className="w-10 h-10 object-contain bg-white rounded border cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => setZoomedImage(item.images[0])}
                     />
                   ) : (
                     <div className="w-10 h-10 bg-white rounded border flex items-center justify-center"><Package className="h-5 w-5 text-muted-foreground" /></div>
                   )}
-                  <span className="font-medium">{val}</span>
+                  <div>
+                    <div className="font-medium">{val}</div>
+                    {item.category_id && (
+                      <div className="text-xs text-muted-foreground">
+                        {categories.find(c => c.id === item.category_id)?.name || '—'}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )
             },
             { header: 'Preço', key: 'price', render: (val) => formatCurrency(Number(val)) },
-            { 
-              header: 'Estoque', 
+            {
+              header: 'Estoque',
               key: 'stock',
               render: (val) => (
                 <Badge variant={Number(val) <= 0 ? 'destructive' : 'secondary'}>
@@ -129,8 +136,8 @@ export default function AdminProdutos() {
                 </Badge>
               )
             },
-            { 
-              header: 'Status', 
+            {
+              header: 'Status',
               key: 'is_active',
               render: (val) => (
                 <Badge className={val ? 'bg-green-500/20 text-green-500' : 'bg-muted text-muted-foreground'}>
