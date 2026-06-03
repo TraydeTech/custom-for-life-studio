@@ -180,9 +180,8 @@ export default function AdminProdutos() {
                   <div className="border rounded-lg p-4 space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="font-bold flex items-center gap-2"><ImageIcon className="h-4 w-4" /> Cores e Estoque</h3>
-                      <Button type="button" variant="outline" size="sm" onClick={addVariant}><Plus className="h-3 w-3 mr-1" /> Adicionar Cor</Button>
                     </div>
-                    
+
                     {variants.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Nenhuma cor cadastrada. Adicione ao menos uma para gerenciar o estoque.</p>}
 
                     <div className="space-y-4">
@@ -266,6 +265,10 @@ export default function AdminProdutos() {
                         </div>
                       ))}
                     </div>
+
+                    <Button type="button" variant="outline" className="w-full border-dashed" onClick={addVariant}>
+                      <Plus className="h-4 w-4 mr-2" /> Adicionar Cor
+                    </Button>
 
                   </div>
 
