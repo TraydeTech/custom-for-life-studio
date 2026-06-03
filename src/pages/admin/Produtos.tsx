@@ -193,19 +193,35 @@ export default function AdminProdutos() {
                               )}
                               {uploadingVariant === idx && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-white" /></div>}
                             </div>
-                            <Label className="cursor-pointer text-[10px] flex items-center gap-1 px-2 py-1 border rounded hover:bg-muted transition-colors">
-                              <Upload className="h-3 w-3" />
-                              {v.main_image ? 'Trocar' : 'Imagem'}
-                              <Input 
-                                type="file" 
-                                className="hidden" 
-                                accept="image/*" 
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) handleMainImageUpload(idx, file, variants, (v) => setFormData({ ...formData, variants: v }));
-                                }} 
-                              />
-                            </Label>
+                            <div className="flex gap-1">
+                              <Label className="cursor-pointer text-[10px] flex items-center gap-1 px-2 py-1 border rounded hover:bg-muted transition-colors">
+                                <Upload className="h-3 w-3" />
+                                {v.main_image ? 'Trocar' : 'Imagem'}
+                                <Input 
+                                  type="file" 
+                                  className="hidden" 
+                                  accept="image/*" 
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleMainImageUpload(idx, file, variants, (v) => setFormData({ ...formData, variants: v }));
+                                    e.target.value = '';
+                                  }} 
+                                />
+                              </Label>
+                              {v.main_image && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = variants.map((vv, i) => i === idx ? { ...vv, main_image: '' } : vv);
+                                    setFormData({ ...formData, variants: updated });
+                                  }}
+                                  className="text-[10px] flex items-center gap-1 px-2 py-1 border rounded text-destructive hover:bg-destructive/10 transition-colors"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
+
                           </div>
                           
                           <div className="flex-1 grid grid-cols-2 gap-2">
