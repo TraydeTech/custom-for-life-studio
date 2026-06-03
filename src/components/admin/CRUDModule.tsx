@@ -249,7 +249,7 @@ export function CRUDModule<T extends { id: string }>({
               </TableRow>
             ) : (
               filteredItems?.map((item) => (
-                <TableRow key={item.id} className={onItemClick ? "cursor-pointer" : ""} onClick={() => onItemClick?.(item)}>
+                <TableRow key={item.id}>
                   {columns.map((col, i) => (
                     <TableCell key={i}>
                       {col.render ? col.render(item[col.key], item) : String(item[col.key] || '-')}
