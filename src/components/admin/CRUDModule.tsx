@@ -85,14 +85,14 @@ export function CRUDModule<T extends { id: string }>({
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
+      const { variants: originalVariants } = data;
       const finalData = onBeforeSave ? await onBeforeSave(data) : data;
-      // Removendo campos que não pertencem à tabela (como 'variants') antes de salvar
-      const { variants, ...dbData } = finalData;
-      
+      const { variants: _v, ...dbData } = finalData;
+
       const { data: newItem, error } = await supabase.from(tableName as any).insert([dbData]).select().single();
       if (error) throw error;
 
-      // Se houver variantes para salvar
+      const variants = originalVariants ?? _v;
       if (variants && Array.isArray(variants) && newItem) {
         const variantsWithProductId = variants.map((v: any, idx: number) => ({
           ...v,
@@ -116,13 +116,14 @@ export function CRUDModule<T extends { id: string }>({
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const { variants: originalVariants } = data;
       const finalData = onBeforeSave ? await onBeforeSave(data) : data;
-      const { variants, ...dbData } = finalData;
+      const { variants: _v, ...dbData } = finalData;
 
       const { error } = await supabase.from(tableName as any).update(dbData).eq('id', id);
       if (error) throw error;
 
-      // Se houver variantes para atualizar (delete + insert simplificado)
+      const variants = originalVariants ?? _v;
       if (variants && Array.isArray(variants)) {
         await supabase.from('product_variants').delete().eq('product_id', id);
         
