@@ -172,14 +172,22 @@ export function CRUDModule<T extends { id: string }>({
   };
 
   const handleEdit = async (item: T) => {
+    setIsDialogOpen(true); // Abre o modal imediatamente
     let dataToEdit = item;
     if (onItemClick) {
-      const result = await onItemClick(item);
-      if (result) dataToEdit = result;
+      try {
+        const result = await onItemClick(item);
+        if (result) {
+          setFormData(result);
+          setEditingProduct(result);
+          return;
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados do item:", error);
+      }
     }
     setEditingProduct(dataToEdit);
     setFormData(dataToEdit);
-    setIsDialogOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
