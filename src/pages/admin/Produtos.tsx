@@ -73,7 +73,7 @@ export default function AdminProdutos() {
           queryKey="admin-products"
           searchPlaceholder="Buscar produtos..."
           searchFields={['name', 'slug']}
-          formClassName="max-w-4xl max-h-[90vh]"
+          formClassName="max-w-4xl h-[90vh] flex flex-col"
           initialData={{
             name: '',
             slug: '',
@@ -128,6 +128,14 @@ export default function AdminProdutos() {
             const addVariant = () => {
               const newVariants = [...variants, { color_name: '', main_image: '', additional_images: [], sort_order: variants.length, stock: 0 }];
               setFormData({ ...formData, variants: newVariants });
+              
+              // Scroll para o fim após adicionar
+              setTimeout(() => {
+                const scrollArea = document.querySelector('[data-radix-scroll-area-viewport]');
+                if (scrollArea) {
+                  scrollArea.scrollTo({ top: scrollArea.scrollHeight, behavior: 'smooth' });
+                }
+              }, 100);
             };
 
             const removeVariant = (index: number) => {
@@ -135,7 +143,7 @@ export default function AdminProdutos() {
             };
 
             return (
-              <ScrollArea className="max-h-[75vh] pr-4">
+              <ScrollArea className="flex-1 pr-4">
                 <div className="space-y-6 pt-4 pb-8">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
