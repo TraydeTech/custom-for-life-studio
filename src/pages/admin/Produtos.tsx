@@ -8,13 +8,13 @@ import { formatCurrency } from '@/lib/utils';
 import { Package, Image as ImageIcon, Plus, X, Upload, Loader2, SlidersHorizontal } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -34,6 +34,7 @@ type StockFilter = 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
 type StatusFilter = 'all' | 'active' | 'inactive';
 
 export default function AdminProdutos() {
+  const queryClient = useQueryClient();
   const [uploadingVariant, setUploadingVariant] = useState<number | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
@@ -45,12 +46,37 @@ export default function AdminProdutos() {
   const [filterStatus, setFilterStatus] = useState<StatusFilter>('all');
   const [showFilters, setShowFilters] = useState(false);
 
+  // New category inline state
+  const [newCatDialog, setNewCatDialog] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [pendingCatCallback, setPendingCatCallback] = useState<((id: string) => void) | null>(null);
+
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       const { data } = await supabase.from('categories').select('*').eq('is_active', true).order('name');
       return data || [];
     }
+  });
+
+  const createCategoryMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const slug = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+      const { data, error } = await supabase.from('categories').insert([{ name, slug, is_active: true }]).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success(`Categoria "${data.name}" criada!`);
+      if (pendingCatCallback) pendingCatCallback(data.id);
+      setNewCatDialog(false);
+      setNewCatName('');
+      setPendingCatCallback(null);
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao criar categoria: ' + error.message);
+    },
   });
 
   const uploadImage = async (file: File): Promise<string> => {
@@ -309,10 +335,23 @@ export default function AdminProdutos() {
                     </div>
                     <div className="space-y-2">
                       <Label>Categoria</Label>
-                      <Select value={formData.category_id || ''} onValueChange={(v) => setFormData({ ...formData, category_id: v })}>
+                      <Select
+                        value={formData.category_id || ''}
+                        onValueChange={(v) => {
+                          if (v === '__new__') {
+                            setPendingCatCallback(() => (id: string) => setFormData({ ...formData, category_id: id }));
+                            setNewCatDialog(true);
+                          } else {
+                            setFormData({ ...formData, category_id: v });
+                          }
+                        }}
+                      >
                         <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                         <SelectContent>
                           {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                          <SelectItem value="__new__" className="text-primary font-medium border-t mt-1 pt-2">
+                            <span className="flex items-center gap-1.5"><Plus className="h-3.5 w-3.5" /> Nova Categoria</span>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -499,6 +538,43 @@ export default function AdminProdutos() {
             return { ...item, variants: variants || [] };
           }}
         />
+
+        <Dialog open={newCatDialog} onOpenChange={(open) => { if (!open) { setNewCatDialog(false); setNewCatName(''); setPendingCatCallback(null); } }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Nova Categoria</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <div className="space-y-1.5">
+                <Label>Nome da Categoria *</Label>
+                <Input
+                  autoFocus
+                  placeholder="Ex: Camisetas"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newCatName.trim()) {
+                      e.preventDefault();
+                      createCategoryMutation.mutate(newCatName.trim());
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setNewCatDialog(false); setNewCatName(''); setPendingCatCallback(null); }}>
+                Cancelar
+              </Button>
+              <Button
+                disabled={!newCatName.trim() || createCategoryMutation.isPending}
+                onClick={() => createCategoryMutation.mutate(newCatName.trim())}
+              >
+                {createCategoryMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Criar Categoria
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
           <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white">
