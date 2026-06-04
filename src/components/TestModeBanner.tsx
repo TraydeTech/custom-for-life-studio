@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, X, Construction, ShoppingBag } from 'lucide-react';
+import { MessageCircle, X, Wrench, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const WHATSAPP_NUMBER = '5547984492949';
 const WHATSAPP_MESSAGE = encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar um orçamento de brindes personalizados.');
+const RESHOW_MS = 4 * 60 * 1000; // 4 minutos
 
 export function TestModeBanner() {
   const [visible, setVisible] = useState(false);
@@ -14,7 +15,7 @@ export function TestModeBanner() {
 
   const dismiss = () => {
     setVisible(false);
-    setTimeout(() => setVisible(true), 15000);
+    setTimeout(() => setVisible(true), RESHOW_MS);
   };
 
   if (!visible) return null;
@@ -22,15 +23,15 @@ export function TestModeBanner() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
       <div className="relative w-full max-w-lg animate-in fade-in zoom-in-95 duration-300">
-        {/* Glow border effect */}
+        {/* Glow border */}
         <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-orange-400 to-primary rounded-3xl blur opacity-75 animate-pulse" />
 
         <div className="relative bg-zinc-950 rounded-3xl overflow-hidden">
-          {/* Top banner stripe */}
+          {/* Top stripe */}
           <div className="bg-gradient-to-r from-primary to-orange-500 px-6 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Construction className="h-4 w-4 text-white" />
-              <span className="text-white text-xs font-bold uppercase tracking-widest">Em desenvolvimento</span>
+              <Wrench className="h-4 w-4 text-white" />
+              <span className="text-white text-xs font-bold uppercase tracking-widest">Aviso importante</span>
             </div>
             <button
               onClick={dismiss}
@@ -55,23 +56,30 @@ export function TestModeBanner() {
             <h2 className="text-2xl font-heading font-bold text-white mb-1">
               Site em fase de testes
             </h2>
-            <p className="text-primary font-medium text-sm mb-5">
-              Estamos quase prontos! 🚀
+            <p className="text-primary font-medium text-sm mb-6">
+              Estamos finalizando os últimos detalhes! 🔧
             </p>
 
             {/* Info cards */}
             <div className="space-y-3 mb-7 text-left">
+              <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                <span className="text-red-400 text-lg mt-0.5">🚫</span>
+                <p className="text-red-200 text-sm leading-relaxed">
+                  <span className="font-semibold">Todos os produtos estão com estoque zerado.</span> Estamos atualizando os valores, o catálogo e a forma de pagamento para oferecer a melhor experiência.
+                </p>
+              </div>
+
               <div className="flex items-start gap-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
-                <span className="text-yellow-400 text-lg mt-0.5">⚠️</span>
+                <span className="text-yellow-400 text-lg mt-0.5">⏳</span>
                 <p className="text-yellow-200 text-sm leading-relaxed">
-                  <span className="font-semibold">Produtos não estão à venda ainda.</span> Os itens exibidos são apenas demonstrações do catálogo e não podem ser comprados no momento.
+                  <span className="font-semibold">Em breve tudo estará 100% funcionando!</span> Os produtos exibidos são uma prévia do nosso catálogo. Logo você poderá comprar diretamente pelo site.
                 </p>
               </div>
 
               <div className="flex items-start gap-3 bg-green-500/10 border border-green-500/20 rounded-xl p-4">
                 <span className="text-green-400 text-lg mt-0.5">✅</span>
                 <p className="text-green-200 text-sm leading-relaxed">
-                  <span className="font-semibold">Já estamos atendendo!</span> Entre em contato pelo WhatsApp para solicitar seu orçamento personalizado.
+                  <span className="font-semibold">Mas já estamos atendendo!</span> Entre em contato pelo WhatsApp e solicite seu orçamento personalizado agora mesmo.
                 </p>
               </div>
             </div>

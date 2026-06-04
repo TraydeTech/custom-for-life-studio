@@ -60,8 +60,7 @@ export default function Loja() {
       let query = supabase
         .from('products')
         .select('id, name, slug, price, compare_price, images, is_featured, stock, category_id, category:categories(name, slug)')
-        .eq('is_active', true)
-        .gt('stock', 0);
+        .eq('is_active', true);
 
       if (activeCategoryId) {
         query = query.eq('category_id', activeCategoryId);
