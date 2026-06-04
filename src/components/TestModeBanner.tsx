@@ -4,18 +4,17 @@ import { Button } from '@/components/ui/button';
 
 const WHATSAPP_NUMBER = '5547984492949';
 const WHATSAPP_MESSAGE = encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar um orçamento de brindes personalizados.');
-const STORAGE_KEY = 'test_banner_dismissed';
 
 export function TestModeBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const dismissed = sessionStorage.getItem(STORAGE_KEY);
-    if (!dismissed) setVisible(true);
+    setVisible(true);
+    const interval = setInterval(() => setVisible(true), 15000);
+    return () => clearInterval(interval);
   }, []);
 
   const dismiss = () => {
-    sessionStorage.setItem(STORAGE_KEY, '1');
     setVisible(false);
   };
 
