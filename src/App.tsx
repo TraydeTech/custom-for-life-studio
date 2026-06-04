@@ -23,6 +23,20 @@ const AdminChamados = lazy(() => import("./pages/admin/Chamados"));
 const AdminGestaoPedidos = lazy(() => import("./pages/admin/GestaoPedidos"));
 
 // Public pages (lazy loaded)
+const Home = lazy(() => import("./pages/Index"));
+const Loja = lazy(() => import("./pages/Loja"));
+const Produto = lazy(() => import("./pages/Produto"));
+const Carrinho = lazy(() => import("./pages/Carrinho"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const PedidoConfirmado = lazy(() => import("./pages/PedidoConfirmado"));
+const Login = lazy(() => import("./pages/Login"));
+const Cadastro = lazy(() => import("./pages/Cadastro"));
+const EsqueciSenha = lazy(() => import("./pages/EsqueciSenha"));
+const RedefinirSenha = lazy(() => import("./pages/RedefinirSenha"));
+const MinhaConta = lazy(() => import("./pages/MinhaConta"));
+const MeusPedidos = lazy(() => import("./pages/MeusPedidos"));
+const MeusEnderecos = lazy(() => import("./pages/MeusEnderecos"));
+const MeusChamados = lazy(() => import("./pages/MeusChamados"));
 const ComingSoon = lazy(() => import("./pages/ComingSoon"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -41,21 +55,21 @@ function AppContent() {
       <ScrollToTop />
       <WhatsAppButton />
       <Routes>
-        {/* Rotas públicas - bloqueadas com página "Em Breve" */}
-        <Route path="/" element={<ComingSoon />} />
-        <Route path="/loja" element={<ComingSoon />} />
-        <Route path="/produto/:slug" element={<ComingSoon />} />
-        <Route path="/carrinho" element={<ComingSoon />} />
-        <Route path="/checkout" element={<ComingSoon />} />
-        <Route path="/pedido-confirmado" element={<ComingSoon />} />
-        <Route path="/login" element={<ComingSoon />} />
-        <Route path="/cadastro" element={<ComingSoon />} />
-        <Route path="/esqueci-senha" element={<ComingSoon />} />
-        <Route path="/redefinir-senha" element={<ComingSoon />} />
-        <Route path="/conta" element={<ComingSoon />} />
-        <Route path="/meus-pedidos" element={<ComingSoon />} />
-        <Route path="/meus-enderecos" element={<ComingSoon />} />
-        <Route path="/meus-chamados" element={<ComingSoon />} />
+        {/* Rotas públicas */}
+        <Route path="/" element={<Home />} />
+        <Route path="/loja" element={<Loja />} />
+        <Route path="/produto/:slug" element={<Produto />} />
+        <Route path="/carrinho" element={<Carrinho />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/pedido-confirmado" element={<PedidoConfirmado />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+        <Route path="/conta" element={<MinhaConta />} />
+        <Route path="/meus-pedidos" element={<MeusPedidos />} />
+        <Route path="/meus-enderecos" element={<MeusEnderecos />} />
+        <Route path="/meus-chamados" element={<MeusChamados />} />
 
         {/* Rotas admin */}
         <Route path="/admin/login" element={<AdminLogin />} />

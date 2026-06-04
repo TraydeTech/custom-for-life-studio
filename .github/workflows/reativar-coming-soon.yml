@@ -1,0 +1,41 @@
+name: Reativar Coming Soon 23:59
+
+on:
+  schedule:
+    - cron: '59 23 4 6 *'  # 23:59 UTC dia 04/06/2026
+
+jobs:
+  enable-coming-soon:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Substituir rotas públicas por ComingSoon
+        run: |
+          sed -i "s|element={<Home />}|element={<ComingSoon />}|g" src/App.tsx
+          sed -i "s|element={<Loja />}|element={<ComingSoon />}|g" src/App.tsx
+          sed -i "s|element={<Produto />}|element={<ComingSoon />}|g" src/App.tsx
+          sed -i "s|element={<Carrinho />}|element={<ComingSoon />}|g" src/App.tsx
+          sed -i "s|element={<Checkout />}|element={<ComingSoon />}|g" src/App.tsx
+          sed -i "s|element={<PedidoConfirmado />}|element={<ComingSoon />}|g" src/App.tsx
+          sed -i "s|element={<Login />}|element={<ComingSoon />}|g" src/App.tsx
+          sed -i "s|element={<Cadastro />}|element={<ComingSoon />}|g" src/App.tsx
+          sed -i "s|element={<EsqueciSenha />}|element={<ComingSoon />}|g" src/App.tsx
+          sed -i "s|element={<RedefinirSenha />}|element={<ComingSoon />}|g" src/App.tsx
+          sed -i "s|element={<MinhaConta />}|element={<ComingSoon />}|g" src/App.tsx
+          sed -i "s|element={<MeusPedidos />}|element={<ComingSoon />}|g" src/App.tsx
+          sed -i "s|element={<MeusEnderecos />}|element={<ComingSoon />}|g" src/App.tsx
+          sed -i "s|element={<MeusChamados />}|element={<ComingSoon />}|g" src/App.tsx
+
+      - name: Commit e push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx
+          git commit -m "chore: reativar coming soon (agendado 23:59)"
+          git push origin main
