@@ -55,23 +55,7 @@ function AppContent() {
       <ScrollToTop />
       <WhatsAppButton />
       <Routes>
-        {/* Rotas públicas */}
-        <Route path="/" element={<Home />} />
-        <Route path="/loja" element={<Loja />} />
-        <Route path="/produto/:slug" element={<Produto />} />
-        <Route path="/carrinho" element={<Carrinho />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/pedido-confirmado" element={<PedidoConfirmado />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/cadastro" element={<Cadastro />} />
-        <Route path="/esqueci-senha" element={<EsqueciSenha />} />
-        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
-        <Route path="/conta" element={<MinhaConta />} />
-        <Route path="/meus-pedidos" element={<MeusPedidos />} />
-        <Route path="/meus-enderecos" element={<MeusEnderecos />} />
-        <Route path="/meus-chamados" element={<MeusChamados />} />
-
-        {/* Rotas admin */}
+        {/* Rotas admin sempre acessíveis */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/pdv" element={<AdminPDV />} />
@@ -85,7 +69,9 @@ function AppContent() {
         <Route path="/admin/chamados" element={<AdminChamados />} />
         <Route path="/admin/gestao-pedidos" element={<AdminGestaoPedidos />} />
 
-        <Route path="*" element={<NotFound />} />
+        {/* Todas as outras rotas redirecionam para Coming Soon */}
+        <Route path="/" element={<ComingSoon />} />
+        <Route path="*" element={<ComingSoon />} />
       </Routes>
     </Suspense>
   );
