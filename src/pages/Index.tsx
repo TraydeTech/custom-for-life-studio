@@ -10,6 +10,7 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from "@/components/ui/carousel";
 import { ModernHero } from "@/components/home/ModernHero";
 import { FeatureStrip } from "@/components/home/FeatureStrip";
@@ -17,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/utils";
 import heroImage from "@/assets/hero-brindes-novo.png";
+import { useEffect, useState } from "react";
 
 
 // Removidas categorias fixas para usar produtos do banco de dados
@@ -45,6 +47,14 @@ const diferenciais = [
 ];
 
 const Index = () => {
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+
+  useEffect(() => {
+    if (!carouselApi) return;
+    const interval = setInterval(() => carouselApi.scrollNext(), 3000);
+    return () => clearInterval(interval);
+  }, [carouselApi]);
+
   const { data: featuredProducts = [], isLoading: loadingProducts } = useQuery({
     queryKey: ['featured-products'],
     queryFn: async () => {
@@ -227,20 +237,18 @@ const Index = () => {
           <div className="text-center mb-12">
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-sm text-muted-foreground mb-4">
               <Star className="w-4 h-4 text-primary" />
-              Nossos Trabalhos
+              Catálogo
             </span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-heading font-bold mb-4">
-              Projetos <span className="gradient-text">Realizados</span>
+              Conheça nossos <span className="gradient-text">Produtos</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Veja alguns dos brindes personalizados que já criamos para nossos clientes
+              Explore o catálogo de brindes que podem ser personalizados com a sua marca
             </p>
           </div>
           <Carousel
-            opts={{
-              align: "start",
-              loop: true,
-            }}
+            opts={{ align: "start", loop: true }}
+            setApi={setCarouselApi}
             className="w-full"
           >
             <CarouselContent className="-ml-2 md:-ml-4">
