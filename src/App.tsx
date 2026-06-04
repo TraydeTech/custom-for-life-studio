@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { TestModeBanner } from "@/components/TestModeBanner";
@@ -50,11 +50,14 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
+  const { pathname } = useLocation();
+  const isAdmin = pathname.startsWith('/admin');
+
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
       <ScrollToTop />
-      <TestModeBanner />
-      <WhatsAppButton />
+      {!isAdmin && <TestModeBanner />}
+      {!isAdmin && <WhatsAppButton />}
       <Routes>
         {/* Rotas admin sempre acessíveis */}
         <Route path="/admin/login" element={<AdminLogin />} />
