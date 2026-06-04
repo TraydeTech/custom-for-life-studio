@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,114 @@ import {
 } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import logoImage from '@/assets/logo-custom-forlife.png';
+import { supabase } from '@/integrations/supabase/client';
+
+type SearchResult = { id: string; name: string; slug: string; images: string[] | null; price: number };
+
+function SearchBar({ className }: { className?: string }) {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  useEffect(() => {
+    if (query.trim().length < 2) { setResults([]); setOpen(false); return; }
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from('products')
+        .select('id, name, slug, images, price')
+        .eq('is_active', true)
+        .ilike('name', `%${query.trim()}%`)
+        .limit(6);
+      setResults((data as SearchResult[]) || []);
+      setOpen(true);
+      setLoading(false);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      navigate(`/loja?busca=${encodeURIComponent(query.trim())}`);
+      setQuery(''); setOpen(false);
+    }
+  };
+
+  const handleSelect = (slug: string) => {
+    navigate(`/produto/${slug}`);
+    setQuery(''); setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className={`relative ${className}`}>
+      <form onSubmit={handleSubmit} className="w-full">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Buscar produtos..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => results.length > 0 && setOpen(true)}
+            className="pl-10 w-full"
+          />
+        </div>
+      </form>
+
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-background border rounded-lg shadow-xl overflow-hidden">
+          {loading ? (
+            <div className="px-4 py-3 text-sm text-muted-foreground">Buscando...</div>
+          ) : results.length === 0 ? (
+            <div className="px-4 py-3 text-sm text-muted-foreground">Nenhum produto encontrado</div>
+          ) : (
+            <>
+              {results.map(p => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => handleSelect(p.slug)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted transition-colors text-left"
+                >
+                  <div className="w-10 h-10 rounded border bg-white flex-shrink-0 overflow-hidden">
+                    {p.images?.[0]
+                      ? <img src={p.images[0]} className="w-full h-full object-contain" />
+                      : <Package className="h-5 w-5 m-auto text-muted-foreground" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{p.name}</p>
+                    <p className="text-xs text-primary font-semibold">
+                      {p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                  </div>
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => { navigate(`/loja?busca=${encodeURIComponent(query.trim())}`); setOpen(false); }}
+                className="w-full px-4 py-2.5 text-sm text-primary font-medium hover:bg-muted transition-colors border-t text-center"
+              >
+                Ver todos os resultados para "{query}"
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Header() {
   // isAdmin e adminChecked já estão no AuthContext — sem chamada extra ao banco
@@ -30,19 +138,10 @@ export function Header() {
   const { cartCount } = useCart();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const isLoggedIn = !!user;
   const isCustomer = user && (!adminChecked || !isAdmin);
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || 'Cliente';
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/loja?busca=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery('');
-    }
-  };
 
   const handleSignOut = async () => {
     try {
@@ -65,18 +164,9 @@ export function Header() {
         </Link>
 
         {/* Search Bar - Desktop */}
-        <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Buscar produtos..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 w-full"
-            />
-          </div>
-        </form>
+        <div className="hidden md:flex flex-1 max-w-md mx-8">
+          <SearchBar className="w-full" />
+        </div>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-4 text-foreground">
@@ -207,18 +297,7 @@ export function Header() {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-border/50 bg-background p-4 space-y-4 text-foreground animate-fade-in">
-          <form onSubmit={handleSearch}>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Buscar produtos..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </form>
+          <SearchBar className="w-full" />
 
           <nav className="flex flex-col gap-2">
             <Link to="/loja" onClick={() => setMobileMenuOpen(false)}>
