@@ -47,6 +47,8 @@ interface CRUDModuleProps<T> {
   onItemClick?: (item: T) => Promise<any> | void;
   formClassName?: string;
   customForm?: (formData: any, setFormData: (data: any) => void) => React.ReactNode;
+  filterFn?: (item: T) => boolean;
+  filterControls?: React.ReactNode;
 }
 
 export function CRUDModule<T extends { id: string }>({
@@ -64,6 +66,8 @@ export function CRUDModule<T extends { id: string }>({
   onItemClick,
   formClassName = "sm:max-w-[425px]",
   customForm,
+  filterFn,
+  filterControls,
 }: CRUDModuleProps<T>) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -206,11 +210,12 @@ export function CRUDModule<T extends { id: string }>({
   };
 
   const filteredItems = items?.filter((item) => {
-    if (!search) return true;
-    return searchFields.some((field) => {
+    const matchesSearch = !search || searchFields.some((field) => {
       const val = item[field];
       return val && String(val).toLowerCase().includes(search.toLowerCase());
     });
+    const matchesFilter = !filterFn || filterFn(item);
+    return matchesSearch && matchesFilter;
   });
 
   return (
@@ -228,14 +233,17 @@ export function CRUDModule<T extends { id: string }>({
         )}
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder={searchPlaceholder}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10"
-        />
+      <div className="space-y-3">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={searchPlaceholder}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        {filterControls}
       </div>
 
       <div className="border rounded-lg">

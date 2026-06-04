@@ -5,7 +5,7 @@ import { ProtectedAdminRoute } from '@/components/admin/ProtectedAdminRoute';
 import { Tables } from '@/integrations/supabase/types';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { Package, Image as ImageIcon, Plus, X, Upload, Loader2 } from 'lucide-react';
+import { Package, Image as ImageIcon, Plus, X, Upload, Loader2, SlidersHorizontal } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -30,9 +30,20 @@ interface ColorVariant {
   stock: number;
 }
 
+type StockFilter = 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
+type StatusFilter = 'all' | 'active' | 'inactive';
+
 export default function AdminProdutos() {
   const [uploadingVariant, setUploadingVariant] = useState<number | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+
+  // Filter state
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterPriceMin, setFilterPriceMin] = useState('');
+  const [filterPriceMax, setFilterPriceMax] = useState('');
+  const [filterStock, setFilterStock] = useState<StockFilter>('all');
+  const [filterStatus, setFilterStatus] = useState<StatusFilter>('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -81,6 +92,126 @@ export default function AdminProdutos() {
     setUploadingExtra(null);
   };
 
+  const hasActiveFilters = filterCategory !== 'all' || filterPriceMin !== '' || filterPriceMax !== '' || filterStock !== 'all' || filterStatus !== 'all';
+
+  const productFilterFn = (item: Product): boolean => {
+    if (filterCategory !== 'all' && item.category_id !== filterCategory) return false;
+    if (filterPriceMin !== '' && Number(item.price) < Number(filterPriceMin)) return false;
+    if (filterPriceMax !== '' && Number(item.price) > Number(filterPriceMax)) return false;
+    if (filterStatus === 'active' && !item.is_active) return false;
+    if (filterStatus === 'inactive' && item.is_active) return false;
+    const stock = Number(item.stock ?? 0);
+    if (filterStock === 'in_stock' && stock <= 0) return false;
+    if (filterStock === 'low_stock' && (stock <= 0 || stock > 5)) return false;
+    if (filterStock === 'out_of_stock' && stock > 0) return false;
+    return true;
+  };
+
+  const clearFilters = () => {
+    setFilterCategory('all');
+    setFilterPriceMin('');
+    setFilterPriceMax('');
+    setFilterStock('all');
+    setFilterStatus('all');
+  };
+
+  const filterControls = (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant={showFilters ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setShowFilters(!showFilters)}
+          className="h-8 gap-1.5"
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Filtros
+          {hasActiveFilters && (
+            <Badge className="ml-1 h-4 min-w-4 px-1 text-[10px] bg-primary-foreground text-primary">
+              {[filterCategory !== 'all', filterPriceMin !== '', filterPriceMax !== '', filterStock !== 'all', filterStatus !== 'all'].filter(Boolean).length}
+            </Badge>
+          )}
+        </Button>
+        {hasActiveFilters && (
+          <Button type="button" variant="ghost" size="sm" className="h-8 text-muted-foreground" onClick={clearFilters}>
+            <X className="h-3.5 w-3.5 mr-1" /> Limpar
+          </Button>
+        )}
+      </div>
+
+      {showFilters && (
+        <div className="flex flex-wrap gap-3 p-3 border rounded-lg bg-muted/30">
+          <div className="space-y-1 min-w-[160px]">
+            <Label className="text-xs text-muted-foreground">Categoria</Label>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Preço mínimo</Label>
+            <Input
+              type="number"
+              placeholder="R$ 0"
+              value={filterPriceMin}
+              onChange={(e) => setFilterPriceMin(e.target.value)}
+              className="h-8 text-xs w-28"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Preço máximo</Label>
+            <Input
+              type="number"
+              placeholder="R$ ∞"
+              value={filterPriceMax}
+              onChange={(e) => setFilterPriceMax(e.target.value)}
+              className="h-8 text-xs w-28"
+            />
+          </div>
+
+          <div className="space-y-1 min-w-[140px]">
+            <Label className="text-xs text-muted-foreground">Estoque</Label>
+            <Select value={filterStock} onValueChange={(v) => setFilterStock(v as StockFilter)}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="in_stock">Em estoque</SelectItem>
+                <SelectItem value="low_stock">Estoque baixo (≤5)</SelectItem>
+                <SelectItem value="out_of_stock">Sem estoque</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1 min-w-[120px]">
+            <Label className="text-xs text-muted-foreground">Status</Label>
+            <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as StatusFilter)}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="active">Ativo</SelectItem>
+                <SelectItem value="inactive">Inativo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <ProtectedAdminRoute>
       <AdminLayout>
@@ -91,6 +222,8 @@ export default function AdminProdutos() {
           searchPlaceholder="Buscar produtos..."
           searchFields={['name', 'slug']}
           formClassName="max-w-4xl h-[90vh] flex flex-col"
+          filterFn={productFilterFn}
+          filterControls={filterControls}
           initialData={{
             name: '',
             slug: '',
