@@ -10,12 +10,11 @@ export function TestModeBanner() {
 
   useEffect(() => {
     setVisible(true);
-    const interval = setInterval(() => setVisible(true), 15000);
-    return () => clearInterval(interval);
   }, []);
 
   const dismiss = () => {
     setVisible(false);
+    setTimeout(() => setVisible(true), 15000);
   };
 
   if (!visible) return null;
