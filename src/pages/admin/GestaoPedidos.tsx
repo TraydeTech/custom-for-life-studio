@@ -231,10 +231,33 @@ function GestaoPedidosContent() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-heading font-bold">Gestão de Pedidos</h1>
         <p className="text-muted-foreground">Acompanhe o fluxo completo dos pedidos do site</p>
+      </div>
+
+      {/* Pipeline summary */}
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+        {PDV_STATUSES.map((s, idx) => {
+          const count = ordersByStatus[s.id]?.length || 0;
+          const Icon = s.icon;
+          return (
+            <button
+              key={s.id}
+              onClick={() => setStatusFilter(statusFilter === s.id ? 'all' : s.id)}
+              className={`flex flex-col items-center gap-1 p-3 rounded-lg border transition-all text-center ${
+                statusFilter === s.id
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:border-primary/50 bg-card'
+              }`}
+            >
+              <Icon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-2xl font-bold">{count}</span>
+              <span className="text-[10px] text-muted-foreground leading-tight">{s.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Filters */}
@@ -261,43 +284,72 @@ function GestaoPedidosContent() {
         </Select>
       </div>
 
-      {/* Kanban Board */}
+      {/* Table */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">Carregando pedidos...</div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground border rounded-lg">
+          <Package className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p>Nenhum pedido encontrado</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
-          {PDV_STATUSES.map(statusDef => (
-            <div key={statusDef.id} className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Badge className={statusDef.color}>{statusDef.label}</Badge>
-                <Badge variant="secondary" className="text-xs">{ordersByStatus[statusDef.id]?.length || 0}</Badge>
-              </div>
-              <div className="space-y-2 min-h-[100px]">
-                {(ordersByStatus[statusDef.id] || []).map(order => (
-                  <Card key={order.id} className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setSelectedOrder(order); setIsDetailOpen(true); }}>
-                    <CardContent className="p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-bold">{order.order_number}</span>
+        <div className="border rounded-lg overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b">
+              <tr>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Pedido</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Cliente</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Data</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Pagamento</th>
+                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Total</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
+                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredOrders.map((order, idx) => {
+                const statusDef = PDV_STATUSES.find(s => s.id === (order.pdv_status || 'aguardando_pagamento'));
+                const isLast = idx === filteredOrders.length - 1;
+                return (
+                  <tr
+                    key={order.id}
+                    className={`hover:bg-muted/30 transition-colors cursor-pointer ${!isLast ? 'border-b' : ''}`}
+                    onClick={() => { setSelectedOrder(order); setIsDetailOpen(true); }}
+                  >
+                    <td className="px-4 py-3 font-mono font-bold text-xs">{order.order_number}</td>
+                    <td className="px-4 py-3 font-medium">{order.customer_name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {format(new Date(order.created_at), 'dd/MM/yy HH:mm')}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
                         {getPaymentIcon(order.payment_method)}
+                        <span className="text-xs capitalize text-muted-foreground">{order.payment_method || '—'}</span>
                       </div>
-                      <p className="text-sm font-medium truncate">{order.customer_name}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(order.created_at), 'dd/MM HH:mm')}
-                        </span>
-                        <span className="font-bold text-sm text-primary">{formatCurrency(Number(order.total))}</span>
-                      </div>
-                      {statusDef.id !== 'entregue' && (
-                        <Button size="sm" variant="ghost" className="w-full gap-1 text-xs h-7" onClick={e => { e.stopPropagation(); handleMoveToNext(order); }}>
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-primary">{formatCurrency(Number(order.total))}</td>
+                    <td className="px-4 py-3">
+                      {statusDef && (
+                        <Badge className={`${statusDef.color} border text-xs`}>{statusDef.label}</Badge>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {statusDef?.id !== 'entregue' && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs gap-1"
+                          onClick={e => { e.stopPropagation(); handleMoveToNext(order); }}
+                        >
                           Avançar <ArrowRight className="h-3 w-3" />
                         </Button>
                       )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          ))}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
