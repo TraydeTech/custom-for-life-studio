@@ -39,6 +39,7 @@ const MeusPedidos = lazy(() => import("./pages/MeusPedidos"));
 const MeusEnderecos = lazy(() => import("./pages/MeusEnderecos"));
 const MeusChamados = lazy(() => import("./pages/MeusChamados"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const ComingSoon = lazy(() => import("./pages/ComingSoon"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
