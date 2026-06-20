@@ -207,10 +207,10 @@ export function useCart() {
         return;
       }
       if (quantity <= 0) {
-        const { error } = await supabase.from('cart_items').delete().eq('id', itemId);
+        const { error } = await supabase.from('cart_items').delete().eq('id', itemId).eq('user_id', user.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('cart_items').update({ quantity }).eq('id', itemId);
+        const { error } = await supabase.from('cart_items').update({ quantity }).eq('id', itemId).eq('user_id', user.id);
         if (error) throw error;
       }
     },
@@ -227,7 +227,7 @@ export function useCart() {
         saveGuestCart(items);
         return;
       }
-      const { error } = await supabase.from('cart_items').delete().eq('id', itemId);
+      const { error } = await supabase.from('cart_items').delete().eq('id', itemId).eq('user_id', user.id);
       if (error) throw error;
     },
     onSuccess: () => {

@@ -249,7 +249,7 @@ export default function Checkout() {
       };
 
       if (selectedAddressId !== 'new') {
-        await supabase.from('addresses').update(addressPayload).eq('id', selectedAddressId);
+        await supabase.from('addresses').update(addressPayload).eq('id', selectedAddressId).eq('user_id', user.id);
       } else {
         // Verifica se este endereço já existe para evitar duplicatas básicas
         const { data: existingAddr } = await supabase
@@ -343,8 +343,7 @@ export default function Checkout() {
       const order = orderId ? { id: orderId } : await createOrder();
       const orderNumber = (order as any).order_number;
 
-      // Chave PIX informada: 008.697.879-93
-      const pixKey = '008.697.879-93';
+      const pixKey = import.meta.env.VITE_PIX_KEY as string;
       const payload = generatePixPayload(
         pixKey,
         'Custom For Life',
