@@ -1,15 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+// Webhooks de pagamento não precisam de CORS — vêm do servidor Iugu, não do browser
+const jsonHeaders = { "Content-Type": "application/json" };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+  // Iugu não envia OPTIONS — rejeitar outros métodos
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: jsonHeaders,
+    });
   }
 
   try {
@@ -17,24 +18,35 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Iugu sends webhooks as form-urlencoded or JSON
+    // Parse body (Iugu envia form-urlencoded ou JSON)
     let body: any;
     const contentType = req.headers.get("content-type") || "";
     if (contentType.includes("application/x-www-form-urlencoded")) {
       const text = await req.text();
       const params = new URLSearchParams(text);
       body = Object.fromEntries(params.entries());
-      // Parse nested data if present
       if (body.data) {
-        try {
-          body.data = JSON.parse(body.data);
-        } catch {}
+        try { body.data = JSON.parse(body.data); } catch {}
       }
     } else {
       body = await req.json();
     }
 
-    console.log("Iugu webhook received:", JSON.stringify(body));
+    // ── Verificação de token Iugu ─────────────────────────────────────────
+    // Configure IUGU_WEBHOOK_TOKEN no painel Supabase → Edge Functions → Secrets
+    // com o mesmo valor configurado em Iugu → Webhooks → Token de verificação.
+    const webhookToken = Deno.env.get("IUGU_WEBHOOK_TOKEN");
+    if (webhookToken) {
+      const receivedToken = body.token as string | undefined;
+      if (!receivedToken || receivedToken !== webhookToken) {
+        console.error("Webhook token inválido");
+        // Retorna 200 para o Iugu não retentar, mas não processa
+        return new Response(JSON.stringify({ ok: false, message: "Invalid token" }), {
+          status: 200,
+          headers: jsonHeaders,
+        });
+      }
+    }
 
     const event = body.event;
     const invoiceId = body.data?.id || body.data?.invoice_id;
@@ -42,7 +54,7 @@ serve(async (req) => {
     if (!invoiceId) {
       return new Response(JSON.stringify({ error: "No invoice ID" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: jsonHeaders,
       });
     }
 
@@ -50,7 +62,6 @@ serve(async (req) => {
       const status = body.data?.status;
 
       if (status === "paid") {
-        // Find order by iugu_invoice_id
         const { data: order, error: orderError } = await supabase
           .from("orders")
           .select("id, total, payment_method, payment_status")
@@ -61,19 +72,18 @@ serve(async (req) => {
           console.error("Order not found for invoice:", invoiceId);
           return new Response(JSON.stringify({ ok: true, message: "Order not found" }), {
             status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: jsonHeaders,
           });
         }
 
-        // Skip if already paid
+        // Idempotência: ignora se já pago
         if (order.payment_status === "paid") {
           return new Response(JSON.stringify({ ok: true, message: "Already paid" }), {
             status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: jsonHeaders,
           });
         }
 
-        // Update order status
         await supabase
           .from("orders")
           .update({
@@ -84,7 +94,7 @@ serve(async (req) => {
           })
           .eq("id", order.id);
 
-        // Create financial transaction if not exists
+        // Transação financeira (idempotente por iugu_invoice_id)
         const { data: existingTx } = await supabase
           .from("financial_transactions")
           .select("id")
@@ -93,7 +103,7 @@ serve(async (req) => {
 
         if (!existingTx) {
           const paymentMethod = order.payment_method || "pix";
-          let feeRate = 0.01; // PIX default
+          let feeRate = 0.01;
           if (paymentMethod === "credito") feeRate = 0.025;
           else if (paymentMethod === "debito") feeRate = 0.02;
 
@@ -111,13 +121,13 @@ serve(async (req) => {
           });
         }
 
-        // Update accounts_receivable for this order
         await supabase
           .from("accounts_receivable")
           .update({ status: "paid", paid_date: new Date().toISOString().split("T")[0] })
           .eq("order_id", order.id);
 
         console.log("Order paid:", order.id);
+
       } else if (status === "refunded") {
         const { data: order } = await supabase
           .from("orders")
@@ -141,13 +151,13 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: jsonHeaders,
     });
   } catch (error) {
     console.error("Webhook error:", error);
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: jsonHeaders,
     });
   }
 });

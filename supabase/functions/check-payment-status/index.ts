@@ -1,13 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGIN = Deno.env.get("SITE_URL") || "https://customforlife.com.br";
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const allowed = origin === ALLOWED_ORIGIN || origin.endsWith(".supabase.co");
+  return {
+    "Access-Control-Allow-Origin": allowed ? origin : ALLOWED_ORIGIN,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -44,12 +52,30 @@ serve(async (req) => {
       });
     }
 
+    const userId = claimsData.claims.sub;
+
     const { invoiceId } = await req.json();
     if (!invoiceId) {
       return new Response(
         JSON.stringify({ error: "invoiceId is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Verificar que a invoice pertence a um pedido do usuário autenticado
+    const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: orderCheck } = await serviceClient
+      .from("orders")
+      .select("id")
+      .eq("iugu_invoice_id", invoiceId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!orderCheck) {
+      return new Response(JSON.stringify({ error: "Invoice not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const iuguAuth = btoa(`${IUGU_API_KEY}:`);
@@ -65,18 +91,14 @@ serve(async (req) => {
       );
     }
 
-    // If paid, update the order
     if (data.status === "paid") {
-      const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-
-      // Find and update the order
       const { data: order } = await serviceClient
         .from("orders")
-        .select("id, total, payment_method")
+        .select("id, total, payment_method, payment_status")
         .eq("iugu_invoice_id", invoiceId)
         .single();
 
-      if (order) {
+      if (order && order.payment_status !== "paid") {
         await serviceClient
           .from("orders")
           .update({
@@ -87,7 +109,6 @@ serve(async (req) => {
           })
           .eq("id", order.id);
 
-        // Create financial transaction if not exists
         const { data: existingTx } = await serviceClient
           .from("financial_transactions")
           .select("id")
