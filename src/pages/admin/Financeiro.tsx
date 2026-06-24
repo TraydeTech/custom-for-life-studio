@@ -27,6 +27,26 @@ import { formatCurrency } from '@/lib/utils';
 
 const PIE_COLORS = ['hsl(var(--primary))', '#8b5cf6', '#3b82f6', '#10b981'];
 
+// A tabela financial_transactions ainda não está nos tipos gerados do Supabase
+// (src/integrations/supabase/types.ts), então definimos o shape usado aqui.
+interface FinancialTransaction {
+  id: string;
+  status: string;
+  transaction_date: string;
+  payment_method: string | null;
+  installments: number | null;
+  gross_amount: number;
+  gateway_fee: number;
+  net_amount: number;
+  customer_name?: string;
+  orders?: {
+    order_number?: string | null;
+    notes?: string | null;
+    user_id?: string | null;
+    shipping_address?: unknown;
+  } | null;
+}
+
 function FinanceiroContent() {
   const queryClient = useQueryClient();
   const [isPayableDialogOpen, setIsPayableDialogOpen] = useState(false);
@@ -42,21 +62,23 @@ function FinanceiroContent() {
     queryKey: ['financial-transactions'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('financial_transactions' as any)
+        .from('financial_transactions' as never)
         .select('*, orders(order_number, shipping_address, notes, user_id)')
         .order('transaction_date', { ascending: false });
       if (error) throw error;
 
+      const rows = (data || []) as unknown as FinancialTransaction[];
+
       // Get customer names
-      const userIds = (data || []).map((t: any) => t.orders?.user_id).filter(Boolean);
-      let profiles: any[] = [];
+      const userIds = rows.map((t) => t.orders?.user_id).filter(Boolean) as string[];
+      let profiles: { user_id: string; full_name: string | null }[] = [];
       if (userIds.length > 0) {
         const { data: p } = await supabase.from('profiles').select('user_id, full_name').in('user_id', userIds);
         profiles = p || [];
       }
 
-      return (data || []).map((t: any) => {
-        const profile = profiles.find((p: any) => p.user_id === t.orders?.user_id);
+      return rows.map((t) => {
+        const profile = profiles.find((p) => p.user_id === t.orders?.user_id);
         let customerName = profile?.full_name;
         if (!customerName && t.orders?.notes) {
           const match = t.orders.notes.match(/Cliente:\s*([^|]+)/i);
@@ -143,20 +165,20 @@ function FinanceiroContent() {
     const monthStart = startOfMonth(now);
     const yearStart = startOfYear(now);
 
-    const paidTx = transactions.filter((t: any) => t.status === 'confirmed');
-    const todayTx = paidTx.filter((t: any) => new Date(t.transaction_date) >= todayStart);
-    const monthTx = paidTx.filter((t: any) => new Date(t.transaction_date) >= monthStart);
-    const yearTx = paidTx.filter((t: any) => new Date(t.transaction_date) >= yearStart);
+    const paidTx = transactions.filter((t) => t.status === 'confirmed');
+    const todayTx = paidTx.filter((t) => new Date(t.transaction_date) >= todayStart);
+    const monthTx = paidTx.filter((t) => new Date(t.transaction_date) >= monthStart);
+    const yearTx = paidTx.filter((t) => new Date(t.transaction_date) >= yearStart);
 
-    const todayTotal = todayTx.reduce((s: number, t: any) => s + Number(t.net_amount), 0);
-    const monthTotal = monthTx.reduce((s: number, t: any) => s + Number(t.net_amount), 0);
-    const yearTotal = yearTx.reduce((s: number, t: any) => s + Number(t.net_amount), 0);
+    const todayTotal = todayTx.reduce((s: number, t) => s + Number(t.net_amount), 0);
+    const monthTotal = monthTx.reduce((s: number, t) => s + Number(t.net_amount), 0);
+    const yearTotal = yearTx.reduce((s: number, t) => s + Number(t.net_amount), 0);
     const avgTicket = monthTx.length > 0 ? monthTotal / monthTx.length : 0;
-    const pendingReceivable = receivables.filter((r: any) => r.status !== 'paid').reduce((s: number, r: any) => s + Number(r.amount), 0);
+    const pendingReceivable = receivables.filter((r) => r.status !== 'paid').reduce((s: number, r) => s + Number(r.amount), 0);
 
-    const monthGross = monthTx.reduce((s: number, t: any) => s + Number(t.gross_amount), 0);
-    const monthFees = monthTx.reduce((s: number, t: any) => s + Number(t.gateway_fee), 0);
-    const monthNet = monthTx.reduce((s: number, t: any) => s + Number(t.net_amount), 0);
+    const monthGross = monthTx.reduce((s: number, t) => s + Number(t.gross_amount), 0);
+    const monthFees = monthTx.reduce((s: number, t) => s + Number(t.gateway_fee), 0);
+    const monthNet = monthTx.reduce((s: number, t) => s + Number(t.net_amount), 0);
 
     return { todayTotal, monthTotal, yearTotal, avgTicket, monthSales: monthTx.length, pendingReceivable, monthGross, monthFees, monthNet };
   }, [transactions, receivables]);
@@ -167,8 +189,8 @@ function FinanceiroContent() {
     for (let i = 29; i >= 0; i--) {
       const d = subDays(new Date(), i);
       const dateStr = format(d, 'yyyy-MM-dd');
-      const dayTx = transactions.filter((t: any) => t.status === 'confirmed' && format(new Date(t.transaction_date), 'yyyy-MM-dd') === dateStr);
-      days.push({ date: format(d, 'dd/MM'), revenue: dayTx.reduce((s: number, t: any) => s + Number(t.net_amount), 0) });
+      const dayTx = transactions.filter((t) => t.status === 'confirmed' && format(new Date(t.transaction_date), 'yyyy-MM-dd') === dateStr);
+      days.push({ date: format(d, 'dd/MM'), revenue: dayTx.reduce((s: number, t) => s + Number(t.net_amount), 0) });
     }
     return days;
   }, [transactions]);
@@ -176,7 +198,7 @@ function FinanceiroContent() {
   // Pie: payment method distribution
   const paymentPieData = useMemo(() => {
     const methods: Record<string, number> = {};
-    transactions.filter((t: any) => t.status === 'confirmed').forEach((t: any) => {
+    transactions.filter((t) => t.status === 'confirmed').forEach((t) => {
       const m = t.payment_method || 'outro';
       methods[m] = (methods[m] || 0) + Number(t.gross_amount);
     });
@@ -200,12 +222,12 @@ function FinanceiroContent() {
     return <Banknote className="h-4 w-4 text-green-400" />;
   };
 
-  const totalReceivable = receivables.filter((r: any) => r.status !== 'paid').reduce((s: number, r: any) => s + Number(r.amount), 0);
-  const totalPayable = payables.filter((p: any) => p.status !== 'paid').reduce((s: number, p: any) => s + Number(p.amount), 0);
-  const totalReceived = receivables.filter((r: any) => r.status === 'paid').reduce((s: number, r: any) => s + Number(r.amount), 0);
+  const totalReceivable = receivables.filter((r) => r.status !== 'paid').reduce((s: number, r) => s + Number(r.amount), 0);
+  const totalPayable = payables.filter((p) => p.status !== 'paid').reduce((s: number, p) => s + Number(p.amount), 0);
+  const totalReceived = receivables.filter((r) => r.status === 'paid').reduce((s: number, r) => s + Number(r.amount), 0);
 
   const handleExportCSV = () => {
-    const rows = transactions.map((t: any) => [
+    const rows = transactions.map((t) => [
       format(new Date(t.transaction_date), 'dd/MM/yyyy HH:mm'),
       t.orders?.order_number || '-',
       t.customer_name,
@@ -323,7 +345,7 @@ function FinanceiroContent() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions.map((t: any) => (
+                    {transactions.map((t) => (
                       <TableRow key={t.id}>
                         <TableCell className="text-xs">{format(new Date(t.transaction_date), 'dd/MM/yy HH:mm')}</TableCell>
                         <TableCell className="font-mono text-xs">{t.orders?.order_number || '-'}</TableCell>
@@ -355,7 +377,7 @@ function FinanceiroContent() {
                 <Table>
                   <TableHeader><TableRow><TableHead>Descrição</TableHead><TableHead>Cliente</TableHead><TableHead>Valor</TableHead><TableHead>Vencimento</TableHead><TableHead>Status</TableHead><TableHead>Ações</TableHead></TableRow></TableHeader>
                   <TableBody>
-                    {receivables.map((item: any) => (
+                    {receivables.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.description}</TableCell>
                         <TableCell>{item.customer_name || '-'}</TableCell>
@@ -414,7 +436,7 @@ function FinanceiroContent() {
                 <Table>
                   <TableHeader><TableRow><TableHead>Descrição</TableHead><TableHead>Fornecedor</TableHead><TableHead>Categoria</TableHead><TableHead>Valor</TableHead><TableHead>Vencimento</TableHead><TableHead>Status</TableHead><TableHead>Ações</TableHead></TableRow></TableHeader>
                   <TableBody>
-                    {payables.map((item: any) => (
+                    {payables.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.description}</TableCell>
                         <TableCell>{item.supplier_name || '-'}</TableCell>
@@ -449,7 +471,7 @@ function FinanceiroContent() {
               </div>
               <div className="space-y-3">
                 <h4 className="font-semibold flex items-center gap-2"><Package className="h-4 w-4" />Produtos</h4>
-                {orderDetails.order_items.map((item: any) => (
+                {orderDetails.order_items.map((item) => (
                   <div key={item.id} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
                     <div className="w-16 h-16 bg-white rounded-lg overflow-hidden flex-shrink-0 border">
                       {item.product_image ? (

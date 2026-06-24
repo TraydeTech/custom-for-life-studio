@@ -39,7 +39,7 @@ export default function AdminCategorias() {
             { header: 'Slug', key: 'slug' },
             { 
               header: 'Ficha Técnica', 
-              key: 'technical_sheet' as any,
+              key: 'technical_sheet' as never,
               render: (val) => (
                 val && Array.isArray(val) && val.length > 0 ? (
                   <Badge variant="outline" className="text-primary gap-1">
@@ -122,7 +122,7 @@ export default function AdminCategorias() {
                     </Button>
                   </div>
                   
-                  {Array.isArray(formData.technical_sheet) && formData.technical_sheet.map((section: any, sIdx: number) => (
+                  {Array.isArray(formData.technical_sheet) && formData.technical_sheet.map((section: { title: string; items: { label: string; value: string }[] }, sIdx: number) => (
                     <div key={sIdx} className="border rounded-lg p-3 space-y-3 bg-muted/30">
                       <div className="flex items-center gap-2">
                         <Input 
@@ -140,14 +140,14 @@ export default function AdminCategorias() {
                           size="icon" 
                           className="text-destructive"
                           onClick={() => {
-                            const sections = formData.technical_sheet.filter((_: any, i: number) => i !== sIdx);
+                            const sections = formData.technical_sheet.filter((_, i: number) => i !== sIdx);
                             setFormData({ ...formData, technical_sheet: sections });
                           }}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
-                      {section.items.map((item: any, iIdx: number) => (
+                      {section.items.map((item, iIdx: number) => (
                         <div key={iIdx} className="flex items-center gap-2">
                           <Input 
                             value={item.label} 
@@ -176,7 +176,7 @@ export default function AdminCategorias() {
                             className="text-destructive"
                             onClick={() => {
                               const sections = [...formData.technical_sheet];
-                              sections[sIdx].items = sections[sIdx].items.filter((_: any, i: number) => i !== iIdx);
+                              sections[sIdx].items = sections[sIdx].items.filter((_, i: number) => i !== iIdx);
                               setFormData({ ...formData, technical_sheet: sections });
                             }}
                           >

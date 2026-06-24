@@ -180,8 +180,8 @@ export default function MeusChamados() {
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
       setNewMessage('');
-    } catch (e: any) {
-      toast({ title: 'Erro ao enviar mensagem', description: e.message, variant: 'destructive' });
+    } catch (e) {
+      toast({ title: 'Erro ao enviar mensagem', description: (e as Error).message, variant: 'destructive' });
     }
 
     setSending(false);

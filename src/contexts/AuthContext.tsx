@@ -131,6 +131,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isMounted = false;
       subscription.unsubscribe();
     };
+    // assina o auth listener uma única vez no mount; checkIsAdmin é estável
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {

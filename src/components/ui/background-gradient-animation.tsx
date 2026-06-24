@@ -51,6 +51,8 @@ export const BackgroundGradientAnimation = ({
     document.body.style.setProperty("--pointer-color", pointerColor);
     document.body.style.setProperty("--size", size);
     document.body.style.setProperty("--blending-value", blendingValue);
+    // props são estáticas neste uso; CSS vars setadas uma vez no mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -61,6 +63,7 @@ export const BackgroundGradientAnimation = ({
       interactiveRef.current.style.transform = `translate(${Math.round(curX)}px, ${Math.round(curY)}px)`;
     }
     move();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tgX, tgY]);
 
   const handleMouseMove = (event: React.MouseEvent) => {

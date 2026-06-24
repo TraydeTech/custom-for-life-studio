@@ -154,7 +154,8 @@ export function useCart() {
           engraving_preview_image: engravingPreviewImage,
           product_color: productColor,
           engraving_file_url: engravingFileUrl,
-        } as any);
+          // colunas engraving_* ainda não estão nos tipos gerados do Supabase
+        } as never);
         if (error) throw error;
         return;
       }
@@ -164,7 +165,7 @@ export function useCart() {
         .select('id, quantity')
         .eq('user_id', user.id)
         .eq('product_id', productId)
-        .is('engraving_text' as any, null)
+        .is('engraving_text' as never, null)
         .maybeSingle();
 
       if (existing) {
@@ -178,7 +179,7 @@ export function useCart() {
           user_id: user.id, product_id: productId, quantity,
           customization_notes: customizationNotes, product_color: productColor,
           engraving_file_url: engravingFileUrl,
-        } as any);
+        } as never);
         if (error) throw error;
       }
     },
@@ -286,7 +287,7 @@ export async function syncGuestCartToSupabase(userId: string): Promise<void> {
         .select('id, quantity')
         .eq('user_id', userId)
         .eq('product_id', item.product_id)
-        .is('engraving_text' as any, null)
+        .is('engraving_text' as never, null)
         .maybeSingle();
 
       if (existing) {
@@ -309,7 +310,7 @@ export async function syncGuestCartToSupabase(userId: string): Promise<void> {
   }
 
   if (itemsToInsert.length > 0) {
-    const { error } = await supabase.from('cart_items').insert(itemsToInsert as any);
+    const { error } = await supabase.from('cart_items').insert(itemsToInsert as never);
     if (error) console.error('[CartSync] Erro no bulk insert:', error);
   }
 

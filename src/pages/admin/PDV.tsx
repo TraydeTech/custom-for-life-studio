@@ -209,9 +209,9 @@ export default function AdminPDV() {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('Checkout error:', error);
-      toast.error('Erro ao finalizar venda: ' + error.message);
+      toast.error('Erro ao finalizar venda: ' + (error as Error).message);
     } finally {
       setIsProcessing(false);
     }

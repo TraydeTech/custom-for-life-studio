@@ -26,7 +26,11 @@ serve(async (req) => {
       const params = new URLSearchParams(text);
       body = Object.fromEntries(params.entries());
       if (body.data) {
-        try { body.data = JSON.parse(body.data); } catch {}
+        // body.data pode vir como string JSON ou já decodificado; se não for JSON
+        // válido, mantém o valor original em vez de quebrar o webhook.
+        try { body.data = JSON.parse(body.data); } catch {
+          console.warn("iugu-webhook: body.data não é JSON válido, mantendo valor original");
+        }
       }
     } else {
       body = await req.json();

@@ -74,7 +74,7 @@ export default function AdminProdutos() {
       setNewCatName('');
       setPendingCatCallback(null);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error('Erro ao criar categoria: ' + error.message);
     },
   });
@@ -97,8 +97,8 @@ export default function AdminProdutos() {
       const url = await uploadImage(file);
       const updated = variants.map((v, i) => i === variantIndex ? { ...v, main_image: url } : v);
       setVariants(updated);
-    } catch (error: any) {
-      toast.error('Erro ao fazer upload: ' + error.message);
+    } catch (error) {
+      toast.error('Erro ao fazer upload: ' + (error as Error).message);
     }
     setUploadingVariant(null);
   };
@@ -112,8 +112,8 @@ export default function AdminProdutos() {
         ? { ...v, additional_images: [...(v.additional_images || []), url] }
         : v);
       setVariants(updated);
-    } catch (error: any) {
-      toast.error('Erro ao fazer upload: ' + error.message);
+    } catch (error) {
+      toast.error('Erro ao fazer upload: ' + (error as Error).message);
     }
     setUploadingExtra(null);
   };
@@ -515,13 +515,13 @@ export default function AdminProdutos() {
             
             // Calcula estoque total
             const totalStock = Array.isArray(variants) 
-              ? variants.reduce((sum: number, v: any) => sum + (parseInt(v.stock) || 0), 0)
+              ? variants.reduce((sum: number, v: { stock?: string | number }) => sum + (parseInt(String(v.stock ?? 0)) || 0), 0)
               : 0;
 
             const finalData = {
               ...productData,
               stock: totalStock,
-              images: Array.isArray(variants) ? variants.map((v: any) => v.main_image).filter(Boolean) : [],
+              images: Array.isArray(variants) ? variants.map((v: { main_image?: string | null }) => v.main_image).filter(Boolean) : [],
               slug: data.slug || data.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, ''),
             };
 
