@@ -62,6 +62,8 @@ export default function MeusPedidos() {
     }, 2000);
 
     return () => clearTimeout(timeout);
+    // busca dispara em mudança de user/auth; fetchOrders/loading omitidos de propósito
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, navigate]);
 
   const fetchOrders = async () => {

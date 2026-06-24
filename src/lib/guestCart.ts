@@ -25,7 +25,9 @@ export function getGuestCart(): GuestCartItem[] {
 export function saveGuestCart(items: GuestCartItem[]): void {
   try {
     localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
-  } catch {}
+  } catch {
+    // localStorage indisponível (quota cheia / modo privado) — ignora
+  }
 }
 
 export function clearGuestCart(): void {

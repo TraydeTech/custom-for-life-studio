@@ -174,8 +174,8 @@ export default function AdminChamados() {
         queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
         queryClient.invalidateQueries({ queryKey: ['open-tickets-count'] });
       }
-    } catch (err: any) {
-      toast({ title: 'Erro ao enviar', description: err.message, variant: 'destructive' });
+    } catch (err) {
+      toast({ title: 'Erro ao enviar', description: (err as Error).message, variant: 'destructive' });
     }
     setSending(false);
   };
@@ -201,8 +201,8 @@ export default function AdminChamados() {
       queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
       queryClient.invalidateQueries({ queryKey: ['open-tickets-count'] });
       toast({ title: 'Status atualizado' });
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } catch (err) {
+      toast({ title: 'Erro', description: (err as Error).message, variant: 'destructive' });
     }
   };
 

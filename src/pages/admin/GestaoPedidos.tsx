@@ -40,11 +40,23 @@ type OrderWithItems = {
   created_at: string;
   tracking_code: string | null;
   notes: string | null;
-  shipping_address: any;
+  shipping_address: unknown;
   user_id: string | null;
   customer_name?: string;
-  items?: any[];
+  items?: OrderItem[];
 };
+
+interface OrderItem {
+  id: string;
+  product_name?: string;
+  product_image?: string | null;
+  quantity?: number;
+  unit_price?: number;
+  total_price?: number;
+  engraving_text?: string | null;
+  engraving_preview_url?: string | null;
+  engraving_file_url?: string | null;
+}
 
 function GestaoPedidosContent() {
   const queryClient = useQueryClient();
@@ -54,7 +66,7 @@ function GestaoPedidosContent() {
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [trackingCode, setTrackingCode] = useState('');
-  const [engravingZoomItem, setEngravingZoomItem] = useState<any>(null);
+  const [engravingZoomItem, setEngravingZoomItem] = useState<OrderItem | null>(null);
   const [zoomedImageType, setZoomedImageType] = useState<'preview' | 'original'>('preview');
 
   const handleDownload = async (url: string, filename: string) => {
@@ -86,28 +98,28 @@ function GestaoPedidosContent() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      const rawOrders = (data || []) as any[];
+      const rawOrders = (data || []) as unknown as OrderWithItems[];
 
       // Get customer names
-      const userIds = rawOrders.map((o: any) => o.user_id).filter(Boolean);
-      let profiles: any[] = [];
+      const userIds = rawOrders.map((o) => o.user_id).filter(Boolean) as string[];
+      let profiles: { user_id: string; full_name: string | null }[] = [];
       if (userIds.length > 0) {
         const { data: p } = await supabase
           .from('profiles')
           .select('user_id, full_name')
-          .in('user_id', userIds as string[]);
+          .in('user_id', userIds);
         profiles = p || [];
       }
 
-      return rawOrders.map((order: any) => {
-        const profile = profiles.find((p: any) => p.user_id === order.user_id);
+      return rawOrders.map((order) => {
+        const profile = profiles.find((p) => p.user_id === order.user_id);
         let customerName = profile?.full_name;
         if (!customerName && order.notes) {
           const match = order.notes.match(/Cliente:\s*([^|]+)/i);
           if (match) customerName = match[1].trim();
         }
-        // Read pdv_status from the raw data (column added via migration, not yet in types)
-        return { ...order, pdv_status: (order as any).pdv_status || 'aguardando_pagamento', customer_name: customerName || 'Cliente' } as OrderWithItems;
+        // pdv_status: coluna adicionada via migration, ainda não nos tipos gerados
+        return { ...order, pdv_status: order.pdv_status || 'aguardando_pagamento', customer_name: customerName || 'Cliente' } as OrderWithItems;
       });
     },
   });
@@ -126,7 +138,7 @@ function GestaoPedidosContent() {
   // Update pdv_status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ orderId, newStatus, trackingCode: tc }: { orderId: string; newStatus: string; trackingCode?: string }) => {
-      const updates: any = { pdv_status: newStatus };
+      const updates: Record<string, string> = { pdv_status: newStatus };
       if (newStatus === 'enviado' && tc) {
         updates.tracking_code = tc;
         updates.sent_at = new Date().toISOString();
@@ -157,7 +169,7 @@ function GestaoPedidosContent() {
         .from('order_items')
         .select('*')
         .eq('order_id', selectedOrder.id);
-      return data || [];
+      return (data || []) as unknown as OrderItem[];
     },
     enabled: !!selectedOrder,
   });
@@ -197,6 +209,8 @@ function GestaoPedidosContent() {
       result = result.filter(o => new Date(o.created_at) >= dateRange);
     }
     return result;
+    // getDateRange usa só dateFilter, que já está nas deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orders, search, statusFilter, dateFilter]);
 
   const getPaymentIcon = (method: string | null) => {
@@ -373,7 +387,7 @@ function GestaoPedidosContent() {
               {/* Items with engraving */}
               <div className="space-y-3">
                 <h4 className="font-semibold">Itens do Pedido</h4>
-                {orderItems.map((item: any) => (
+                {orderItems.map((item) => (
                   <div key={item.id} className="flex gap-4 p-3 bg-muted/50 rounded-lg items-start">
                     <div className="flex gap-2 shrink-0">
                       {/* Produto/Prévia */}

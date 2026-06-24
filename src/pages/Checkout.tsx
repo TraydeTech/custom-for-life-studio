@@ -24,6 +24,24 @@ import { toast } from 'sonner';
 import { maskCPF, unmaskCPF, isValidCPF } from '@/lib/cpf';
 import { buildInstallmentOptions } from '@/lib/installments';
 
+interface IuguTokenResponse {
+  id: string;
+  errors?: unknown;
+}
+
+interface IuguSDK {
+  createPaymentToken(
+    data: Record<string, string>,
+    callback: (response: IuguTokenResponse) => void,
+  ): void;
+}
+
+declare global {
+  interface Window {
+    Iugu?: IuguSDK;
+  }
+}
+
 interface CustomerData {
   name: string;
   email: string;
@@ -86,7 +104,7 @@ export default function Checkout() {
 
   // Carrega Iugu.js corretamente via DOM (script tag em JSX não executa)
   useEffect(() => {
-    if ((window as any).Iugu) return;
+    if (window.Iugu) return;
     const script = document.createElement('script');
     script.src = 'https://js.iugu.com/v2';
     script.async = true;
@@ -142,9 +160,11 @@ export default function Checkout() {
 
   // Cleanup intervals
   useEffect(() => {
+    const checkInterval = checkIntervalRef;
+    const timer = timerRef;
     return () => {
-      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (checkInterval.current) clearInterval(checkInterval.current);
+      if (timer.current) clearInterval(timer.current);
     };
   }, []);
 
@@ -282,7 +302,7 @@ export default function Checkout() {
         status: 'pending', payment_status: 'pending',
         notes: `Cliente: ${customer.name} | Tel: ${customer.phone} | CPF: ${customer.cpf || 'N/A'}`,
         order_number: 'temp', source: 'site',
-      } as any)
+      })
       .select()
       .single();
 
@@ -341,7 +361,7 @@ export default function Checkout() {
       // Fix the total before clearing the cart
       setFixedTotal(liveCartTotal);
       const order = orderId ? { id: orderId } : await createOrder();
-      const orderNumber = (order as any).order_number;
+      const orderNumber = (order as { order_number?: string }).order_number;
 
       const pixKey = import.meta.env.VITE_PIX_KEY as string;
       const payload = generatePixPayload(
@@ -361,9 +381,9 @@ export default function Checkout() {
       await clearCart.mutateAsync();
       
       toast.success('Pedido criado! Realize o pagamento via PIX para processarmos seu pedido.');
-    } catch (error: any) {
+    } catch (error) {
       console.error('PIX error:', error);
-      toast.error(error.message || 'Erro ao gerar PIX');
+      toast.error((error instanceof Error && error.message) || 'Erro ao gerar PIX');
     } finally {
       setIsGeneratingPayment(false);
     }
@@ -409,14 +429,14 @@ export default function Checkout() {
       const order = orderId ? { id: orderId } : await createOrder();
 
       // Tokenize via Iugu.js (loaded via script tag)
-      const Iugu = (window as any).Iugu;
+      const Iugu = window.Iugu;
       if (!Iugu) {
         toast.error('Sistema de pagamento não carregado. Recarregue a página.');
         return;
       }
 
       const [expMonth, expYear] = cardExpiry.split('/');
-      const tokenData = await new Promise<any>((resolve, reject) => {
+      const tokenData = await new Promise<IuguTokenResponse>((resolve, reject) => {
         Iugu.createPaymentToken({
           number: cardNumber.replace(/\s/g, ''),
           verification_value: cardCvv,
@@ -424,7 +444,7 @@ export default function Checkout() {
           last_name: cardName.split(' ').slice(1).join(' ') || '',
           month: expMonth,
           year: `20${expYear}`,
-        }, (response: any) => {
+        }, (response) => {
           if (response.errors) reject(new Error('Dados do cartão inválidos'));
           else resolve(response);
         });
@@ -447,10 +467,10 @@ export default function Checkout() {
 
       await clearCart.mutateAsync();
       toast.success('Pagamento aprovado!');
-      navigate(`/pedido-confirmado?pedido=${(order as any).order_number || ''}`);
-    } catch (error: any) {
+      navigate(`/pedido-confirmado?pedido=${(order as { order_number?: string }).order_number || ''}`);
+    } catch (error) {
       console.error('Card error:', error);
-      toast.error(error.message || 'Cartão recusado. Verifique os dados ou tente outro cartão.');
+      toast.error((error instanceof Error && error.message) || 'Cartão recusado. Verifique os dados ou tente outro cartão.');
     } finally {
       setIsSubmitting(false);
     }

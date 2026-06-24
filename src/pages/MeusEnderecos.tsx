@@ -65,6 +65,8 @@ export default function MeusEnderecos() {
     }, 2000);
 
     return () => clearTimeout(timeout);
+    // busca dispara em mudança de user/auth; fetchAddresses/loading omitidos de propósito
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, navigate]);
 
   const fetchAddresses = async () => {

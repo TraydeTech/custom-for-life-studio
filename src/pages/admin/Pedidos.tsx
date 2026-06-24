@@ -18,6 +18,14 @@ import { toast } from 'sonner';
 type Order = Tables<'orders'>;
 type OrderItem = Tables<'order_items'>;
 
+interface ShippingAddr {
+  name?: string;
+  street?: string;
+  number?: string;
+  city?: string;
+  state?: string;
+}
+
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-500/20 text-yellow-500',
   paid: 'bg-blue-500/20 text-blue-500',
@@ -63,7 +71,7 @@ export default function AdminPedidos() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from('orders').update({ status: status as any }).eq('id', id);
+      const { error } = await supabase.from('orders').update({ status: status as Order['status'] }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -231,9 +239,9 @@ export default function AdminPedidos() {
                   <div className="space-y-2">
                     <h3 className="font-semibold">Entrega</h3>
                     <div className="text-sm p-3 border rounded-lg">
-                      <p><strong>{(selectedOrder.shipping_address as any).name}</strong></p>
-                      <p>{(selectedOrder.shipping_address as any).street}, {(selectedOrder.shipping_address as any).number}</p>
-                      <p>{(selectedOrder.shipping_address as any).city} - {(selectedOrder.shipping_address as any).state}</p>
+                      <p><strong>{(selectedOrder.shipping_address as unknown as ShippingAddr).name}</strong></p>
+                      <p>{(selectedOrder.shipping_address as unknown as ShippingAddr).street}, {(selectedOrder.shipping_address as unknown as ShippingAddr).number}</p>
+                      <p>{(selectedOrder.shipping_address as unknown as ShippingAddr).city} - {(selectedOrder.shipping_address as unknown as ShippingAddr).state}</p>
                     </div>
                   </div>
                 )}

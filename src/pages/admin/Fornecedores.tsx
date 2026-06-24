@@ -16,7 +16,7 @@ export default function AdminFornecedores() {
   const [isLoadingCEP, setIsLoadingCEP] = useState(false);
   const [isLoadingCNPJ, setIsLoadingCNPJ] = useState(false);
 
-  const fetchAddressByCEP = async (cep: string, formData: any, setFormData: any) => {
+  const fetchAddressByCEP = async (cep: string, formData: Record<string, string | undefined>, setFormData: (data: Record<string, string | undefined>) => void) => {
     const cleanCEP = cep.replace(/\D/g, '');
     if (cleanCEP.length !== 8) return;
     setIsLoadingCEP(true);
@@ -39,7 +39,7 @@ export default function AdminFornecedores() {
     }
   };
 
-  const fetchCompanyByCNPJ = async (cnpj: string, formData: any, setFormData: any) => {
+  const fetchCompanyByCNPJ = async (cnpj: string, formData: Record<string, string | undefined>, setFormData: (data: Record<string, string | undefined>) => void) => {
     const cleanCNPJ = cnpj.replace(/\D/g, '');
     if (cleanCNPJ.length !== 14) return;
     setIsLoadingCNPJ(true);

@@ -5,7 +5,8 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  // dist = build; supabase/functions = Deno runtime (tooling próprio, não o app Vite)
+  { ignores: ["dist", "supabase/functions"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
@@ -21,6 +22,14 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+    },
+  },
+  {
+    // Componentes shadcn/ui e contexts exportam variants/hooks junto do componente
+    // (padrão da lib). A regra é só DX de fast-refresh, sem impacto em runtime.
+    files: ["src/components/ui/**", "src/contexts/**"],
+    rules: {
+      "react-refresh/only-export-components": "off",
     },
   },
 );

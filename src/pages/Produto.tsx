@@ -99,14 +99,14 @@ export default function Produto() {
         .neq('id', product.id)
         .gt('stock', 0)
         .limit(4);
-      return (data || []) as any[];
+      return data || [];
     },
     enabled: !!product?.category_id,
     staleTime: 1000 * 60 * 5,
   });
 
   const variants: ProductVariant[] = useMemo(() => {
-    const list = (productData as any)?.product_variants;
+    const list = (productData as { product_variants?: ProductVariant[] })?.product_variants;
     if (!list) return [];
     return [...list].sort(
       (a: ProductVariant, b: ProductVariant) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
@@ -120,6 +120,8 @@ export default function Produto() {
       const inStockVariant = variants.find(v => (v.stock || 0) > 0) || variants[0];
       setSelected(inStockVariant);
     }
+    // seleção inicial só quando variants carrega; guard !selected evita re-set
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variants]);
 
   // Preload all variant images in background for instant switching
@@ -201,7 +203,7 @@ export default function Produto() {
     });
     
     ctx.restore();
-  }, [engravingPosX, engravingPosY, engravingRotation, engravingScale, engravingColor]);
+  }, [engravingPosX, engravingPosY, engravingRotation, engravingScale]);
 
   // Draw canvas with image cache
   const drawCanvas = useCallback((url: string, text: string) => {
@@ -261,6 +263,8 @@ export default function Produto() {
     if (isDragging) {
       drawCanvas(mainImage, engravingText);
     }
+    // redesenho durante drag depende só da posição/transform; mainImage/text têm efeito próprio
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engravingPosX, engravingPosY, isDragging, engravingRotation, engravingScale, engravingColor]);
 
   // Selection handler — receives the FULL variant object
@@ -868,14 +872,14 @@ export default function Produto() {
               {product.category?.technical_sheet && (
                 <TabsContent value="specs" className="mt-0">
                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {(product.category.technical_sheet as any[]).map((section, sIdx) => (
+                      {(product.category.technical_sheet as Array<{ title?: string; items: Array<{ label: string; value: string }> }>).map((section, sIdx) => (
                         <div key={sIdx} className="p-6 rounded-3xl border bg-card/50">
                           <h3 className="font-bold text-primary mb-4 flex items-center gap-2">
                              <span className="w-1.5 h-6 bg-primary rounded-full" />
                              {section.title}
                           </h3>
                           <div className="space-y-3">
-                            {section.items.map((item: any, iIdx: number) => (
+                            {section.items.map((item, iIdx: number) => (
                               <div key={iIdx} className="flex flex-col gap-0.5 border-b border-border/50 pb-2 last:border-0">
                                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{item.label}</span>
                                 <span className="text-sm font-medium">

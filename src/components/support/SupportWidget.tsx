@@ -76,8 +76,8 @@ export function SupportWidget({ clientSystem, userName, userEmail }: SupportWidg
       } else {
         throw new Error(data.error || 'Erro ao enviar');
       }
-    } catch (err: any) {
-      toast({ title: 'Erro ao enviar ticket', description: err.message, variant: 'destructive' });
+    } catch (err) {
+      toast({ title: 'Erro ao enviar ticket', description: (err as Error).message, variant: 'destructive' });
     } finally {
       setSending(false);
     }

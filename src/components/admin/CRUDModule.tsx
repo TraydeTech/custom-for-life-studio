@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any --
+   Componente CRUD genérico: render/onBeforeSave/customForm/formData e o nome de
+   tabela dinâmico passado ao supabase.from() são boundaries genéricos onde `any`
+   é intencional para os callers manterem flexibilidade de tipos. */
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
