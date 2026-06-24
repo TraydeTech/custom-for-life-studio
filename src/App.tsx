@@ -75,20 +75,21 @@ function AppContent() {
         <Route path="/admin/gestao-pedidos" element={<AdminGestaoPedidos />} />
 
         {/* Rotas públicas */}
-        <Route path="/" element={<ComingSoon />} />
-        <Route path="/loja" element={<ComingSoon />} />
-        <Route path="/produto/:slug" element={<ComingSoon />} />
-        <Route path="/carrinho" element={<ComingSoon />} />
-        <Route path="/checkout" element={<ComingSoon />} />
-        <Route path="/pedido-confirmado" element={<ComingSoon />} />
-        <Route path="/login" element={<ComingSoon />} />
-        <Route path="/cadastro" element={<ComingSoon />} />
-        <Route path="/esqueci-senha" element={<ComingSoon />} />
-        <Route path="/redefinir-senha" element={<ComingSoon />} />
-        <Route path="/minha-conta" element={<ComingSoon />} />
-        <Route path="/meus-pedidos" element={<ComingSoon />} />
-        <Route path="/meus-enderecos" element={<ComingSoon />} />
-        <Route path="/meus-chamados" element={<ComingSoon />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/loja" element={<Loja />} />
+        <Route path="/produto/:slug" element={<Produto />} />
+        <Route path="/carrinho" element={<Carrinho />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/pedido-confirmado" element={<PedidoConfirmado />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+        <Route path="/minha-conta" element={<MinhaConta />} />
+        <Route path="/meus-pedidos" element={<MeusPedidos />} />
+        <Route path="/meus-enderecos" element={<MeusEnderecos />} />
+        <Route path="/meus-chamados" element={<MeusChamados />} />
+        <Route path="/em-breve" element={<ComingSoon />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
