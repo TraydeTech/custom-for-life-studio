@@ -1,11 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Webhooks de pagamento não precisam de CORS — vêm do servidor Iugu, não do browser
 const jsonHeaders = { "Content-Type": "application/json" };
 
 serve(async (req) => {
-  // Iugu não envia OPTIONS — rejeitar outros métodos
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
@@ -13,12 +11,22 @@ serve(async (req) => {
     });
   }
 
+  // Token is MANDATORY. Without it, refuse to process anything to prevent
+  // forged payment events from marking arbitrary orders as paid.
+  const webhookToken = Deno.env.get("IUGU_WEBHOOK_TOKEN");
+  if (!webhookToken) {
+    console.error("iugu-webhook: IUGU_WEBHOOK_TOKEN not configured — rejecting request");
+    return new Response(
+      JSON.stringify({ error: "Webhook not configured" }),
+      { status: 503, headers: jsonHeaders },
+    );
+  }
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Parse body (Iugu envia form-urlencoded ou JSON)
     let body: any;
     const contentType = req.headers.get("content-type") || "";
     if (contentType.includes("application/x-www-form-urlencoded")) {
@@ -26,36 +34,22 @@ serve(async (req) => {
       const params = new URLSearchParams(text);
       body = Object.fromEntries(params.entries());
       if (body.data) {
-        // body.data pode vir como string JSON ou já decodificado; se não for JSON
-        // válido, mantém o valor original em vez de quebrar o webhook.
         try { body.data = JSON.parse(body.data); } catch {
-          console.warn("iugu-webhook: body.data não é JSON válido, mantendo valor original");
+          console.warn("iugu-webhook: body.data não é JSON válido");
         }
       }
     } else {
       body = await req.json();
     }
 
-    // ── Verificação de token Iugu ─────────────────────────────────────────
-    // Configure IUGU_WEBHOOK_TOKEN no painel Supabase → Edge Functions → Secrets
-    // com o mesmo valor configurado em Iugu → Webhooks → Token de verificação.
-    const webhookToken = Deno.env.get("IUGU_WEBHOOK_TOKEN");
-    if (webhookToken) {
-      const receivedToken = body.token as string | undefined;
-      if (!receivedToken || receivedToken !== webhookToken) {
-        console.error("Webhook token inválido");
-        // Retorna 200 para o Iugu não retentar, mas não processa
-        return new Response(JSON.stringify({ ok: false, message: "Invalid token" }), {
-          status: 200,
-          headers: jsonHeaders,
-        });
-      }
-    } else {
-      // Sem token configurado o webhook aceita qualquer chamada — risco de
-      // marcar pedidos como pagos por requisição forjada. Configure
-      // IUGU_WEBHOOK_TOKEN em Supabase → Edge Functions → Secrets.
-      console.warn(
-        "iugu-webhook: IUGU_WEBHOOK_TOKEN não configurado — webhook sem verificação de origem"
+    const receivedToken = (body.token as string | undefined)
+      || req.headers.get("x-iugu-token")
+      || undefined;
+    if (!receivedToken || receivedToken !== webhookToken) {
+      console.error("iugu-webhook: invalid or missing token");
+      return new Response(
+        JSON.stringify({ error: "Invalid token" }),
+        { status: 401, headers: jsonHeaders },
       );
     }
 
@@ -87,7 +81,6 @@ serve(async (req) => {
           });
         }
 
-        // Idempotência: ignora se já pago
         if (order.payment_status === "paid") {
           return new Response(JSON.stringify({ ok: true, message: "Already paid" }), {
             status: 200,
@@ -105,7 +98,6 @@ serve(async (req) => {
           })
           .eq("id", order.id);
 
-        // Transação financeira (idempotente por iugu_invoice_id)
         const { data: existingTx } = await supabase
           .from("financial_transactions")
           .select("id")
@@ -166,8 +158,8 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Webhook error:", error);
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
+    return new Response(JSON.stringify({ error: "Internal error" }), {
+      status: 500,
       headers: jsonHeaders,
     });
   }

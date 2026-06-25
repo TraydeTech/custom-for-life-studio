@@ -54,14 +54,17 @@ export function SupportWidget({ clientSystem, userName, userEmail }: SupportWidg
     setSending(true);
     try {
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) throw new Error('Faça login para abrir um chamado.');
       const res = await fetch(SUPPORT_API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` },
+        headers: { 'Content-Type': 'application/json', 'apikey': anonKey, 'Authorization': `Bearer ${accessToken}` },
         body: JSON.stringify({
           tipo,
           descricao,
           prioridade,
-          usuario_email: userEmail,
           userName,
           clientSystem,
           anexo_base64: anexo?.base64 || null,
