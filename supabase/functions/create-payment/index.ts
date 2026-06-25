@@ -98,9 +98,20 @@ serve(async (req) => {
       price_cents: Math.round(Number(item.unit_price) * 100),
     }));
 
+    // Resolve um email real do cliente — exigido pela nota fiscal Iugu.
+    // Nunca usar um endereço fake: invoice com email inválido quebra cobrança/recibo.
+    const resolvedEmail =
+      customerEmail || order.notes?.match(/email:\s*(\S+)/i)?.[1] || null;
+    if (!resolvedEmail) {
+      return new Response(
+        JSON.stringify({ error: "customerEmail is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Build Iugu invoice payload
     const invoicePayload: any = {
-      email: customerEmail || order.notes?.match(/email:\s*(\S+)/i)?.[1] || "cliente@email.com",
+      email: resolvedEmail,
       due_date: new Date(Date.now() + 30 * 60 * 1000).toISOString().split("T")[0],
       items: iuguItems.length > 0 ? iuguItems : [
         { description: `Pedido ${order.order_number}`, quantity: 1, price_cents: Math.round(Number(order.total) * 100) },
@@ -108,7 +119,7 @@ serve(async (req) => {
       payer: {
         name: customerName || "Cliente",
         cpf_cnpj: customerCpf?.replace(/\D/g, "") || undefined,
-        email: customerEmail || "cliente@email.com",
+        email: resolvedEmail,
       },
     };
 
