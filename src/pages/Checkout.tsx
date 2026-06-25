@@ -318,12 +318,13 @@ export default function Checkout() {
         try {
           const base64Data = item.engraving_preview_image.split(',')[1];
           const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-          const fileName = `engraving-previews/${order.id}/${item.id}-${Date.now()}.png`;
+          // Bucket engravings: pasta raiz = id do usuário (exigido pela RLS).
+          const fileName = `${user.id}/${order.id}/${item.id}-${Date.now()}.png`;
           const { error: uploadError } = await supabase.storage
-            .from('product-images')
+            .from('engravings')
             .upload(fileName, byteArray, { contentType: 'image/png' });
           if (!uploadError) {
-            const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(fileName);
+            const { data: urlData } = supabase.storage.from('engravings').getPublicUrl(fileName);
             engravingPreviewUrl = urlData.publicUrl;
           }
         } catch (e) { console.error('Upload failed:', e); }

@@ -338,26 +338,34 @@ export default function Produto() {
   // Perform the actual add-to-cart mutation
   const doAddToCart = async () => {
     if (!product) return;
-    
+
+    // O bucket de gravação é privado por usuário (pasta = id do usuário), então
+    // só dá pra subir a arte logado. Sem login, abre o modal e retoma depois.
+    if (engravingFile && !user) {
+      setPendingAddToCart(true);
+      setShowAuthModal(true);
+      return;
+    }
+
     let uploadedFileUrl = null;
-    
-    if (engravingFile) {
+
+    if (engravingFile && user) {
       setIsUploading(true);
       try {
         const fileExt = engravingFile.name.split('.').pop();
-        const fileName = `${user?.id || 'guest'}-${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-        const filePath = `${user?.id || 'anonymous'}/${fileName}`;
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
 
         const { data, error } = await supabase.storage
-          .from('product-images')
+          .from('engravings')
           .upload(filePath, engravingFile);
 
         if (error) throw error;
-        
+
         const { data: { publicUrl } } = supabase.storage
-          .from('product-images')
+          .from('engravings')
           .getPublicUrl(data.path);
-          
+
         uploadedFileUrl = publicUrl;
       } catch (error) {
         console.error('Error uploading file:', error);
