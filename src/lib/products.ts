@@ -9,7 +9,4 @@
  * O painel admin (papel `authenticated` com role admin) continua lendo as
  * colunas sensíveis normalmente via `select('*')`.
  */
-export const PUBLIC_PRODUCT_COLUMNS =
-  'id, name, slug, description, short_description, price, compare_price, ' +
-  'images, category_id, stock, min_quantity, is_active, is_featured, ' +
-  'customization_options, specifications, created_at, updated_at';
+export const PUBLIC_PRODUCT_COLUMNS = 'id, name, slug, description, short_description, price, compare_price, images, category_id, stock, min_quantity, is_active, is_featured, customization_options, specifications, created_at, updated_at' as const;
