@@ -49,6 +49,7 @@ type OrderWithItems = {
 interface OrderItem {
   id: string;
   product_name?: string;
+  product_color?: string | null;
   product_image?: string | null;
   quantity?: number;
   unit_price?: number;
@@ -433,7 +434,7 @@ function GestaoPedidosContent() {
                     </div>
 
                     <div className="flex-1 pt-1">
-                      <p className="font-medium text-sm">{item.product_name}{(item as any).product_color && ` — ${(item as any).product_color}`}</p>
+                      <p className="font-medium text-sm">{item.product_name}{item.product_color && ` — ${item.product_color}`}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {item.quantity}x {formatCurrency(Number(item.unit_price))} = {formatCurrency(Number(item.total_price))}
                       </p>
