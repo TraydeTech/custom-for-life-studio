@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency, cn } from '@/lib/utils';
+import { PUBLIC_PRODUCT_COLUMNS } from '@/lib/products';
 import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2, CheckCircle, RotateCcw, Type, Upload, Paperclip, ShieldCheck, Zap, Heart } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -75,7 +76,7 @@ export default function Produto() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, category:categories(name, slug, technical_sheet), product_variants(*)')
+        .select(`${PUBLIC_PRODUCT_COLUMNS}, category:categories(name, slug, technical_sheet), product_variants(*)`)
         .eq('slug', slug!)
         .single();
       if (error) throw error;
