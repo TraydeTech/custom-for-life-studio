@@ -17,6 +17,7 @@ import { FeatureStrip } from "@/components/home/FeatureStrip";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/utils";
+import { PUBLIC_PRODUCT_COLUMNS } from "@/lib/products";
 import heroImage from "@/assets/hero-brindes-novo.png";
 import { useEffect, useState } from "react";
 
@@ -60,7 +61,7 @@ const Index = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select(PUBLIC_PRODUCT_COLUMNS)
         .eq('is_active', true)
         .limit(6);
       
@@ -74,7 +75,7 @@ const Index = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select(PUBLIC_PRODUCT_COLUMNS)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(9);
