@@ -249,6 +249,56 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_transactions: {
+        Row: {
+          created_at: string
+          gateway_fee: number
+          gross_amount: number
+          id: string
+          installments: number | null
+          iugu_invoice_id: string | null
+          net_amount: number
+          order_id: string | null
+          payment_method: string | null
+          status: string
+          transaction_date: string
+        }
+        Insert: {
+          created_at?: string
+          gateway_fee?: number
+          gross_amount?: number
+          id?: string
+          installments?: number | null
+          iugu_invoice_id?: string | null
+          net_amount?: number
+          order_id?: string | null
+          payment_method?: string | null
+          status?: string
+          transaction_date?: string
+        }
+        Update: {
+          created_at?: string
+          gateway_fee?: number
+          gross_amount?: number
+          id?: string
+          installments?: number | null
+          iugu_invoice_id?: string | null
+          net_amount?: number
+          order_id?: string | null
+          payment_method?: string | null
+          status?: string
+          transaction_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
