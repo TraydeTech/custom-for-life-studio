@@ -50,6 +50,13 @@ serve(async (req) => {
           headers: jsonHeaders,
         });
       }
+    } else {
+      // Sem token configurado o webhook aceita qualquer chamada — risco de
+      // marcar pedidos como pagos por requisição forjada. Configure
+      // IUGU_WEBHOOK_TOKEN em Supabase → Edge Functions → Secrets.
+      console.warn(
+        "iugu-webhook: IUGU_WEBHOOK_TOKEN não configurado — webhook sem verificação de origem"
+      );
     }
 
     const event = body.event;

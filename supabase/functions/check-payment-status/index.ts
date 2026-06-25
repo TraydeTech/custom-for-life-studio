@@ -116,7 +116,10 @@ serve(async (req) => {
           .maybeSingle();
 
         if (!existingTx) {
-          const feeRate = (order.payment_method === "pix") ? 0.01 : 0.025;
+          // Taxas por método (mesma tabela do iugu-webhook): pix 1%, débito 2%, crédito 2,5%.
+          let feeRate = 0.01;
+          if (order.payment_method === "credito") feeRate = 0.025;
+          else if (order.payment_method === "debito") feeRate = 0.02;
           const grossAmount = Number(order.total);
           const gatewayFee = grossAmount * feeRate;
           await serviceClient.from("financial_transactions").insert({

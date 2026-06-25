@@ -3,16 +3,16 @@
  * a página do produto, carrinho e checkout.
  *
  * Mantenha em sintonia com a configuração real do gateway Iugu.
- * Confirmado: a loja absorve juros em até 12x.
+ * Confirmado: a loja absorve juros em até 5x.
  */
 
 import { formatCurrency } from '@/lib/utils';
 
 export const INSTALLMENT_CONFIG = {
   /** Número máximo de parcelas oferecido no checkout. */
-  maxInstallments: 12,
+  maxInstallments: 5,
   /** Até quantas parcelas são sem juros (loja absorve). */
-  interestFreeUpTo: 12,
+  interestFreeUpTo: 5,
   /** Valor mínimo aceitável por parcela (em reais). */
   minInstallmentValue: 5,
   /** Preço mínimo do produto para mostrar a opção de parcelamento. */
