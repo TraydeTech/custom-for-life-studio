@@ -568,7 +568,7 @@ export default function Produto() {
                 </div>
                 {isOutOfStock && (
                   <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-                    <Badge variant="secondary" className="text-xl px-6 py-3 font-bold shadow-xl border-2">Esgotado</Badge>
+                    <Badge variant="secondary" className="text-xl px-6 py-3 font-bold shadow-xl border-2">Sem estoque</Badge>
                   </div>
                 )}
               </div>
@@ -621,7 +621,7 @@ export default function Produto() {
                           selected?.id === v.id ? "text-primary" : "text-muted-foreground"
                         )}>
                           {v.color_name}
-                          {(v.stock || 0) <= 0 && <span className="block text-[9px] text-destructive">Esgotado</span>}
+                          {(v.stock || 0) <= 0 && <span className="block text-[9px] text-destructive">Sem estoque</span>}
                         </span>
                       </button>
                     ))}

@@ -60,7 +60,7 @@ export function ProductCard({ product }: ProductCardProps) {
           )}
           {product.stock === 0 && (
             <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-              <Badge variant="secondary">Esgotado</Badge>
+              <Badge variant="secondary">Sem estoque</Badge>
             </div>
           )}
           {isLowStock && (
