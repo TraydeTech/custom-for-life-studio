@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { TestModeBanner } from "@/components/TestModeBanner";
 import ScrollToTop from "./components/ScrollToTop";
 import { lazy, Suspense } from "react";
 
@@ -57,7 +56,6 @@ function AppContent() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
       <ScrollToTop />
-      {!isAdmin && <TestModeBanner />}
       {!isAdmin && <WhatsAppButton />}
       <Routes>
         {/* Rotas admin sempre acessíveis */}
