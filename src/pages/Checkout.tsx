@@ -51,9 +51,9 @@ const FREE_SHIPPING_CITY = 'blumenau';
 // PREENCHER com o endereço real e trocar `filled` para true.
 // Enquanto `filled` for false, o site mostra "combinar pelo WhatsApp".
 const STORE_PICKUP = {
-  filled: false,
-  address: '', // ex: 'Rua Exemplo, 123 - Centro, Blumenau/SC - CEP 89000-000'
-  hours: '',   // ex: 'Seg a Sex, 9h às 18h'
+  filled: true,
+  address: 'Rua Leopoldo dos Santos, 591 - Blumenau/SC',
+  hours: 'Seg a Sex, 9h às 18h',
 };
 
 const normalizeCity = (c: string) =>
