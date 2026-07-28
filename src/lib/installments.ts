@@ -11,7 +11,7 @@ import { formatCurrency } from '@/lib/utils';
 
 export const INSTALLMENT_CONFIG = {
   /** Número máximo de parcelas oferecido no checkout. */
-  maxInstallments: 5,
+  maxInstallments: 12,
   /** Até quantas parcelas são sem juros (loja absorve). */
   interestFreeUpTo: 3,
   /** Valor mínimo aceitável por parcela (em reais). */
