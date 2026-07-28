@@ -429,8 +429,13 @@ export default function Produto() {
       if (data.erro) {
         setShippingResult('CEP não encontrado. Verifique e tente novamente.');
       } else {
-        // Simulação de cálculo — em produção integrar com correios/melhor envio
-        setShippingResult(`Entrega para ${data.localidade}/${data.uf} — Frete grátis para pedidos acima de R$ 150,00. Consulte prazo no checkout.`);
+        const cidade = String(data.localidade || '');
+        const isBlumenau = cidade.trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '') === 'blumenau';
+        setShippingResult(
+          isBlumenau
+            ? `🎉 Entrega para ${cidade}/${data.uf} — Frete grátis para Blumenau!`
+            : `Entrega para ${cidade}/${data.uf} — Frete a combinar pelo WhatsApp. Retirada na loja também disponível.`
+        );
       }
     } catch {
       setShippingResult('Não foi possível calcular o frete. Tente novamente.');

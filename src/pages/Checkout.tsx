@@ -18,7 +18,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { generatePixPayload } from '@/lib/pix';
 import {
   ChevronLeft, ChevronRight, MapPin, User, CreditCard, Loader2,
-  QrCode, Lock, Copy, CheckCircle, Clock, Banknote
+  QrCode, Lock, Copy, CheckCircle, Clock, Banknote, Truck, Store
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { maskCPF, unmaskCPF, isValidCPF } from '@/lib/cpf';
@@ -41,6 +41,22 @@ declare global {
     Iugu?: IuguSDK;
   }
 }
+
+const WHATSAPP_NUMBER = '5547984492949';
+// Cidade com frete grátis (comparação sem acento/maiúsculas).
+const FREE_SHIPPING_CITY = 'blumenau';
+
+// Endereço de retirada na loja.
+// PREENCHER com o endereço real e trocar `filled` para true.
+// Enquanto `filled` for false, o site mostra "combinar pelo WhatsApp".
+const STORE_PICKUP = {
+  filled: false,
+  address: '', // ex: 'Rua Exemplo, 123 - Centro, Blumenau/SC - CEP 89000-000'
+  hours: '',   // ex: 'Seg a Sex, 9h às 18h'
+};
+
+const normalizeCity = (c: string) =>
+  c.trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
 
 interface CustomerData {
   name: string;
@@ -69,6 +85,7 @@ export default function Checkout() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
+  const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
 
   const [customer, setCustomer] = useState<CustomerData>({
     name: user?.user_metadata?.full_name || '',
@@ -218,7 +235,11 @@ export default function Checkout() {
     customer.email.trim() &&
     customer.phone.trim() &&
     isValidCPF(customer.cpf);
-  const canProceedStep2 = address.zip_code.trim() && address.street.trim() && address.number.trim() && address.neighborhood.trim() && address.city.trim() && address.state.trim();
+  const isPickup = deliveryMethod === 'pickup';
+  const isBlumenau = normalizeCity(address.city) === FREE_SHIPPING_CITY;
+  const canProceedStep2 = isPickup
+    ? true
+    : Boolean(address.zip_code.trim() && address.street.trim() && address.number.trim() && address.neighborhood.trim() && address.city.trim() && address.state.trim());
 
   const formatCardNumber = (v: string) => v.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').slice(0, 19);
   const formatExpiry = (v: string) => {
@@ -255,7 +276,8 @@ export default function Checkout() {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
 
-      // 2. Salvar/Atualizar Endereço no CRM
+      // 2. Salvar/Atualizar Endereço no CRM (só quando é entrega)
+      if (!isPickup) {
       const addressPayload = {
         user_id: user.id,
         zip_code: address.zip_code,
@@ -284,14 +306,29 @@ export default function Checkout() {
           await supabase.from('addresses').insert(addressPayload);
         }
       }
+      } // fecha if (!isPickup)
     }
 
-    const shippingAddress = {
-      name: customer.name, phone: customer.phone,
-      street: address.street, number: address.number,
-      complement: address.complement, neighborhood: address.neighborhood,
-      city: address.city, state: address.state, zip_code: address.zip_code,
-    };
+    // Resumo da entrega para a loja identificar frete/retirada no pedido.
+    const deliveryLabel = isPickup
+      ? 'Retirada na loja'
+      : isBlumenau
+        ? `Entrega ${address.city}/${address.state} — frete grátis (Blumenau)`
+        : `Entrega ${address.city}/${address.state} — frete a combinar pelo WhatsApp`;
+
+    const shippingAddress = isPickup
+      ? {
+          name: customer.name, phone: customer.phone,
+          delivery_method: 'pickup' as const,
+        }
+      : {
+          name: customer.name, phone: customer.phone,
+          street: address.street, number: address.number,
+          complement: address.complement, neighborhood: address.neighborhood,
+          city: address.city, state: address.state, zip_code: address.zip_code,
+          delivery_method: 'delivery' as const,
+          free_shipping: isBlumenau,
+        };
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -300,7 +337,7 @@ export default function Checkout() {
         subtotal: cartTotal, total: cartTotal,
         shipping_address: shippingAddress,
         status: 'pending', payment_status: 'pending',
-        notes: `Cliente: ${customer.name} | Tel: ${customer.phone} | CPF: ${customer.cpf || 'N/A'}`,
+        notes: `Cliente: ${customer.name} | Tel: ${customer.phone} | CPF: ${customer.cpf || 'N/A'} | ${deliveryLabel}`,
         order_number: 'temp', source: 'site',
       })
       .select()
@@ -547,9 +584,52 @@ export default function Checkout() {
         {step === 2 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" />Endereço de Entrega</CardTitle>
+              <CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" />Forma de Entrega</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Escolha: entrega no endereço ou retirada na loja */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMethod('delivery')}
+                  className={`border rounded-xl p-3 text-left transition-all ${!isPickup ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}
+                >
+                  <div className="flex items-center gap-2 text-sm font-medium"><Truck className="h-4 w-4" /> Entrega</div>
+                  <p className="text-xs text-muted-foreground mt-1">Receber no seu endereço</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMethod('pickup')}
+                  className={`border rounded-xl p-3 text-left transition-all ${isPickup ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}
+                >
+                  <div className="flex items-center gap-2 text-sm font-medium"><Store className="h-4 w-4" /> Retirar na loja</div>
+                  <p className="text-xs text-muted-foreground mt-1">Sem frete</p>
+                </button>
+              </div>
+
+              {isPickup ? (
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2 text-sm">
+                  <p className="font-semibold flex items-center gap-2"><Store className="h-4 w-4 text-primary" /> Retirada na loja</p>
+                  {STORE_PICKUP.filled ? (
+                    <>
+                      <p>{STORE_PICKUP.address}</p>
+                      {STORE_PICKUP.hours && <p className="text-muted-foreground">{STORE_PICKUP.hours}</p>}
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground">Combinamos o local e horário de retirada pelo WhatsApp após o pedido.</p>
+                  )}
+                  <p className="text-primary font-medium">Sem custo de frete.</p>
+                  <a
+                    href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Olá! Fiz um pedido no site para retirar na loja e gostaria de combinar a retirada.')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-primary text-xs font-semibold hover:underline"
+                  >
+                    Combinar retirada pelo WhatsApp
+                  </a>
+                </div>
+              ) : (
+              <>
               {user && userAddresses.length > 0 && (
                 <div className="mb-6">
                   <Label>Selecione um endereço salvo</Label>
@@ -583,6 +663,18 @@ export default function Checkout() {
                 <div className="col-span-2"><Label htmlFor="city">Cidade *</Label><Input id="city" value={address.city} onChange={e => setAddress(prev => ({ ...prev, city: e.target.value }))} /></div>
                 <div><Label htmlFor="state">Estado *</Label><Input id="state" value={address.state} onChange={e => setAddress(prev => ({ ...prev, state: e.target.value }))} maxLength={2} placeholder="SP" /></div>
               </div>
+
+              {/* Aviso de frete conforme a cidade */}
+              {address.city.trim() && (
+                <div className={`rounded-lg p-3 text-sm font-medium ${isBlumenau ? 'bg-green-500/10 text-green-600 border border-green-500/20' : 'bg-muted text-muted-foreground border'}`}>
+                  {isBlumenau
+                    ? '🎉 Frete grátis para Blumenau!'
+                    : 'Frete a combinar pelo WhatsApp — sem cobrança online.'}
+                </div>
+              )}
+              </>
+              )}
+
               <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="mr-2 h-4 w-4" />Voltar</Button>
                 <Button onClick={() => setStep(3)} disabled={!canProceedStep2}>Próximo<ChevronRight className="ml-2 h-4 w-4" /></Button>
@@ -618,12 +710,23 @@ export default function Checkout() {
 
             {/* Delivery Info */}
             <Card>
-              <CardHeader><CardTitle>Dados da Entrega</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{isPickup ? 'Retirada na loja' : 'Dados da Entrega'}</CardTitle></CardHeader>
               <CardContent className="text-sm space-y-1">
                 <p><strong>{customer.name}</strong></p>
                 <p>{customer.email} | {customer.phone}</p>
-                <p>{address.street}, {address.number}{address.complement ? ` - ${address.complement}` : ''}</p>
-                <p>{address.neighborhood}, {address.city}/{address.state} - CEP: {address.zip_code}</p>
+                {isPickup ? (
+                  STORE_PICKUP.filled
+                    ? <p>{STORE_PICKUP.address}</p>
+                    : <p className="text-muted-foreground">Retirada combinada pelo WhatsApp — sem frete.</p>
+                ) : (
+                  <>
+                    <p>{address.street}, {address.number}{address.complement ? ` - ${address.complement}` : ''}</p>
+                    <p>{address.neighborhood}, {address.city}/{address.state} - CEP: {address.zip_code}</p>
+                    <p className={isBlumenau ? 'text-green-600 font-medium' : 'text-muted-foreground'}>
+                      {isBlumenau ? 'Frete grátis (Blumenau)' : 'Frete a combinar pelo WhatsApp'}
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
 
