@@ -5,7 +5,7 @@ import { ProtectedAdminRoute } from '@/components/admin/ProtectedAdminRoute';
 import { Tables } from '@/integrations/supabase/types';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { Package, Image as ImageIcon, Plus, X, Upload, Loader2, SlidersHorizontal } from 'lucide-react';
+import { Package, Image as ImageIcon, Plus, X, Upload, Loader2, SlidersHorizontal, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -77,6 +77,53 @@ export default function AdminProdutos() {
     onError: (error: Error) => {
       toast.error('Erro ao criar categoria: ' + error.message);
     },
+  });
+
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+
+  const duplicateMutation = useMutation({
+    mutationFn: async (product: Product) => {
+      // Carrega variantes do produto original
+      const { data: variants } = await supabase
+        .from('product_variants')
+        .select('*')
+        .eq('product_id', product.id)
+        .order('sort_order');
+
+      // Remove campos que o banco gera; cria nome e slug únicos
+      const { id: _id, created_at: _ca, updated_at: _ua, ...productData } = product;
+      const suffix = Date.now().toString(36);
+      const newProduct = {
+        ...productData,
+        name: `${product.name} (Cópia)`,
+        slug: `${product.slug}-copia-${suffix}`,
+        is_active: false,
+      };
+
+      const { data: inserted, error } = await supabase
+        .from('products')
+        .insert([newProduct])
+        .select()
+        .single();
+      if (error) throw error;
+
+      if (variants && variants.length > 0) {
+        const newVariants = variants.map((v, idx) => {
+          const { id: _vid, created_at: _vca, updated_at: _vua, product_id: _pid, ...vData } = v;
+          return { ...vData, product_id: inserted.id, sort_order: idx };
+        });
+        const { error: vError } = await supabase.from('product_variants').insert(newVariants);
+        if (vError) throw vError;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      toast.success('Produto duplicado! Revise e ative a cópia.');
+    },
+    onError: (error: Error) => {
+      toast.error('Erro ao duplicar produto: ' + error.message);
+    },
+    onSettled: () => setDuplicatingId(null),
   });
 
   const uploadImage = async (file: File): Promise<string> => {
@@ -250,6 +297,22 @@ export default function AdminProdutos() {
           formClassName="max-w-4xl h-[90vh] flex flex-col"
           filterFn={productFilterFn}
           filterControls={filterControls}
+          customActions={(item) => (
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Duplicar produto"
+              disabled={duplicateMutation.isPending && duplicatingId === item.id}
+              onClick={() => {
+                setDuplicatingId(item.id);
+                duplicateMutation.mutate(item);
+              }}
+            >
+              {duplicateMutation.isPending && duplicatingId === item.id
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <Copy className="h-4 w-4" />}
+            </Button>
+          )}
           initialData={{
             name: '',
             slug: '',
