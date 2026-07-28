@@ -7,9 +7,10 @@ import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Minus, Plus, Trash2, ShoppingBag, X, LogIn } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingBag, X, LogIn, MessageCircle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { PAYMENT_ENABLED, buildWhatsAppOrderLink } from '@/lib/store-config';
 
 export default function Carrinho() {
   const { user } = useAuth();
@@ -180,18 +181,38 @@ export default function Carrinho() {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-2">
-                {!user && (
-                  <p className="text-xs text-muted-foreground text-center w-full">
-                    Faça login para finalizar sua compra
-                  </p>
+                {!PAYMENT_ENABLED ? (
+                  <>
+                    <p className="text-xs text-muted-foreground text-center w-full">
+                      Pagamento online em manutenção. Finalize seu pedido e pague pelo WhatsApp.
+                    </p>
+                    <Button className="w-full" size="lg" style={{ backgroundColor: '#25D366' }} asChild>
+                      <a
+                        href={buildWhatsAppOrderLink(cartItems, cartTotal)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Pedir pelo WhatsApp
+                      </a>
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {!user && (
+                      <p className="text-xs text-muted-foreground text-center w-full">
+                        Faça login para finalizar sua compra
+                      </p>
+                    )}
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      onClick={() => user ? navigate('/checkout') : setShowAuthModal(true)}
+                    >
+                      {user ? 'Finalizar Compra' : <><LogIn className="mr-2 h-4 w-4" />Entrar e Finalizar</>}
+                    </Button>
+                  </>
                 )}
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={() => user ? navigate('/checkout') : setShowAuthModal(true)}
-                >
-                  {user ? 'Finalizar Compra' : <><LogIn className="mr-2 h-4 w-4" />Entrar e Finalizar</>}
-                </Button>
               </CardFooter>
             </Card>
           </div>
