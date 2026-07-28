@@ -16,8 +16,9 @@ export const INSTALLMENT_CONFIG = {
   interestFreeUpTo: 3,
   /** Valor mínimo aceitável por parcela (em reais). */
   minInstallmentValue: 5,
-  /** Preço mínimo do produto para mostrar a opção de parcelamento. */
-  showInstallmentsAbove: 30,
+  /** Preço mínimo do produto para mostrar a opção de parcelamento.
+   *  R$10 garante ao menos 2x (parcela mínima R$5); abaixo disso não parcela. */
+  showInstallmentsAbove: 10,
 } as const;
 
 /**
