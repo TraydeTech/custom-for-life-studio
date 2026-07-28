@@ -1,0 +1,21 @@
+-- =============================================================
+-- FIX: loja vazia para visitante anônimo (produtos não apareciam)
+-- =============================================================
+-- As políticas "Admins can manage <tabela>" usam public.has_role(). Numa
+-- consulta SELECT o Postgres avalia TODAS as políticas permissivas (OR),
+-- então a de admin chama has_role() mesmo para o visitante anônimo.
+--
+-- Uma migration de segurança anterior revogou o EXECUTE de has_role() do
+-- papel `anon`. Com isso, qualquer SELECT anônimo em products/categories/
+-- product_variants estourava "permission denied for function has_role" e a
+-- loja pública voltava vazia (o admin logado funcionava porque `authenticated`
+-- ainda podia executar has_role).
+--
+-- Conceder EXECUTE ao `anon` faz a checagem retornar `false` para o visitante
+-- (ele não é admin) em vez de dar erro, deixando as políticas
+-- "Anyone can view active <tabela>" valerem como planejado.
+--
+-- Seguro: has_role() só informa se um usuário é admin; para o anônimo é sempre
+-- false. Não expõe nenhum dado sensível.
+
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO anon;
