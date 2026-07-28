@@ -18,11 +18,12 @@ import { QRCodeSVG } from 'qrcode.react';
 import { generatePixPayload } from '@/lib/pix';
 import {
   ChevronLeft, ChevronRight, MapPin, User, CreditCard, Loader2,
-  QrCode, Lock, Copy, CheckCircle, Clock, Banknote, Truck, Store
+  QrCode, Lock, Copy, CheckCircle, Clock, Banknote, Truck, Store, MessageCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { maskCPF, unmaskCPF, isValidCPF } from '@/lib/cpf';
 import { buildInstallmentOptions } from '@/lib/installments';
+import { PAYMENT_ENABLED, buildWhatsAppOrderLink } from '@/lib/store-config';
 
 interface IuguTokenResponse {
   id: string;
@@ -532,6 +533,26 @@ export default function Checkout() {
       <main className="flex-1 container py-8 max-w-3xl">
         <h1 className="text-3xl font-bold mb-2">Finalizar Compra</h1>
 
+        {!PAYMENT_ENABLED && (
+          <div className="mb-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 flex items-start gap-3">
+            <MessageCircle className="h-5 w-5 text-yellow-600 mt-0.5 shrink-0" />
+            <div className="text-sm">
+              <p className="font-semibold text-yellow-700">Pagamento online em manutenção</p>
+              <p className="text-muted-foreground">
+                No momento os pedidos e pagamentos são finalizados pelo WhatsApp. Revise seu pedido e clique em “Pedir pelo WhatsApp”.
+              </p>
+              <a
+                href={buildWhatsAppOrderLink(cartItems, cartTotal)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-green-600 hover:underline"
+              >
+                <MessageCircle className="h-4 w-4" /> Pedir pelo WhatsApp
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Step indicator */}
         <div className="flex items-center gap-2 mb-8">
           {[
@@ -736,12 +757,27 @@ export default function Checkout() {
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />Pagamento
                 </CardTitle>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                  <Lock className="h-3 w-3" />
-                  Pagamento seguro — seus dados são criptografados
-                </div>
+                {PAYMENT_ENABLED && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                    <Lock className="h-3 w-3" />
+                    Pagamento seguro — seus dados são criptografados
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
+                {!PAYMENT_ENABLED ? (
+                  <div className="text-center space-y-4 py-4">
+                    <MessageCircle className="h-14 w-14 mx-auto text-primary" />
+                    <p className="text-muted-foreground text-sm">
+                      Para pagar e concluir seu pedido, fale com a gente no WhatsApp. Enviamos as formas de pagamento por lá.
+                    </p>
+                    <Button size="lg" className="gap-2" style={{ backgroundColor: '#25D366' }} asChild>
+                      <a href={buildWhatsAppOrderLink(cartItems, cartTotal)} target="_blank" rel="noopener noreferrer">
+                        <MessageCircle className="h-5 w-5" /> Pedir pelo WhatsApp
+                      </a>
+                    </Button>
+                  </div>
+                ) : (
                 <Tabs value={paymentTab} onValueChange={setPaymentTab}>
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="pix" className="gap-2"><QrCode className="h-4 w-4" />PIX</TabsTrigger>
@@ -826,6 +862,7 @@ export default function Checkout() {
                     />
                   </TabsContent>
                 </Tabs>
+                )}
 
                 <div className="flex justify-start mt-6">
                   <Button variant="outline" onClick={() => setStep(2)}><ChevronLeft className="mr-2 h-4 w-4" />Voltar</Button>
