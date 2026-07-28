@@ -3,7 +3,8 @@
  * a página do produto, carrinho e checkout.
  *
  * Mantenha em sintonia com a configuração real do gateway Iugu.
- * Confirmado: a loja absorve juros em até 5x.
+ * Confirmado: a loja absorve juros em até 3x. Acima disso o cliente paga
+ * juros — a taxa é a da operadora do cartão.
  */
 
 import { formatCurrency } from '@/lib/utils';
@@ -12,7 +13,7 @@ export const INSTALLMENT_CONFIG = {
   /** Número máximo de parcelas oferecido no checkout. */
   maxInstallments: 5,
   /** Até quantas parcelas são sem juros (loja absorve). */
-  interestFreeUpTo: 5,
+  interestFreeUpTo: 3,
   /** Valor mínimo aceitável por parcela (em reais). */
   minInstallmentValue: 5,
   /** Preço mínimo do produto para mostrar a opção de parcelamento. */
@@ -26,9 +27,10 @@ export const INSTALLMENT_CONFIG = {
 export function getInstallmentText(price: number): string | null {
   if (!price || price < INSTALLMENT_CONFIG.showInstallmentsAbove) return null;
   const max = computeMaxInstallments(price);
-  const value = price / max;
-  const interestNote = max <= INSTALLMENT_CONFIG.interestFreeUpTo ? ' sem juros' : '';
-  return `${max}x de ${formatCurrency(value)}${interestNote}`;
+  // Destaca o maior parcelamento SEM juros (mensagem de marketing).
+  const interestFree = Math.min(max, INSTALLMENT_CONFIG.interestFreeUpTo);
+  const value = price / interestFree;
+  return `${interestFree}x de ${formatCurrency(value)} sem juros`;
 }
 
 /**
@@ -54,7 +56,7 @@ export function buildInstallmentOptions(total: number) {
         ? ' (à vista)'
         : n <= INSTALLMENT_CONFIG.interestFreeUpTo
           ? ' sem juros'
-          : '';
+          : ' com juros da operadora';
     return { value: String(n), label: `${n}x de ${formatCurrency(value)}${interestNote}` };
   });
 }

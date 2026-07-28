@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
+import { getInstallmentText } from '@/lib/installments';
 import { Zap } from 'lucide-react';
-
-const MAX_INSTALLMENTS = 12;
 
 interface Product {
   id: string;
@@ -31,7 +30,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const discountPercentage = hasDiscount
     ? Math.round((1 - product.price / product.compare_price!) * 100)
     : 0;
-  const installmentValue = product.price / MAX_INSTALLMENTS;
+  const installmentText = getInstallmentText(product.price);
   const isLowStock = product.stock > 0 && product.stock <= 5;
 
   const imageUrl = product.images?.[0] || '/placeholder.svg';
@@ -102,9 +101,9 @@ export function ProductCard({ product }: ProductCardProps) {
                 </span>
               )}
             </div>
-            {product.price >= 30 && (
+            {installmentText && (
               <p className="text-xs text-muted-foreground mt-0.5">
-                ou {MAX_INSTALLMENTS}x de {formatCurrency(installmentValue)} sem juros
+                ou {installmentText}
               </p>
             )}
           </div>

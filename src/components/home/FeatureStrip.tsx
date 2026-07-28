@@ -21,7 +21,7 @@ export const FeatureStrip = () => {
     {
       icon: CreditCard,
       title: "Pagamento Facilitado",
-      description: "Parcelamento em até 12x no cartão."
+      description: "Até 3x sem juros no cartão."
     }
   ];
 
