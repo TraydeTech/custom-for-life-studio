@@ -39,6 +39,7 @@ const MeusEnderecos = lazy(() => import("./pages/MeusEnderecos"));
 const MeusChamados = lazy(() => import("./pages/MeusChamados"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ComingSoon = lazy(() => import("./pages/ComingSoon"));
+const Localizacao = lazy(() => import("./pages/Localizacao"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -92,6 +93,7 @@ function AppContent() {
         <Route path="/minha-conta/enderecos" element={<MeusEnderecos />} />
         <Route path="/minha-conta/chamados" element={<MeusChamados />} />
         <Route path="/em-breve" element={<ComingSoon />} />
+        <Route path="/localizacao" element={<Localizacao />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
