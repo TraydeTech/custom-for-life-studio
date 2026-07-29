@@ -103,9 +103,16 @@ export function Footer() {
                 <MessageCircle className="h-4 w-4 mt-0.5 shrink-0" />
                 <span>(47) 98449-2949</span>
               </li>
-              <li className="flex items-start gap-2 text-muted-foreground">
-                <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
-                <span>Rua Leopoldo dos Santos, 591 - Blumenau/SC</span>
+              <li>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('Rua Leopoldo dos Santos, 591 - Blumenau/SC')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-2 text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>Rua Leopoldo dos Santos, 591 - Blumenau/SC<br /><span className="text-xs underline">Ver no mapa / como chegar</span></span>
+                </a>
               </li>
             </ul>
           </div>
