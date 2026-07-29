@@ -11,6 +11,15 @@ export const WHATSAPP_NUMBER = '5547984492949';
 
 export const PAYMENT_ENABLED = false;
 
+/** Endereço físico da loja. */
+export const STORE_ADDRESS = 'Rua Leopoldo dos Santos, 591 - Blumenau/SC';
+/** Mapa embutido (iframe) da loja. */
+export const STORE_MAPS_EMBED = `https://www.google.com/maps?q=${encodeURIComponent(STORE_ADDRESS)}&output=embed`;
+/** Abre o Google Maps na localização da loja. */
+export const STORE_MAPS_SEARCH = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(STORE_ADDRESS)}`;
+/** Abre o Google Maps já traçando rota até a loja ("como chegar"). */
+export const STORE_MAPS_DIRECTIONS = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(STORE_ADDRESS)}`;
+
 interface CartLikeItem {
   quantity: number;
   product?: { name?: string | null; price?: number | null } | null;

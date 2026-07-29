@@ -79,8 +79,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/minha-conta/enderecos" className="text-muted-foreground hover:text-primary transition-colors">
-                  Endereços
+                <Link to="/localizacao" className="text-muted-foreground hover:text-primary transition-colors">
+                  Endereço
                 </Link>
               </li>
               <li>
