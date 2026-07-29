@@ -87,6 +87,10 @@ function AppContent() {
         <Route path="/meus-pedidos" element={<MeusPedidos />} />
         <Route path="/meus-enderecos" element={<MeusEnderecos />} />
         <Route path="/meus-chamados" element={<MeusChamados />} />
+        {/* Aliases aninhados usados por Header/Footer/AccountLayout/SupportWidget */}
+        <Route path="/minha-conta/pedidos" element={<MeusPedidos />} />
+        <Route path="/minha-conta/enderecos" element={<MeusEnderecos />} />
+        <Route path="/minha-conta/chamados" element={<MeusChamados />} />
         <Route path="/em-breve" element={<ComingSoon />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
