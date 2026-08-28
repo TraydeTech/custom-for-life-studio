@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { isNativeApp } from '@/lib/native';
 import { toast } from 'sonner';
 
 
@@ -136,11 +137,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    // No app nativo, window.location.origin é "capacitor://localhost" — uma URL
+    // que o Supabase rejeita como redirect e faz o cadastro falhar. Nesse caso
+    // omitimos o emailRedirectTo e deixamos o Supabase usar a Site URL do
+    // projeto. No navegador seguimos usando a origem real do site.
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        ...(isNativeApp() ? {} : { emailRedirectTo: window.location.origin }),
         data: {
           full_name: fullName,
         },
