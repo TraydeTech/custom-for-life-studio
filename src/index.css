@@ -265,14 +265,13 @@
   padding-top: env(safe-area-inset-top);
 }
 
-/* Botão flutuante do WhatsApp sobe acima da barra de gestos inferior. */
-.native-app .fixed.bottom-0,
-.native-app [class*="bottom-4"],
-.native-app [class*="bottom-6"] {
-  margin-bottom: env(safe-area-inset-bottom);
+/* Espaço no fim da página pra barra de abas fixa não cobrir o conteúdo/rodapé.
+   Altura da barra (~58px) + label + safe-area. */
+.native-app body {
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
 }
 
-/* Rodapé encosta na base sem ficar sob a barra de gestos. */
-.native-app footer {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+/* Botão flutuante do WhatsApp sobe acima da barra de abas. */
+.native-app a[aria-label="Falar no WhatsApp"] {
+  bottom: calc(78px + env(safe-area-inset-bottom));
 }

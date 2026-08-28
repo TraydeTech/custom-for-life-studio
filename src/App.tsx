@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { BottomNav } from "@/components/layout/BottomNav";
 import ScrollToTop from "./components/ScrollToTop";
 import { lazy, Suspense, useEffect } from "react";
 import { isNativeApp, initNative } from "@/lib/native";
@@ -119,6 +120,8 @@ function AppContent() {
         <Route path="/localizacao" element={<Localizacao />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      {/* Barra de abas estilo app — só no app nativo, fora do admin. */}
+      {native && !isAdmin && <BottomNav />}
     </Suspense>
   );
 }
