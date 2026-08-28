@@ -4,11 +4,11 @@ const config: CapacitorConfig = {
   appId: "br.com.customforlife.app",
   appName: "Custom For Life",
   webDir: "dist",
-  backgroundColor: "#ffffff",
+  backgroundColor: "#0e0e11",
   plugins: {
     SplashScreen: {
       launchShowDuration: 1200,
-      backgroundColor: "#ffffff",
+      backgroundColor: "#0e0e11",
       showSpinner: false,
     },
     Keyboard: {
