@@ -2,11 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import ScrollToTop from "./components/ScrollToTop";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import { isNativeApp, initNative } from "@/lib/native";
 
 // Admin pages (lazy loaded)
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
@@ -52,26 +53,48 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const isAdmin = pathname.startsWith('/admin');
+  // No app publicado nas lojas o painel admin não existe: é ferramenta interna,
+  // só acessível pelo site. No navegador o admin continua normal.
+  const native = isNativeApp();
+
+  useEffect(() => {
+    // Botão "voltar" do Android: volta na navegação enquanto houver histórico
+    // dentro do app; na tela inicial deixa o sistema minimizar/fechar.
+    initNative(() => {
+      if (window.location.pathname !== '/') {
+        navigate(-1);
+        return true;
+      }
+      return false;
+    });
+  }, [navigate]);
 
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
       <ScrollToTop />
       {!isAdmin && <WhatsAppButton />}
       <Routes>
-        {/* Rotas admin sempre acessíveis */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/pdv" element={<AdminPDV />} />
-        <Route path="/admin/produtos" element={<AdminProdutos />} />
-        <Route path="/admin/categorias" element={<AdminCategorias />} />
-        <Route path="/admin/pedidos" element={<AdminPedidos />} />
-        <Route path="/admin/financeiro" element={<AdminFinanceiro />} />
-        <Route path="/admin/clientes" element={<AdminClientes />} />
-        <Route path="/admin/fornecedores" element={<AdminFornecedores />} />
-        <Route path="/admin/relatorios" element={<AdminRelatorios />} />
-        <Route path="/admin/chamados" element={<AdminChamados />} />
-        <Route path="/admin/gestao-pedidos" element={<AdminGestaoPedidos />} />
+        {/* Rotas admin — só no site. No app nativo redirecionam para a home. */}
+        {native ? (
+          <Route path="/admin/*" element={<Navigate to="/" replace />} />
+        ) : (
+          <>
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/pdv" element={<AdminPDV />} />
+            <Route path="/admin/produtos" element={<AdminProdutos />} />
+            <Route path="/admin/categorias" element={<AdminCategorias />} />
+            <Route path="/admin/pedidos" element={<AdminPedidos />} />
+            <Route path="/admin/financeiro" element={<AdminFinanceiro />} />
+            <Route path="/admin/clientes" element={<AdminClientes />} />
+            <Route path="/admin/fornecedores" element={<AdminFornecedores />} />
+            <Route path="/admin/relatorios" element={<AdminRelatorios />} />
+            <Route path="/admin/chamados" element={<AdminChamados />} />
+            <Route path="/admin/gestao-pedidos" element={<AdminGestaoPedidos />} />
+          </>
+        )}
 
         {/* Rotas públicas */}
         <Route path="/" element={<Home />} />
