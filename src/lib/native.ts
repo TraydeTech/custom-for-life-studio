@@ -29,11 +29,18 @@ export function isNativeApp(): boolean {
 export async function initNative(onBack: () => boolean): Promise<void> {
   if (!isNativeApp()) return;
 
+  // Marca o <html> pra o CSS aplicar os recuos de safe-area (notch/ilha,
+  // barra inferior) só dentro do app. No navegador nada disso vale.
+  const root = document.documentElement;
+  root.classList.add("native-app");
+  root.classList.add(`platform-${Capacitor.getPlatform()}`);
+
   try {
     const { StatusBar, Style } = await import("@capacitor/status-bar");
-    await StatusBar.setStyle({ style: Style.Light });
+    // Tema escuro da marca → texto/ícones claros na status bar.
+    await StatusBar.setStyle({ style: Style.Dark });
     if (Capacitor.getPlatform() === "android") {
-      await StatusBar.setBackgroundColor({ color: "#ffffff" });
+      await StatusBar.setBackgroundColor({ color: "#0e0e11" });
     }
   } catch {
     /* plugin ausente — segue sem status bar customizada */
