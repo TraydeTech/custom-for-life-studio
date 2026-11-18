@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { SEOMeta } from '@/components/SEOMeta';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
@@ -22,6 +22,34 @@ export default function Loja() {
   const searchQuery = searchParams.get('busca') || '';
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const previousFilters = useRef({ categorySlug, searchQuery });
+
+  useEffect(() => {
+    const previous = previousFilters.current;
+    previousFilters.current = { categorySlug, searchQuery };
+    const changed = previous.categorySlug !== categorySlug || previous.searchQuery !== searchQuery;
+    if (!window.matchMedia('(max-width: 1023px)').matches || (!changed && !categorySlug && !searchQuery)) return;
+
+    const frame = requestAnimationFrame(() => {
+      if (!resultsRef.current) return;
+      const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
+      window.scrollTo({
+        top: Math.max(0, window.scrollY + resultsRef.current.getBoundingClientRect().top - headerHeight - 16),
+        behavior: 'instant',
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [categorySlug, searchQuery]);
+
+  useEffect(() => setLocalSearch(searchQuery), [searchQuery]);
+
+  const selectCategory = (slug: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (slug) next.set('categoria', slug);
+    else next.delete('categoria');
+    setSearchParams(next);
+  };
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -113,9 +141,9 @@ export default function Loja() {
       />
       <Header />
       
-      <main className="flex-1 container py-8">
+      <main className="flex-1 container py-4 lg:py-8">
         {/* Breadcrumb e título */}
-        <div className="mb-8">
+        <div className="mb-4 lg:mb-8">
           <nav className="text-sm text-muted-foreground mb-2">
             <Link to="/" className="hover:text-primary">Início</Link>
             <span className="mx-2">/</span>
@@ -130,10 +158,10 @@ export default function Loja() {
           <h1 className="text-3xl font-bold">
             {activeCategory ? activeCategory.name : 'Todos os Produtos'}
           </h1>
-          <p className="text-muted-foreground mt-2 max-w-2xl">
+          <p className="hidden lg:block text-muted-foreground mt-2 max-w-2xl">
             Escolha o produto ideal para personalizar com sua marca. Trabalhamos com itens úteis, bonitos e pensados para empresas, eventos, equipes e presentes especiais. Se precisar de ajuda, fale conosco pelo WhatsApp.
           </p>
-          <div className="mt-4">
+          <div className="hidden lg:block mt-4">
             <Button asChild>
               <a 
                 href={`https://wa.me/5547984492949?text=${encodeURIComponent('Olá! Vim pelo site e gostaria de solicitar uma ajuda para escolher brindes personalizados.')}`}
@@ -152,10 +180,10 @@ export default function Loja() {
           )}
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Sidebar de filtros */}
           <aside className="w-full lg:w-64 shrink-0">
-            <div className="sticky top-24 space-y-6">
+            <div className="lg:sticky lg:top-24 space-y-3 lg:space-y-6">
               {/* Busca */}
               <form onSubmit={handleSearch}>
                 <div className="relative">
@@ -171,7 +199,21 @@ export default function Loja() {
               </form>
 
               {/* Categorias */}
-              <div>
+              <div className="lg:hidden">
+                <label htmlFor="mobile-category" className="sr-only">Categoria de produtos</label>
+                <select
+                  id="mobile-category"
+                  value={categorySlug ?? ''}
+                  onChange={(event) => selectCategory(event.target.value)}
+                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 text-base"
+                >
+                  <option value="">Todos os Produtos</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.slug}>{category.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="hidden lg:block">
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <Filter className="h-4 w-4" />
                   Categorias
@@ -181,10 +223,7 @@ export default function Loja() {
                     variant={!categorySlug ? "secondary" : "ghost"}
                     size="sm"
                     className="w-full justify-start"
-                    onClick={() => {
-                      searchParams.delete('categoria');
-                      setSearchParams(searchParams);
-                    }}
+                    onClick={() => selectCategory('')}
                   >
                     Todos os Produtos
                   </Button>
@@ -194,7 +233,7 @@ export default function Loja() {
                       variant={categorySlug === category.slug ? "secondary" : "ghost"}
                       size="sm"
                       className="w-full justify-start"
-                      onClick={() => setSearchParams({ categoria: category.slug })}
+                      onClick={() => selectCategory(category.slug)}
                     >
                       {category.name}
                     </Button>
@@ -213,7 +252,7 @@ export default function Loja() {
           </aside>
 
           {/* Grid de produtos */}
-          <div className="flex-1">
+          <div ref={resultsRef} className="flex-1 min-w-0" aria-label="Produtos encontrados" aria-busy={isLoading}>
             {/* Barra de ordenação e contagem */}
             {!isLoading && (
               <div className="flex items-center justify-between mb-4 gap-4">
