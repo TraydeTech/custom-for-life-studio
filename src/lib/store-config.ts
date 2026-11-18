@@ -25,6 +25,7 @@ interface CartLikeItem {
   product?: { name?: string | null; price?: number | null } | null;
   product_color?: string | null;
   engraving_text?: string | null;
+  engraving_file_url?: string | null;
 }
 
 const brl = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`;
@@ -40,12 +41,13 @@ export function buildWhatsAppOrderLink(items: CartLikeItem[], total: number): st
     const name = it.product?.name ?? 'Item';
     const color = it.product_color ? ` (${it.product_color})` : '';
     const engraving = it.engraving_text ? ` [gravação: ${it.engraving_text}]` : '';
+    const art = it.engraving_file_url ? `\n  Arte: ${it.engraving_file_url}` : '';
     const lineTotal = (it.product?.price ?? 0) * it.quantity;
-    return `• ${it.quantity}x ${name}${color}${engraving} — ${brl(lineTotal)}`;
+    return `• ${it.quantity}x ${name}${color}${engraving} — ${brl(lineTotal)}${art}`;
   });
   const msg =
     'Olá! Quero finalizar meu pedido pelo WhatsApp:\n\n' +
     (lines.length ? lines.join('\n') : '(carrinho vazio)') +
-    `\n\nTotal: ${brl(total)}`;
+    `\n\nSubtotal dos produtos: ${brl(total)}\nEntrega e frete a confirmar. Entrega grátis para Blumenau.`;
   return whatsAppLink(msg);
 }

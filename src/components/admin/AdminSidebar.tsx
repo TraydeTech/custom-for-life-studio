@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { usePendingOrdersCount } from '@/hooks/usePendingOrdersCount';
 import { useLowStockCount } from '@/hooks/useLowStockProducts';
 import { useOpenTicketsCount } from '@/hooks/useOpenTicketsCount';
-import logo from '@/assets/logo-custom-forlife.png';
+import logo from '@/assets/logo-custom-forlife.webp';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigationType } from 'react-router-dom';
 import { SEOMeta } from '@/components/SEOMeta';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,10 +18,18 @@ type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'featured';
 
 export default function Loja() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigationType = useNavigationType();
   const categorySlug = searchParams.get('categoria');
   const searchQuery = searchParams.get('busca') || '';
   const [localSearch, setLocalSearch] = useState(searchQuery);
-  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const sortParam = searchParams.get('ordem');
+  const sortBy: SortOption = ['newest', 'price_asc', 'price_desc', 'featured'].includes(sortParam ?? '')
+    ? sortParam as SortOption : 'newest';
+  const setSortBy = (value: SortOption) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('ordem', value);
+    setSearchParams(next);
+  };
   const resultsRef = useRef<HTMLDivElement>(null);
   const previousFilters = useRef({ categorySlug, searchQuery });
 
@@ -29,6 +37,7 @@ export default function Loja() {
     const previous = previousFilters.current;
     previousFilters.current = { categorySlug, searchQuery };
     const changed = previous.categorySlug !== categorySlug || previous.searchQuery !== searchQuery;
+    if (navigationType === 'POP' && !changed) return;
     if (!window.matchMedia('(max-width: 1023px)').matches || (!changed && !categorySlug && !searchQuery)) return;
 
     const frame = requestAnimationFrame(() => {
@@ -40,7 +49,7 @@ export default function Loja() {
       });
     });
     return () => cancelAnimationFrame(frame);
-  }, [categorySlug, searchQuery]);
+  }, [categorySlug, searchQuery, navigationType]);
 
   useEffect(() => setLocalSearch(searchQuery), [searchQuery]);
 
@@ -51,7 +60,7 @@ export default function Loja() {
     setSearchParams(next);
   };
 
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [], isError: categoriesError, refetch: retryCategories } = useQuery({
     queryKey: ['categories'],
     staleTime: 1000 * 60 * 10, // 10 minutos
     queryFn: async () => {
@@ -73,6 +82,8 @@ export default function Loja() {
   const {
     data: productsData,
     isLoading,
+    isError: productsError,
+    refetch: retryProducts,
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
@@ -82,6 +93,7 @@ export default function Loja() {
     initialPageParam: 0,
     enabled: categories.length > 0 || !categorySlug,
     queryFn: async ({ pageParam = 0 }) => {
+      if (categorySlug && !activeCategoryId) return { items: [], nextPage: null };
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
@@ -118,12 +130,10 @@ export default function Loja() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (localSearch.trim()) {
-      setSearchParams({ busca: localSearch.trim() });
-    } else {
-      searchParams.delete('busca');
-      setSearchParams(searchParams);
-    }
+    const next = new URLSearchParams(searchParams);
+    if (localSearch.trim()) next.set('busca', localSearch.trim());
+    else next.delete('busca');
+    setSearchParams(next);
   };
 
   const clearFilters = () => {
@@ -256,9 +266,9 @@ export default function Loja() {
             {/* Barra de ordenação e contagem */}
             {!isLoading && (
               <div className="flex items-center justify-between mb-4 gap-4">
-                <p className="text-sm text-muted-foreground">
+                <p aria-live="polite" className="text-sm text-muted-foreground">
                   {products.length > 0
-                    ? `${products.length} produto${products.length !== 1 ? 's' : ''} carregado${products.length !== 1 ? 's' : ''}${hasNextPage ? '+' : ''}`
+                    ? `${products.length} produto${products.length !== 1 ? 's' : ''}${hasNextPage ? '+' : ''}`
                     : ''}
                 </p>
                 <div className="flex items-center gap-2">
@@ -278,7 +288,12 @@ export default function Loja() {
               </div>
             )}
 
-            {isLoading ? (
+            {categoriesError || productsError ? (
+              <div role="alert" className="rounded-lg border p-6 text-center space-y-3">
+                <p>Não foi possível carregar os produtos. Confira sua conexão e tente novamente.</p>
+                <Button variant="outline" onClick={() => { retryCategories(); retryProducts(); }}>Tentar novamente</Button>
+              </div>
+            ) : isLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="space-y-4">

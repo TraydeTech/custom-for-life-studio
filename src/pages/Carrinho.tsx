@@ -52,28 +52,27 @@ export default function Carrinho() {
     );
   }
 
-  const shippingCost = 0;
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       
       <main className="flex-1 container py-8">
-        <h1 className="text-3xl font-bold mb-8">Carrinho de Compras</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">Carrinho de Compras</h1>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Lista de itens */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="min-w-0 lg:col-span-2 space-y-4">
             {cartItems.map((item) => (
               <Card key={item.id}>
                 <CardContent className="p-4">
-                  <div className="flex gap-4">
+                  <div className="flex gap-3 sm:gap-4">
                     <Link to={`/produto/${item.product?.slug}`} className="shrink-0">
                       {item.engraving_preview_image ? (
                         <img
                           src={item.engraving_preview_image}
                           alt={item.product?.name}
-                          className="w-24 h-24 object-contain rounded-lg cursor-pointer bg-[#FFFFFF]"
+                          className="w-20 h-20 sm:w-24 sm:h-24 object-contain rounded-lg cursor-pointer bg-[#FFFFFF]"
                           onClick={(e) => {
                             e.preventDefault();
                             setZoomedImage(item.engraving_preview_image);
@@ -83,7 +82,7 @@ export default function Carrinho() {
                         <img
                           src={item.product?.images?.[0] || '/placeholder.svg'}
                           alt={item.product?.name}
-                          className="w-24 h-24 object-contain rounded-lg bg-[#FFFFFF]"
+                          className="w-20 h-20 sm:w-24 sm:h-24 object-contain rounded-lg bg-[#FFFFFF]"
                         />
                       )}
                     </Link>
@@ -111,12 +110,18 @@ export default function Carrinho() {
                           Gravação: {item.customization_notes}
                         </p>
                       )}
-                      <div className="mt-2 flex items-center justify-between">
+                      {item.engraving_file_url && (
+                        <a href={item.engraving_file_url} target="_blank" rel="noopener noreferrer"
+                          className="mt-2 inline-block text-sm text-primary underline">Ver arte anexada</a>
+                      )}
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-10 w-10"
+                            disabled={updateQuantity.isPending || removeFromCart.isPending}
+                            aria-label={`Diminuir quantidade de ${item.product?.name}`}
                             onClick={() => updateQuantity.mutate({ 
                               itemId: item.id, 
                               quantity: item.quantity - 1 
@@ -128,24 +133,27 @@ export default function Carrinho() {
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-10 w-10"
                             onClick={() => updateQuantity.mutate({ 
                               itemId: item.id, 
                               quantity: item.quantity + 1 
                             })}
-                            disabled={item.quantity >= (item.product?.stock || 0)}
+                            aria-label={`Aumentar quantidade de ${item.product?.name}`}
+                            disabled={updateQuantity.isPending || removeFromCart.isPending || item.quantity >= (item.product?.stock || 0)}
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className="font-semibold">
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-4">
+                          <span className="font-semibold whitespace-nowrap">
                             {formatCurrency((item.product?.price || 0) * item.quantity)}
                           </span>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="text-destructive hover:text-destructive"
+                            aria-label={`Remover ${item.product?.name} do carrinho`}
+                            disabled={removeFromCart.isPending || updateQuantity.isPending}
                             onClick={() => removeFromCart.mutate(item.id)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -172,19 +180,20 @@ export default function Carrinho() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Frete</span>
-                  <span>{shippingCost === 0 ? 'Grátis' : formatCurrency(shippingCost)}</span>
+                  <span>A combinar</span>
                 </div>
+                <p className="text-xs text-muted-foreground">Entrega grátis para Blumenau. Para outras cidades, confirme o frete antes de fechar o pedido.</p>
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
-                  <span>{formatCurrency(cartTotal + shippingCost)}</span>
+                  <span>Total dos produtos</span>
+                  <span>{formatCurrency(cartTotal)}</span>
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-2">
                 {!PAYMENT_ENABLED ? (
                   <>
                     <p className="text-xs text-muted-foreground text-center w-full">
-                      Pagamento online em manutenção. Finalize seu pedido e pague pelo WhatsApp.
+                      Finalize pelo WhatsApp para confirmar entrega, arte e pagamento.
                     </p>
                     <Button className="w-full" size="lg" style={{ backgroundColor: '#25D366' }} asChild>
                       <a
@@ -235,7 +244,7 @@ export default function Carrinho() {
             className="absolute top-4 right-4 text-white/70 hover:text-white z-50"
             onClick={() => setZoomedImage(null)}
           >
-            <X className="h-8 w-8" />
+            <X className="h-10 w-10" />
           </button>
           <img
             src={zoomedImage}

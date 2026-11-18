@@ -28,15 +28,17 @@ export function AccountLayout({ children, title }: AccountLayoutProps) {
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Sidebar */}
-          <nav className="space-y-1">
+          <nav aria-label="Minha conta" className="flex gap-2 overflow-x-auto pb-2 md:block md:space-y-1 md:pb-0">
             {menuItems.map((item) => {
-              const isActive = location.pathname === item.href;
+              const aliases: Record<string, string> = { '/meus-pedidos': '/minha-conta/pedidos', '/meus-enderecos': '/minha-conta/enderecos', '/meus-chamados': '/minha-conta/chamados' };
+              const isActive = (aliases[location.pathname] ?? location.pathname) === item.href;
               return (
                 <Link
                   key={item.href}
                   to={item.href}
+                  aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                    "flex shrink-0 items-center gap-2 whitespace-nowrap px-3 py-3 rounded-lg transition-colors",
                     isActive 
                       ? "bg-primary text-primary-foreground" 
                       : "hover:bg-muted"

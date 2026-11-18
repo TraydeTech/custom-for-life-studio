@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { Footer } from '@/components/layout/Footer';
 import { Loader2, Lock, CheckCircle, ArrowLeft } from 'lucide-react';
-import logoImage from '@/assets/logo-custom-forlife.png';
+import logoImage from '@/assets/logo-custom-forlife.webp';
 
 export default function RedefinirSenha() {
   const [password, setPassword] = useState('');

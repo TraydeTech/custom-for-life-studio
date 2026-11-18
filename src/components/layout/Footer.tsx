@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Instagram, MessageCircle, Mail, MapPin } from 'lucide-react';
-import logoImage from '@/assets/logo-custom-forlife.png';
+import logoImage from '@/assets/logo-custom-forlife.webp';
 
 export function Footer() {
   return (

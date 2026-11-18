@@ -2,7 +2,7 @@ import { Instagram, MessageCircle, Sparkles, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SEOMeta } from "@/components/SEOMeta";
 import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
-import logoImage from "@/assets/logo-custom-forlife.png";
+import logoImage from "@/assets/logo-custom-forlife.webp";
 
 export default function ComingSoon() {
   return (

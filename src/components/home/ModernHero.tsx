@@ -2,11 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { MessageCircle, ShoppingBag, Star, CheckCircle2, Award, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logoImage from "@/assets/logo-custom-forlife.png";
+import logoImage from "@/assets/logo-custom-forlife.webp";
 
 interface ModernHeroProps {
   title: React.ReactNode;
   subtitle: string;
+  mobileSubtitle?: string;
   ctaPrimary: { label: string; href: string };
   ctaSecondary: { label: string; href: string };
   image: string;
@@ -15,12 +16,13 @@ interface ModernHeroProps {
 export const ModernHero: React.FC<ModernHeroProps> = ({
   title,
   subtitle,
+  mobileSubtitle,
   ctaPrimary,
   ctaSecondary,
   image,
 }) => {
   return (
-    <section className="relative min-h-[90vh] flex items-center pt-20 pb-16 overflow-hidden">
+    <section className="relative lg:min-h-[90vh] flex items-center pt-8 pb-8 lg:pt-20 lg:pb-16 overflow-hidden">
       {/* Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full -z-10 bg-background">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full animate-pulse" />
@@ -32,32 +34,32 @@ export const ModernHero: React.FC<ModernHeroProps> = ({
           {/* Text Content */}
           <div className="flex-1 text-center lg:text-left z-10">
             <div className="flex flex-col items-center lg:items-start mb-6 animate-fade-in">
-              <div className="bg-[#FFFFFF] p-3 rounded-xl mb-6 shadow-sm inline-block">
+              <div className="hidden lg:inline-block bg-[#FFFFFF] p-3 rounded-xl mb-6 shadow-sm">
                 <img src={logoImage} alt="Custom For Life" className="h-10 w-auto" />
               </div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs sm:text-sm font-medium">
                 <Star className="w-4 h-4 fill-primary" />
                 <span>Brindes Premium para Empresas e Eventos</span>
               </div>
             </div>
             
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-heading font-bold mb-6 leading-[1.1] animate-fade-in-up">
+            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-heading font-bold mb-6 leading-[1.1] animate-fade-in-up">
               {title}
             </h1>
             
-            <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-              {subtitle}
+            <p className="text-base sm:text-xl text-muted-foreground mb-6 lg:mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+              {mobileSubtitle ? <><span className="lg:hidden">{mobileSubtitle}</span><span className="hidden lg:inline">{subtitle}</span></> : subtitle}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
-              <Button size="xl" className="bg-gradient-brand hover:scale-105 transition-all shadow-lg shadow-primary/20 rounded-full h-14 px-8 text-lg" asChild>
+              <Button size="xl" className="order-2 sm:order-1 bg-gradient-brand hover:scale-105 transition-all shadow-lg shadow-primary/20 rounded-full h-12 lg:h-14 px-6 lg:px-8 text-base lg:text-lg" asChild>
                 <a href={ctaPrimary.href} target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="w-5 h-5 mr-2" />
                   {ctaPrimary.label}
                 </a>
               </Button>
               
-              <Button size="xl" variant="outline" className="border-2 border-primary/50 hover:bg-primary/5 rounded-full h-14 px-8 text-lg" asChild>
+              <Button size="xl" variant="outline" className="order-1 sm:order-2 border-2 border-primary/50 hover:bg-primary/5 rounded-full h-12 lg:h-14 px-6 lg:px-8 text-base lg:text-lg" asChild>
                 <Link to={ctaSecondary.href}>
                   <ShoppingBag className="w-5 h-5 mr-2" />
                   {ctaSecondary.label}
@@ -66,7 +68,7 @@ export const ModernHero: React.FC<ModernHeroProps> = ({
             </div>
 
             {/* Trust Badges */}
-            <div className="mt-12 pt-12 border-t border-border/50 flex flex-wrap justify-center lg:justify-start gap-8 opacity-70">
+            <div className="hidden lg:flex mt-12 pt-12 border-t border-border/50 flex-wrap justify-center lg:justify-start gap-8 opacity-70">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
                 <span className="text-sm font-medium">Qualidade Premium</span>
@@ -83,7 +85,7 @@ export const ModernHero: React.FC<ModernHeroProps> = ({
           </div>
 
           {/* Image Side */}
-          <div className="flex-1 relative animate-fade-in" style={{ animationDelay: "0.3s" }}>
+          <div className="hidden lg:block flex-1 relative animate-fade-in" style={{ animationDelay: "0.3s" }}>
             <div className="relative z-10 gradient-border p-1.5 rounded-[2.5rem] bg-white shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-700 overflow-hidden group">
               <img
                 src={image}

@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -12,7 +13,7 @@ import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency, cn } from '@/lib/utils';
 import { PUBLIC_PRODUCT_COLUMNS } from '@/lib/products';
-import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2, CheckCircle, RotateCcw, Type, Upload, Paperclip, ShieldCheck, Zap, Heart } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, ChevronRight, X, Hand, Truck, Loader2, CheckCircle, RotateCcw, Type, Upload, Paperclip, ShieldCheck, Zap } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -43,6 +44,7 @@ export default function Produto() {
 
   // Image cache — persists across variant switches for instant swaps
   const imageCache = useRef<Record<string, HTMLImageElement>>({});
+  const canvasDrawRequest = useRef(0);
 
   // Single state for selected variant — controls everything
   const [selected, setSelected] = useState<ProductVariant | null>(null);
@@ -50,6 +52,7 @@ export default function Produto() {
   const [quantity, setQuantity] = useState(1);
   const [engravingText, setEngravingText] = useState('');
   const [addedToCart, setAddedToCart] = useState(false);
+  const [showCartLink, setShowCartLink] = useState(false);
   const [debouncedEngravingText, setDebouncedEngravingText] = useState('');
   const [isZoomed, setIsZoomed] = useState(false);
   const [engravingPosX, setEngravingPosX] = useState(50);
@@ -127,7 +130,8 @@ export default function Produto() {
 
   // Preload all variant images in background for instant switching
   useEffect(() => {
-    variants.forEach((v) => {
+    const currentIndex = Math.max(0, variants.findIndex(v => v.id === selected?.id));
+    variants.slice(currentIndex, currentIndex + 2).forEach((v) => {
       const url = v.main_image;
       if (url && !imageCache.current[url]) {
         const img = new Image();
@@ -145,7 +149,7 @@ export default function Produto() {
         }
       });
     });
-  }, [variants]);
+  }, [variants, selected?.id]);
 
   // Debounce engraving text for canvas rendering
   useEffect(() => {
@@ -217,7 +221,9 @@ export default function Produto() {
     canvas.width = size;
     canvas.height = size;
 
+    const requestId = ++canvasDrawRequest.current;
     const renderImage = (img: HTMLImageElement) => {
+      if (requestId !== canvasDrawRequest.current) return;
       ctx.clearRect(0, 0, size, size);
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, size, size);
@@ -271,6 +277,7 @@ export default function Produto() {
   // Selection handler — receives the FULL variant object
   function handleSelectVariation(variant: ProductVariant) {
     setSelected(variant);
+    setQuantity(current => Math.min(current, Math.max(1, variant.stock)));
     setSelectedImageIndex(0);
   }
 
@@ -369,6 +376,8 @@ export default function Produto() {
         uploadedFileUrl = publicUrl;
       } catch (error) {
         console.error('Error uploading file:', error);
+        toast.error('Não foi possível enviar sua arte. O arquivo continua selecionado; tente novamente.');
+        return;
       } finally {
         setIsUploading(false);
       }
@@ -393,14 +402,14 @@ export default function Produto() {
     }, {
       onSuccess: () => {
         setAddedToCart(true);
+        setShowCartLink(true);
         setEngravingFile(null);
         setTimeout(() => setAddedToCart(false), 2000);
       },
     });
   };
 
-  // Tentativa de adicionar ao carrinho — exige autenticação. Se não logado,
-  // marca a intenção e abre o modal; após login bem-sucedido, retoma a ação.
+  // Anexos exigem login; produtos e gravação em texto aceitam visitantes.
   const [pendingAddToCart, setPendingAddToCart] = useState(false);
 
   const handleAddToCart = () => {
@@ -410,13 +419,14 @@ export default function Produto() {
 
   // Após login via modal, retoma a adição ao carrinho preservando variante,
   // quantidade e personalização que estavam selecionadas antes do login.
-  const handleAuthSuccess = () => {
-    if (pendingAddToCart) {
+  useEffect(() => {
+    if (user && pendingAddToCart) {
       setPendingAddToCart(false);
-      // Pequeno delay para garantir que o contexto de auth atualizou
-      setTimeout(() => doAddToCart(), 50);
+      void doAddToCart();
     }
-  };
+    // Retomar somente quando a sessão real estiver disponível, sem timer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, pendingAddToCart]);
 
   const handleCepLookup = async () => {
     const cep = cepInput.replace(/\D/g, '');
@@ -645,11 +655,7 @@ export default function Produto() {
                     <Link to={`/loja?categoria=${product.category.slug}`}>{product.category.name}</Link>
                   </Badge>
                 )}
-                <div className="flex items-center gap-2">
-                   <Button variant="ghost" size="icon" className="rounded-full hover:text-red-500 hover:bg-red-50">
-                     <Heart className="h-5 w-5" />
-                   </Button>
-                </div>
+
               </div>
               
               <h1 className="text-4xl font-bold tracking-tight text-foreground leading-tight">{product.name}</h1>
@@ -801,16 +807,21 @@ export default function Produto() {
                   <Button
                     size="lg"
                     className={cn(
-                      "flex-1 h-12 text-lg font-bold rounded-xl shadow-lg transition-all duration-300",
+                      "flex-1 min-w-0 h-12 text-sm sm:text-lg font-bold rounded-xl shadow-lg transition-all duration-300",
                       addedToCart ? "bg-green-600 hover:bg-green-600 scale-105" : "bg-primary hover:shadow-primary/30"
                     )}
                     onClick={handleAddToCart}
-                    disabled={isOutOfStock || addToCart.isPending || addedToCart}
+                    disabled={isOutOfStock || addToCart.isPending || addedToCart || isUploading}
                   >
-                    {addedToCart ? <><CheckCircle className="mr-2 h-5 w-5" /> Adicionado!</> : <><ShoppingCart className="mr-2 h-5 w-5" /> Comprar Agora</>}
+                    {addedToCart ? <><CheckCircle className="mr-2 h-5 w-5" /> Adicionado!</> : <><ShoppingCart className="mr-2 h-5 w-5" /> Adicionar ao carrinho</>}
                   </Button>
                </div>
                
+               {showCartLink && (
+                 <Button asChild variant="outline" className="w-full">
+                   <Link to="/carrinho">Ver carrinho e continuar</Link>
+                 </Button>
+               )}
                {/* Shipping Preview */}
                <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground px-2">
                  <div className="flex items-center gap-1.5"><Truck className="h-3.5 w-3.5" /> Entrega em todo Brasil</div>
@@ -934,7 +945,7 @@ export default function Produto() {
         open={showAuthModal}
         onOpenChange={setShowAuthModal}
         defaultTab="login"
-        onSuccess={handleAuthSuccess}
+
       />
       <Dialog open={isZoomed} onOpenChange={setIsZoomed}>
         <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white">

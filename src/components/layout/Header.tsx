@@ -22,7 +22,7 @@ import {
   Settings
 } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
-import logoImage from '@/assets/logo-custom-forlife.png';
+import logoImage from '@/assets/logo-custom-forlife.webp';
 import { supabase } from '@/integrations/supabase/client';
 
 type SearchResult = { id: string; name: string; slug: string; images: string[] | null; price: number };
@@ -155,11 +155,11 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md">
-      <div className="container flex min-h-[90px] lg:min-h-[100px] items-center justify-between py-2 transition-all duration-300">
+      <div className="container flex min-h-[64px] lg:min-h-[100px] items-center justify-between py-2 transition-all duration-300">
         {/* Logo */}
         <Link to="/" className="flex items-center group transition-transform hover:scale-105 active:scale-95">
           <div className="bg-[#FFFFFF] p-2 rounded-lg shadow-sm flex items-center justify-center">
-            <img src={logoImage} alt="Custom For Life" className="h-[45px] md:h-[55px] lg:h-[65px] w-auto" />
+            <img src={logoImage} alt="Custom For Life" className="h-[40px] md:h-[55px] lg:h-[65px] w-auto" />
           </div>
         </Link>
 
@@ -177,7 +177,7 @@ export function Header() {
           {isCustomer ? (
             // UI para CLIENTES logados
             <>
-              <Link to="/carrinho" className="relative">
+              <Link to="/carrinho" aria-label={`Carrinho, ${cartCount} itens`} className="relative">
                 <Button variant="ghost" size="icon" className="text-foreground hover:text-primary hover:bg-white/5">
                   <ShoppingCart className="h-5 w-5" />
                   {cartCount > 0 && (
@@ -253,7 +253,7 @@ export function Header() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Link to="/carrinho" className="relative mr-2">
+              <Link to="/carrinho" aria-label={`Carrinho, ${cartCount} itens`} className="relative mr-2">
                 <Button variant="ghost" size="icon" className="text-foreground hover:text-primary hover:bg-white/5">
                   <ShoppingCart className="h-5 w-5" />
                   {cartCount > 0 && (
@@ -283,22 +283,31 @@ export function Header() {
           )}
         </nav>
 
+        <Link to="/carrinho" aria-label={`Carrinho, ${cartCount} itens`}
+          className="md:hidden relative ml-auto mr-2 flex h-11 w-11 items-center justify-center">
+          <ShoppingCart className="h-6 w-6" />
+          {cartCount > 0 && <span className="absolute top-0 right-0 rounded-full bg-primary px-1.5 text-xs text-primary-foreground">{cartCount > 99 ? '99+' : cartCount}</span>}
+        </Link>
         {/* Mobile Menu Button */}
         <Button
           variant="ghost"
           size="icon"
           className="md:hidden text-foreground hover:bg-white/5"
+          aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-menu"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
           {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
       </div>
 
+      <div className="md:hidden px-4 pb-3">
+        <SearchBar className="w-full" />
+      </div>
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border/50 bg-background p-4 space-y-4 text-foreground animate-fade-in">
-          <SearchBar className="w-full" />
-
+        <div id="mobile-menu" className="md:hidden border-t border-border/50 bg-background p-4 space-y-4 text-foreground animate-fade-in">
           <nav className="flex flex-col gap-2">
             <Link to="/loja" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="ghost" className="w-full justify-start text-foreground">Produtos</Button>

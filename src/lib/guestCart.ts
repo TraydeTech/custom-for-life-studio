@@ -1,3 +1,5 @@
+import { canMergeCartItems } from './cart';
+
 export const GUEST_CART_KEY = 'cfl_guest_cart';
 
 export interface GuestCartItem {
@@ -26,7 +28,7 @@ export function saveGuestCart(items: GuestCartItem[]): void {
   try {
     localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
   } catch {
-    // localStorage indisponível (quota cheia / modo privado) — ignora
+    throw new Error('Não foi possível salvar o carrinho neste navegador. Libere espaço e tente novamente.');
   }
 }
 
@@ -39,16 +41,7 @@ export function addGuestCartItem(
 ): GuestCartItem[] {
   const items = getGuestCart();
 
-  if (params.engraving_text) {
-    const newItem: GuestCartItem = { id: crypto.randomUUID(), ...params };
-    const updated = [...items, newItem];
-    saveGuestCart(updated);
-    return updated;
-  }
-
-  const existing = items.find(
-    i => i.product_id === params.product_id && !i.engraving_text
-  );
+  const existing = items.find(item => canMergeCartItems(item, params));
 
   if (existing) {
     const updated = items.map(i =>

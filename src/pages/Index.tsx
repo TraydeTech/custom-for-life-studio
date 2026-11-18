@@ -18,7 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/utils";
 import { PUBLIC_PRODUCT_COLUMNS } from "@/lib/products";
-import heroImage from "@/assets/hero-brindes-novo.png";
+import heroImage from "@/assets/hero-brindes-novo.webp";
 import { useEffect, useState } from "react";
 
 
@@ -97,10 +97,11 @@ const Index = () => {
       <ModernHero
         title={
           <>
-            Brindes personalizados que <span className="gradient-text">valorizam sua marca</span>
-            <br /> e encantam seus clientes
+            <span className="lg:hidden">Brindes personalizados <span className="gradient-text">para sua marca</span></span>
+            <span className="hidden lg:inline">Brindes personalizados que <span className="gradient-text">valorizam sua marca</span><br /> e encantam seus clientes</span>
           </>
         }
+        mobileSubtitle="Escolha seu produto e personalize com nome, frase ou logotipo."
         subtitle="Especialistas em brindes corporativos premium. Elevamos o posicionamento da sua empresa com produtos exclusivos e personalização de alta qualidade."
         ctaPrimary={{ 
           label: "Solicitar orçamento agora", 
@@ -112,6 +113,52 @@ const Index = () => {
         }}
         image={heroImage}
       />
+
+      {/* Galeria de Produtos Reais */}
+      <section className="py-12 lg:py-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-sm text-muted-foreground mb-4">
+              <Star className="w-4 h-4 text-primary" />
+              Catálogo
+            </span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-heading font-bold mb-4">
+              Conheça nossos <span className="gradient-text">Produtos</span>
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Explore o catálogo de brindes que podem ser personalizados com a sua marca
+            </p>
+          </div>
+          <Carousel
+            opts={{ align: "start", loop: true }}
+            setApi={setCarouselApi}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {recentWorks.map((produto, index) => (
+                <CarouselItem key={produto.id} className="pl-2 md:pl-4 basis-[70%] sm:basis-[35%] lg:basis-[23%]">
+                  <Link to={`/produto/${produto.slug}`}>
+                    <div className="gradient-border overflow-hidden rounded-2xl bg-[#FFFFFF]">
+                      <img
+                        loading="lazy"
+                        src={produto.images?.[0] || '/placeholder.svg'}
+                        alt={produto.name}
+                        className="w-full aspect-square object-contain hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                    <div className="mt-2 text-center">
+                      <p className="font-bold text-sm truncate">{produto.name}</p>
+                    </div>
+                  </Link>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden md:flex -left-4" />
+            <CarouselNext className="hidden md:flex -right-4" />
+          </Carousel>
+        </div>
+      </section>
+
 
       <FeatureStrip />
 
@@ -232,50 +279,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Galeria de Produtos Reais */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-sm text-muted-foreground mb-4">
-              <Star className="w-4 h-4 text-primary" />
-              Catálogo
-            </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-heading font-bold mb-4">
-              Conheça nossos <span className="gradient-text">Produtos</span>
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Explore o catálogo de brindes que podem ser personalizados com a sua marca
-            </p>
-          </div>
-          <Carousel
-            opts={{ align: "start", loop: true }}
-            setApi={setCarouselApi}
-            className="w-full"
-          >
-            <CarouselContent className="-ml-2 md:-ml-4">
-              {recentWorks.map((produto, index) => (
-                <CarouselItem key={produto.id} className="pl-2 md:pl-4 basis-[70%] sm:basis-[35%] lg:basis-[23%]">
-                  <Link to={`/produto/${produto.slug}`}>
-                    <div className="gradient-border overflow-hidden rounded-2xl bg-[#FFFFFF]">
-                      <img
-                        src={produto.images?.[0] || '/placeholder.svg'}
-                        alt={produto.name}
-                        className="w-full aspect-square object-contain hover:scale-105 transition-transform duration-500"
-                      />
-                    </div>
-                    <div className="mt-2 text-center">
-                      <p className="font-bold text-sm truncate">{produto.name}</p>
-                    </div>
-                  </Link>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="hidden md:flex -left-4" />
-            <CarouselNext className="hidden md:flex -right-4" />
-          </Carousel>
-        </div>
-      </section>
-
       {/* Brindes em Destaque */}
       <section id="brindes" className="py-24 bg-muted/30">
         <div className="container mx-auto px-4">
@@ -302,7 +305,8 @@ const Index = () => {
               >
                 <div className="relative aspect-square overflow-hidden bg-[#FFFFFF]">
                   <img
-                    src={produto.images?.[0] || '/placeholder.svg'}
+                    loading="lazy"
+                        src={produto.images?.[0] || '/placeholder.svg'}
                     alt={produto.name}
                     className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
                   />

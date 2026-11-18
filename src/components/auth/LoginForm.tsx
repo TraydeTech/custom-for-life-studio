@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Mail, Lock } from 'lucide-react';
 
 export function LoginForm() {
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,7 +43,9 @@ export function LoginForm() {
       if (isAdmin) {
         window.location.replace('/admin');
       } else {
-        window.location.replace('/');
+        const destination = location.state?.from;
+        const allowed = ['/minha-conta', '/meus-pedidos', '/meus-enderecos', '/meus-chamados'];
+        window.location.replace(typeof destination === 'string' && allowed.some(path => destination === path || destination.startsWith(path + '/')) ? destination : '/');
       }
     } catch {
       toast({
@@ -71,6 +74,7 @@ export function LoginForm() {
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -94,6 +98,7 @@ export function LoginForm() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

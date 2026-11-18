@@ -25,7 +25,7 @@ export default function MinhaConta() {
   // Redirecionar se não estiver logado
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/login');
+      navigate('/login', { replace: true, state: { from: window.location.pathname } });
     }
   }, [authLoading, user, navigate]);
 

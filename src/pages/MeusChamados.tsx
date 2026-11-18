@@ -54,7 +54,7 @@ export default function MeusChamados() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate('/login');
+    if (!authLoading && !user) navigate('/login', { replace: true, state: { from: window.location.pathname } });
   }, [authLoading, user, navigate]);
 
   // Fetch tickets and unread counts

@@ -46,7 +46,7 @@ export default function MeusPedidos() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/login');
+      navigate('/login', { replace: true, state: { from: window.location.pathname } });
       return;
     }
 

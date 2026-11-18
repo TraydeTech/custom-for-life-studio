@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { canMergeCartItems, selectedCartProduct, type CartVariant } from '@/lib/cart';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +27,7 @@ export interface CartItem {
     price: number;
     images: string[];
     stock: number;
+    product_variants?: CartVariant[];
   };
 }
 
@@ -44,6 +47,14 @@ export function useCart() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  useEffect(() => {
+    const refresh = () => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['guest-cart'] });
+    };
+    window.addEventListener('cfl-cart-updated', refresh);
+    return () => window.removeEventListener('cfl-cart-updated', refresh);
+  }, [queryClient]);
 
   // ── Carrinho logado (Supabase) ──────────────────────────────────────────────
   const { data: dbCartItems = [], isLoading: dbLoading } = useQuery({
@@ -56,11 +67,13 @@ export function useCart() {
           id, product_id, quantity, customization_notes,
           engraving_text, engraving_position_x, engraving_position_y,
           engraving_preview_image, product_color, engraving_file_url,
-          product:products (id, name, slug, price, images, stock)
+          product:products (id, name, slug, price, images, stock, product_variants(color_name, stock, main_image))
         `)
         .eq('user_id', user.id);
       if (error) throw error;
-      return data as unknown as CartItem[];
+      return (data as unknown as CartItem[]).map(item => ({
+        ...item, product: item.product ? selectedCartProduct(item.product, item.product_color) : item.product,
+      }));
     },
     enabled: !!user,
   });
@@ -73,17 +86,18 @@ export function useCart() {
       if (guestItems.length === 0) return [];
 
       const productIds = [...new Set(guestItems.map(i => i.product_id))];
-      const { data: products } = await supabase
+      const { data: products, error } = await supabase
         .from('products')
-        .select('id, name, slug, price, images, stock')
+        .select('id, name, slug, price, images, stock, product_variants(color_name, stock, main_image)')
         .in('id', productIds);
 
+      if (error) throw error;
       const productMap = new Map((products || []).map(p => [p.id, p]));
 
       return guestItems
         .map(item => ({
           ...item,
-          product: productMap.get(item.product_id) || null,
+          product: productMap.has(item.product_id) ? selectedCartProduct(productMap.get(item.product_id)!, item.product_color) : null,
         }))
         .filter(item => !!item.product) as CartItem[];
     },
@@ -95,7 +109,7 @@ export function useCart() {
   // Durante a transição de login, se o carrinho do banco estiver vazio mas o de
   // visitante não, mostramos o de visitante para evitar que o carrinho "suma".
   const cartItems = user 
-    ? (dbCartItems.length > 0 ? dbCartItems : guestCartItems) 
+    ? [...dbCartItems, ...guestCartItems.filter(item => !dbCartItems.some(db => db.id === item.id))]
     : guestCartItems;
   const isLoading = user ? (dbLoading && guestCartItems.length === 0) : guestLoading;
 
@@ -109,14 +123,15 @@ export function useCart() {
       // Validação de estoque — busca estoque atual e soma com o que já está no carrinho.
       const { data: stockProduct, error: stockErr } = await supabase
         .from('products')
-        .select('stock, name')
+        .select('stock, name, product_variants(color_name, stock, main_image)')
         .eq('id', productId)
         .maybeSingle();
       if (stockErr) throw stockErr;
-      const availableStock = stockProduct?.stock ?? 0;
+      if (!stockProduct) throw new Error('Produto indisponível.');
+      const availableStock = selectedCartProduct(stockProduct, productColor).stock;
 
       const currentInCart = cartItems
-        .filter((i) => i.product_id === productId)
+        .filter((i) => i.product_id === productId && (!stockProduct.product_variants?.length || i.product_color === productColor))
         .reduce((sum, i) => sum + i.quantity, 0);
 
       if (currentInCart + quantity > availableStock) {
@@ -135,8 +150,8 @@ export function useCart() {
           quantity,
           customization_notes: customizationNotes || null,
           engraving_text: engravingText || null,
-          engraving_position_x: engravingPositionX || null,
-          engraving_position_y: engravingPositionY || null,
+          engraving_position_x: engravingPositionX ?? null,
+          engraving_position_y: engravingPositionY ?? null,
           engraving_preview_image: engravingPreviewImage || null,
           product_color: productColor || null,
           engraving_file_url: engravingFileUrl || null,
@@ -144,41 +159,24 @@ export function useCart() {
         return;
       }
 
-      if (engravingText) {
-        const { error } = await supabase.from('cart_items').insert({
-          user_id: user.id, product_id: productId, quantity,
-          customization_notes: customizationNotes,
-          engraving_text: engravingText,
-          engraving_position_x: engravingPositionX,
-          engraving_position_y: engravingPositionY,
-          engraving_preview_image: engravingPreviewImage,
-          product_color: productColor,
-          engraving_file_url: engravingFileUrl,
-          // colunas engraving_* ainda não estão nos tipos gerados do Supabase
-        } as never);
-        if (error) throw error;
-        return;
-      }
-
-      const { data: existing } = await supabase
-        .from('cart_items')
-        .select('id, quantity')
-        .eq('user_id', user.id)
-        .eq('product_id', productId)
-        .is('engraving_text' as never, null)
-        .maybeSingle();
-
+      const configuration = {
+        product_id: productId, product_color: productColor,
+        customization_notes: customizationNotes, engraving_text: engravingText,
+        engraving_file_url: engravingFileUrl, engraving_preview_image: engravingPreviewImage,
+      };
+      const { data: rows, error: lookupError } = await supabase.from('cart_items')
+        .select('id, quantity, product_id, product_color, customization_notes, engraving_text, engraving_file_url, engraving_preview_image')
+        .eq('user_id', user.id).eq('product_id', productId);
+      if (lookupError) throw lookupError;
+      const existing = rows?.find(item => canMergeCartItems(item, configuration));
       if (existing) {
-        const { error } = await supabase
-          .from('cart_items')
-          .update({ quantity: existing.quantity + quantity })
-          .eq('id', existing.id);
+        const { error } = await supabase.from('cart_items')
+          .update({ quantity: existing.quantity + quantity }).eq('id', existing.id).eq('user_id', user.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from('cart_items').insert({
-          user_id: user.id, product_id: productId, quantity,
-          customization_notes: customizationNotes, product_color: productColor,
-          engraving_file_url: engravingFileUrl,
+          ...configuration, user_id: user.id, quantity,
+          engraving_position_x: engravingPositionX, engraving_position_y: engravingPositionY,
         } as never);
         if (error) throw error;
       }
@@ -199,7 +197,19 @@ export function useCart() {
   // ── updateQuantity ──────────────────────────────────────────────────────────
   const updateQuantity = useMutation({
     mutationFn: async ({ itemId, quantity }: { itemId: string; quantity: number }) => {
-      if (!user) {
+      if (!Number.isInteger(quantity)) throw new Error('Quantidade inválida.');
+      const item = cartItems.find(row => row.id === itemId);
+      if (quantity > 0 && item) {
+        const { data: product, error } = await supabase.from('products')
+          .select('stock, product_variants(color_name, stock, main_image)').eq('id', item.product_id).single();
+        if (error) throw error;
+        const stock = selectedCartProduct(product, item.product_color).stock;
+        const otherQuantity = cartItems.filter(row => row.id !== itemId && row.product_id === item.product_id
+          && (!product.product_variants?.length || row.product_color === item.product_color))
+          .reduce((sum, row) => sum + row.quantity, 0);
+        if (quantity + otherQuantity > stock) throw new Error('Quantidade indisponível para esta cor.');
+      }
+      if (!user || !dbCartItems.some(item => item.id === itemId)) {
         const items = getGuestCart();
         const updated = quantity <= 0
           ? items.filter(i => i.id !== itemId)
@@ -216,14 +226,16 @@ export function useCart() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: user ? ['cart'] : ['guest-cart'] });
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['guest-cart'] });
     },
+    onError: (error) => toast({ variant: 'destructive', title: 'Não foi possível atualizar', description: error.message }),
   });
 
   // ── removeFromCart ──────────────────────────────────────────────────────────
   const removeFromCart = useMutation({
     mutationFn: async (itemId: string) => {
-      if (!user) {
+      if (!user || !dbCartItems.some(item => item.id === itemId)) {
         const items = getGuestCart().filter(i => i.id !== itemId);
         saveGuestCart(items);
         return;
@@ -232,7 +244,8 @@ export function useCart() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: user ? ['cart'] : ['guest-cart'] });
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['guest-cart'] });
       toast({ title: 'Produto removido', description: 'Item removido do carrinho.' });
     },
   });
@@ -243,9 +256,11 @@ export function useCart() {
       if (!user) { clearGuestCart(); return; }
       const { error } = await supabase.from('cart_items').delete().eq('user_id', user.id);
       if (error) throw error;
+      clearGuestCart();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: user ? ['cart'] : ['guest-cart'] });
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['guest-cart'] });
     },
   });
 
@@ -259,60 +274,32 @@ export function useCart() {
 
 // ── syncGuestCartToSupabase ─────────────────────────────────────────────────
 // Chamado logo após o login para mover itens do localStorage para o banco
-export async function syncGuestCartToSupabase(userId: string): Promise<void> {
-  const guestItems = getGuestCart();
-  if (guestItems.length === 0) return;
-
-  const itemsToInsert = [];
-  
-  for (const item of guestItems) {
-    try {
-      if (item.engraving_text) {
-        itemsToInsert.push({
-          user_id: userId,
-          product_id: item.product_id,
-          quantity: item.quantity,
-          customization_notes: item.customization_notes,
-          engraving_text: item.engraving_text,
-          engraving_position_x: item.engraving_position_x,
-          engraving_position_y: item.engraving_position_y,
-          engraving_preview_image: item.engraving_preview_image,
-          product_color: item.product_color,
-        });
-        continue;
-      }
-
-      const { data: existing } = await supabase
-        .from('cart_items')
-        .select('id, quantity')
-        .eq('user_id', userId)
-        .eq('product_id', item.product_id)
-        .is('engraving_text' as never, null)
-        .maybeSingle();
-
-      if (existing) {
-        await supabase
-          .from('cart_items')
-          .update({ quantity: existing.quantity + item.quantity })
-          .eq('id', existing.id);
-      } else {
-        itemsToInsert.push({
-          user_id: userId,
-          product_id: item.product_id,
-          quantity: item.quantity,
-          customization_notes: item.customization_notes,
-          product_color: item.product_color,
-        });
-      }
-    } catch (err) {
-      console.error('[CartSync] Erro ao processar item:', item, err);
-    }
-  }
-
-  if (itemsToInsert.length > 0) {
-    const { error } = await supabase.from('cart_items').insert(itemsToInsert as never);
-    if (error) console.error('[CartSync] Erro no bulk insert:', error);
-  }
-
-  clearGuestCart();
+const cartSyncs = new Map<string, Promise<void>>();
+export function syncGuestCartToSupabase(userId: string): Promise<void> {
+  const running = cartSyncs.get(userId);
+  if (running) return running;
+  const run = (async () => {
+    const guestItems = getGuestCart();
+    if (!guestItems.length) return;
+    // Stable guest UUIDs make retries safe after a lost response. Never clear
+    // the local copy until the complete batch is acknowledged by Supabase.
+    const { error } = await supabase.from('cart_items').upsert(
+      guestItems.map(item => ({ ...item, user_id: userId })) as never,
+      { onConflict: 'id', ignoreDuplicates: true },
+    );
+    if (error) throw error;
+    const synced = new Map(guestItems.map(item => [item.id, item.quantity]));
+    const remaining = getGuestCart().flatMap(item => {
+      const quantity = synced.get(item.id);
+      if (quantity === undefined) return [item];
+      return item.quantity > quantity
+        ? [{ ...item, id: crypto.randomUUID(), quantity: item.quantity - quantity }]
+        : [];
+    });
+    saveGuestCart(remaining);
+    window.dispatchEvent(new Event('cfl-cart-updated'));
+  })();
+  cartSyncs.set(userId, run);
+  run.finally(() => cartSyncs.delete(userId)).catch(() => {});
+  return run;
 }

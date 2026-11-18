@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Settings, Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import logo from '@/assets/logo-custom-forlife.png';
+import logo from '@/assets/logo-custom-forlife.webp';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
