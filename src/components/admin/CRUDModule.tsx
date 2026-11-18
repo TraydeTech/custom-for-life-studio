@@ -80,7 +80,7 @@ export function CRUDModule<T extends { id: string }>({
   const [formData, setFormData] = useState<any>(initialData);
   const [isLoadingItem, setIsLoadingItem] = useState(false);
 
-  const { data: items, isLoading } = useQuery({
+  const { data: items, isLoading, isError, refetch } = useQuery({
     queryKey: [queryKey],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -222,9 +222,31 @@ export function CRUDModule<T extends { id: string }>({
     return matchesSearch && matchesFilter;
   });
 
+  const renderActions = (item: T) => (
+    <div className="flex flex-wrap items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+      {customActions?.(item)}
+      <Button variant="ghost" size="icon" aria-label={`Editar ${title}`} onClick={() => handleEdit(item)}>
+        <Pencil className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="text-destructive hover:text-destructive"
+        aria-label={`Excluir ${title}`}
+        onClick={() => {
+          if (confirm('Tem certeza que deseja excluir este registro?')) {
+            deleteMutation.mutate(item.id);
+          }
+        }}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-heading font-bold">{title}</h1>
           <p className="text-muted-foreground">Gerenciamento de {title.toLowerCase()}</p>
@@ -241,6 +263,7 @@ export function CRUDModule<T extends { id: string }>({
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
+            aria-label={searchPlaceholder}
             placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -250,7 +273,30 @@ export function CRUDModule<T extends { id: string }>({
         {filterControls}
       </div>
 
-      <div className="border rounded-lg">
+      {isError ? (
+        <div role="alert" className="rounded-lg border p-6 space-y-3">
+          <p>Não foi possível carregar os registros. Confira a conexão e tente novamente.</p>
+          <Button variant="outline" onClick={() => refetch()}>Tentar novamente</Button>
+        </div>
+      ) : <>
+      <div className="space-y-3 md:hidden">
+        {isLoading ? <p role="status">Carregando registros...</p> : !filteredItems?.length ? (
+          <p className="rounded-lg border p-4 text-muted-foreground">Nenhum registro encontrado</p>
+        ) : filteredItems.map(item => (
+          <article key={item.id} className="min-w-0 rounded-lg border bg-card p-4 space-y-3">
+            <dl className="space-y-3">
+              {columns.map((col, index) => (
+                <div key={index} className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] items-start gap-3">
+                  <dt className="text-xs font-medium text-muted-foreground">{col.header}</dt>
+                  <dd className="min-w-0 break-words text-sm">{col.render ? col.render(item[col.key], item) : String(item[col.key] ?? '-')}</dd>
+                </div>
+              ))}
+            </dl>
+            <div className="border-t pt-2">{renderActions(item)}</div>
+          </article>
+        ))}
+      </div>
+      <div className="hidden md:block border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
@@ -278,28 +324,11 @@ export function CRUDModule<T extends { id: string }>({
                 <TableRow key={item.id}>
                   {columns.map((col, i) => (
                     <TableCell key={i}>
-                      {col.render ? col.render(item[col.key], item) : String(item[col.key] || '-')}
+                      {col.render ? col.render(item[col.key], item) : String(item[col.key] ?? '-')}
                     </TableCell>
                   ))}
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                      {customActions?.(item)}
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => {
-                          if (confirm('Tem certeza que deseja excluir este registro?')) {
-                            deleteMutation.mutate(item.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {renderActions(item)}
                   </TableCell>
                 </TableRow>
               ))
@@ -307,10 +336,11 @@ export function CRUDModule<T extends { id: string }>({
           </TableBody>
         </Table>
       </div>
+      </>}
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { if (!open) { setIsDialogOpen(false); resetForm(); } }}>
         <DialogContent
-          className={formClassName}
+          className={`${formClassName} max-h-[90dvh] overflow-y-auto`}
           onInteractOutside={(e) => e.preventDefault()}
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
@@ -348,7 +378,7 @@ export function CRUDModule<T extends { id: string }>({
                 )}
               </div>
             ))}
-            <div className="flex justify-end gap-2 pt-4 flex-shrink-0">
+            <div className="flex flex-wrap justify-end gap-2 pt-4 flex-shrink-0">
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
               </Button>

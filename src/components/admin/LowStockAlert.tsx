@@ -27,7 +27,7 @@ export function LowStockAlert() {
     <>
       {/* Alert Banner */}
       <div className={cn(
-        "rounded-lg p-4 flex items-center gap-4",
+        "rounded-lg p-4 flex flex-wrap items-start sm:items-center gap-3",
         criticalCount > 0 
           ? "bg-destructive/10 border border-destructive/20" 
           : "bg-warning/10 border border-warning/20"
@@ -42,7 +42,7 @@ export function LowStockAlert() {
           )} />
         </div>
         
-        <div className="flex-1">
+        <div className="min-w-[160px] flex-1">
           <p className="font-medium">
             {criticalCount > 0 
               ? `${criticalCount} produto${criticalCount > 1 ? 's' : ''} com estoque crítico!`
@@ -54,7 +54,7 @@ export function LowStockAlert() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex w-full justify-end items-center gap-2 sm:w-auto">
           <Button variant="outline" size="sm" onClick={() => setIsOpen(true)}>
             Ver produtos
             <ChevronRight className="ml-1 h-4 w-4" />
@@ -62,7 +62,8 @@ export function LowStockAlert() {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-8 w-8"
+            className="h-10 w-10"
+            aria-label="Ocultar aviso de estoque"
             onClick={() => setIsDismissed(true)}
           >
             <X className="h-4 w-4" />

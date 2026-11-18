@@ -391,7 +391,7 @@ export default function AdminProdutos() {
             return (
               <ScrollArea className="flex-1 pr-4">
                 <div className="space-y-6 pt-4 pb-8">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Nome do Produto *</Label>
                       <Input value={formData.name || ''} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
@@ -420,7 +420,7 @@ export default function AdminProdutos() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>Preço de Venda *</Label>
                       <Input type="number" step="0.01" value={formData.price || ''} onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })} required />

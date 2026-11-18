@@ -251,7 +251,7 @@ function FinanceiroContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">Financeiro</h1>
           <p className="text-muted-foreground">Visão completa das finanças da loja</p>
@@ -318,7 +318,7 @@ function FinanceiroContent() {
 
       {/* Tabs */}
       <Tabs defaultValue="transactions" className="space-y-4">
-        <TabsList>
+        <TabsList className="h-auto w-full flex-wrap justify-start gap-1">
           <TabsTrigger value="transactions">Lançamentos ({transactions.length})</TabsTrigger>
           <TabsTrigger value="receivables">A Receber ({receivables.length})</TabsTrigger>
           <TabsTrigger value="payables">A Pagar ({payables.length})</TabsTrigger>
@@ -407,7 +407,7 @@ function FinanceiroContent() {
                   <DialogHeader><DialogTitle>Nova Conta a Pagar</DialogTitle></DialogHeader>
                   <form onSubmit={e => { e.preventDefault(); createPayableMutation.mutate(newPayable); }} className="space-y-4">
                     <div><Label>Descrição *</Label><Input value={newPayable.description} onChange={e => setNewPayable(p => ({ ...p, description: e.target.value }))} required /></div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div><Label>Valor *</Label><Input type="number" step="0.01" min="0" value={newPayable.amount} onChange={e => setNewPayable(p => ({ ...p, amount: e.target.value }))} required /></div>
                       <div><Label>Vencimento *</Label><Input type="date" value={newPayable.due_date} onChange={e => setNewPayable(p => ({ ...p, due_date: e.target.value }))} required /></div>
                     </div>
@@ -463,7 +463,7 @@ function FinanceiroContent() {
             <div className="flex items-center justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
           ) : orderDetails ? (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1"><p className="text-sm text-muted-foreground">Pedido</p><p className="font-semibold">{orderDetails.order_number}</p></div>
                 <div className="space-y-1"><p className="text-sm text-muted-foreground">Cliente</p><p className="font-semibold">{orderDetails.customer_name || 'Cliente'}</p></div>
                 <div className="space-y-1"><p className="text-sm text-muted-foreground">Data</p><p className="font-semibold">{format(new Date(orderDetails.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p></div>

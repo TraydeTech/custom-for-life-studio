@@ -139,7 +139,7 @@ export default function AdminClientes() {
 
             {selectedCustomer && (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">E-mail</p>
                     <p className="font-medium flex items-center gap-2"><Mail className="h-3 w-3" />{selectedCustomer.email || '-'}</p>
