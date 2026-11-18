@@ -12,5 +12,5 @@ verify_jwt = false
 [functions.check-payment-status]
 verify_jwt = false
 
-[functions.iugu-webhook]
+[functions.mercadopago-webhook]
 verify_jwt = false
