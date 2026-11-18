@@ -6,11 +6,11 @@ import type { Database } from './types';
 // These are public client credentials (anon key, protected by RLS) and are already
 // shipped in the browser bundle, so it is safe to inline them here. Env vars still
 // win when provided.
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL ?? "https://ihkbxdayhdewqzezdrfl.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imloa2J4ZGF5aGRld3F6ZXpkcmZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMTMyMjksImV4cCI6MjA4NDY4OTIyOX0.c57QIqCeeLVxthb3gHy3XxkpDovNXGFztZN4xlGIOck";
+export const SUPABASE_URL =
+  import.meta.env.VITE_CUSTOM_SUPABASE_URL ?? "https://ngouftgmhgtfgqviljeg.supabase.co";
+export const SUPABASE_PUBLISHABLE_KEY =
+  import.meta.env.VITE_CUSTOM_SUPABASE_PUBLISHABLE_KEY ??
+  "sb_publishable_p7XO6SgHoCeBSGTi1kZIWA_Ck5x1c_P";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

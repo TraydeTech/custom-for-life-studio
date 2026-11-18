@@ -73,6 +73,7 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const externalSupportEnabled = Deno.env.get("EXTERNAL_SUPPORT_SYNC_ENABLED") === "true";
   let traydeUrl = Deno.env.get("TRAYDE_SUPABASE_URL") || "";
   if (traydeUrl && !traydeUrl.startsWith("http")) traydeUrl = `https://${traydeUrl}`;
   const traydeKey = Deno.env.get("TRAYDE_SERVICE_ROLE_KEY") || "";
@@ -233,7 +234,7 @@ Deno.serve(async (req) => {
         }
 
         // Sync OUT to Trayde Tech (don't loop internal calls back out)
-        if (!isInternal) {
+        if (externalSupportEnabled && !isInternal) {
           const TRAYDE_SUPPORT_API = "https://yblxrbmtbxtopctuuqjr.supabase.co/functions/v1/support-ticket";
           const syncToken = Deno.env.get("TRAYDE_SUPPORT_SYNC_TOKEN") || "";
           try {
@@ -315,7 +316,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      if (traydeUrl && traydeKey) {
+      if (externalSupportEnabled && traydeUrl && traydeKey) {
         try {
           const trayde = createClient(traydeUrl, traydeKey);
           const { error: traydeError } = await trayde.from("support_tickets").insert({
@@ -354,7 +355,7 @@ Deno.serve(async (req) => {
         .update(updateData).eq("numero_ticket", ticket_number);
       if (error) throw new Error(`Erro ao atualizar ticket: ${error.message}`);
 
-      if (!isInternal) {
+      if (externalSupportEnabled && !isInternal) {
         const TRAYDE_SUPPORT_API = "https://yblxrbmtbxtopctuuqjr.supabase.co/functions/v1/support-ticket";
         const syncToken = Deno.env.get("TRAYDE_SUPPORT_SYNC_TOKEN") || "";
         try {

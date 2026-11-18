@@ -1,3 +1,4 @@
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/integrations/supabase/client';
 import { useState, useRef } from 'react';
 import { MessageCircle, X, Send, Paperclip, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,8 +12,6 @@ interface SupportWidgetProps {
   userName?: string;
   userEmail?: string;
 }
-
-const SUPPORT_API_URL = `https://ihkbxdayhdewqzezdrfl.supabase.co/functions/v1/support-ticket`;
 
 export function SupportWidget({ clientSystem, userName, userEmail }: SupportWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,14 +52,12 @@ export function SupportWidget({ clientSystem, userName, userEmail }: SupportWidg
 
     setSending(true);
     try {
-      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const { supabase } = await import('@/integrations/supabase/client');
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
       if (!accessToken) throw new Error('Faça login para abrir um chamado.');
-      const res = await fetch(SUPPORT_API_URL, {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/support-ticket`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': anonKey, 'Authorization': `Bearer ${accessToken}` },
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': `Bearer ${accessToken}` },
         body: JSON.stringify({
           tipo,
           descricao,

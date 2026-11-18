@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, SUPABASE_URL } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -112,7 +112,7 @@ export default function AdminLogin() {
       // 3. Se NÃO é admin (confirmado), fazer logout
       if (!isAdminUser) {
         try {
-          localStorage.removeItem('sb-ihkbxdayhdewqzezdrfl-auth-token');
+          localStorage.removeItem(`sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`);
           sessionStorage.clear();
         } catch {
           // Ignorar erro de storage
