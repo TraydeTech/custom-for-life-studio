@@ -15,8 +15,6 @@ verify_jwt = false
 [functions.iugu-webhook]
 verify_jwt = false
 
-[functions.mercado-pago-test]
-verify_jwt = false
 
 [functions.mercado-pago]
 verify_jwt = false
