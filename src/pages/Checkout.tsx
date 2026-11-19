@@ -15,6 +15,7 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
+import { generatePixPayload } from '@/lib/pix';
 import {
   ChevronLeft, ChevronRight, MapPin, User, CreditCard, Loader2,
   QrCode, Lock, Copy, CheckCircle, Clock, Banknote, Truck, Store, MessageCircle
@@ -24,31 +25,23 @@ import { maskCPF, unmaskCPF, isValidCPF } from '@/lib/cpf';
 import { buildInstallmentOptions } from '@/lib/installments';
 import { PAYMENT_ENABLED, buildWhatsAppOrderLink } from '@/lib/store-config';
 
-// Mercado Pago JS SDK v2 (https://sdk.mercadopago.com/js/v2) — tokeniza o
-// cartão no navegador; os dados do cartão nunca chegam ao nosso servidor.
-interface MercadoPagoInstance {
-  createCardToken(data: {
-    cardNumber: string;
-    cardholderName: string;
-    cardExpirationMonth: string;
-    cardExpirationYear: string;
-    securityCode: string;
-    identificationType: string;
-    identificationNumber: string;
-  }): Promise<{ id: string }>;
-  getPaymentMethods(data: { bin: string }): Promise<{
-    results: { id: string; payment_type_id: string; issuer?: { id: number | string } }[];
-  }>;
+interface IuguTokenResponse {
+  id: string;
+  errors?: unknown;
+}
+
+interface IuguSDK {
+  createPaymentToken(
+    data: Record<string, string>,
+    callback: (response: IuguTokenResponse) => void,
+  ): void;
 }
 
 declare global {
   interface Window {
-    MercadoPago?: new (publicKey: string, options?: { locale?: string }) => MercadoPagoInstance;
+    Iugu?: IuguSDK;
   }
 }
-
-const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY as string | undefined;
-const PIX_POLL_MS = 5000;
 
 const WHATSAPP_NUMBER = '5547984492949';
 // Cidade com frete grátis (comparação sem acento/maiúsculas).
@@ -114,13 +107,7 @@ export default function Checkout() {
   // Payment state
   const [paymentTab, setPaymentTab] = useState('pix');
   const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
-  const [pixData, setPixData] = useState<{
-    qrCodeText: string;
-    qrCodeBase64?: string;
-    orderNumber: string;
-    paymentId: string;
-  } | null>(null);
-  const [isCheckingPix, setIsCheckingPix] = useState(false);
+  const [pixData, setPixData] = useState<{ qrCodeText: string; orderNumber: string } | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
 
   // Card state (disabled for now)
@@ -133,11 +120,11 @@ export default function Checkout() {
   const checkIntervalRef = useRef<number | null>(null);
   const timerRef = useRef<number | null>(null);
 
-  // Carrega o SDK do Mercado Pago via DOM (script tag em JSX não executa)
+  // Carrega Iugu.js corretamente via DOM (script tag em JSX não executa)
   useEffect(() => {
-    if (window.MercadoPago) return;
+    if (window.Iugu) return;
     const script = document.createElement('script');
-    script.src = 'https://sdk.mercadopago.com/js/v2';
+    script.src = 'https://js.iugu.com/v2';
     script.async = true;
     document.head.appendChild(script);
     return () => {
@@ -199,16 +186,7 @@ export default function Checkout() {
     };
   }, []);
 
-  // Polling do PIX: consulta o status até o pagamento ser aprovado.
-  useEffect(() => {
-    if (!pixData?.paymentId) return;
-    const id = window.setInterval(() => {
-      checkPixStatus(false);
-    }, PIX_POLL_MS);
-    checkIntervalRef.current = id;
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pixData?.paymentId]);
+  // PIX timer removed as we are using static PIX for now
 
   // We allow visitors to proceed, but they'll see the auth modal if they aren't logged in when finishing
   const isGuest = !user;
@@ -422,31 +400,26 @@ export default function Checkout() {
       // Fix the total before clearing the cart
       setFixedTotal(liveCartTotal);
       const order = orderId ? { id: orderId } : await createOrder();
-      const orderNumber = (order as { order_number?: string }).order_number || '';
+      const orderNumber = (order as { order_number?: string }).order_number;
 
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          orderId: order.id,
-          paymentMethod: 'pix',
-          customerName: customer.name,
-          customerEmail: customer.email,
-          customerCpf: unmaskCPF(customer.cpf),
-        },
-      });
-      if (error) throw error;
-      if (data?.error || !data?.pixQrCodeText) throw new Error(data?.message || data?.error || 'Erro ao gerar PIX');
+      const pixKey = import.meta.env.VITE_PIX_KEY as string;
+      const payload = generatePixPayload(
+        pixKey,
+        'Custom For Life',
+        'TIMBO',
+        cartTotal,
+        orderNumber
+      );
 
       setPixData({
-        qrCodeText: data.pixQrCodeText,
-        qrCodeBase64: data.pixQrCodeBase64,
-        orderNumber,
-        paymentId: String(data.paymentId),
+        qrCodeText: payload,
+        orderNumber: orderNumber,
       });
 
       // Clear cart after generating PIX to prevent double orders
       await clearCart.mutateAsync();
-
-      toast.success('PIX gerado! Pague pelo app do seu banco — a confirmação é automática.');
+      
+      toast.success('Pedido criado! Realize o pagamento via PIX para processarmos seu pedido.');
     } catch (error) {
       console.error('PIX error:', error);
       toast.error((error instanceof Error && error.message) || 'Erro ao gerar PIX');
@@ -455,30 +428,27 @@ export default function Checkout() {
     }
   };
 
-  const checkPixStatus = async (manual: boolean) => {
-    if (!pixData) return;
-    if (manual) setIsCheckingPix(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('check-payment-status', {
-        body: { paymentId: pixData.paymentId },
-      });
-      if (error) throw error;
-      if (data?.paid) {
-        if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-        toast.success('Pagamento confirmado!');
+  const handleFinishOrder = () => {
+    if (pixData) {
+      toast.info(
+        "Atenção: Para liberar seu pedido, você deve enviar o comprovante de pagamento via WhatsApp.",
+        {
+          duration: 6000,
+          action: {
+            label: "Enviar Agora",
+            onClick: () => {
+              const message = `Olá! Acabei de realizar o pagamento do pedido ${pixData.orderNumber}. Segue o comprovante em anexo.`;
+              window.open(`https://wa.me/5547984492949?text=${encodeURIComponent(message)}`, '_blank');
+              navigate(`/pedido-confirmado?pedido=${pixData.orderNumber}`);
+            }
+          }
+        }
+      );
+      
+      // Também navega após um pequeno delay para garantir que o toast foi visto se o usuário não clicar na ação
+      setTimeout(() => {
         navigate(`/pedido-confirmado?pedido=${pixData.orderNumber}`);
-      } else if (data?.status === 'cancelled' || data?.status === 'rejected') {
-        if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-        toast.error('PIX expirado. Gere um novo código.');
-        setPixData(null);
-      } else if (manual) {
-        toast.info('Ainda não recebemos o pagamento. Aguarde alguns segundos e tente de novo.');
-      }
-    } catch (error) {
-      console.error('PIX status error:', error);
-      if (manual) toast.error('Não foi possível verificar o pagamento agora.');
-    } finally {
-      if (manual) setIsCheckingPix(false);
+      }, 4000);
     }
   };
 
@@ -497,41 +467,33 @@ export default function Checkout() {
       }
       const order = orderId ? { id: orderId } : await createOrder();
 
-      // Tokeniza via Mercado Pago JS SDK
-      if (!window.MercadoPago || !MP_PUBLIC_KEY) {
+      // Tokenize via Iugu.js (loaded via script tag)
+      const Iugu = window.Iugu;
+      if (!Iugu) {
         toast.error('Sistema de pagamento não carregado. Recarregue a página.');
         return;
       }
-      const mp = new window.MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
-
-      const number = cardNumber.replace(/\s/g, '');
-      const { results } = await mp.getPaymentMethods({ bin: number.slice(0, 8) });
-      const method = results.find(r => r.payment_type_id === type) || results[0];
-      if (!method) throw new Error('Bandeira do cartão não reconhecida');
-      if (method.payment_type_id !== type) {
-        throw new Error(type === 'debit_card'
-          ? 'Este cartão não aceita débito. Use a opção Crédito.'
-          : 'Este cartão não aceita crédito. Use a opção Débito.');
-      }
 
       const [expMonth, expYear] = cardExpiry.split('/');
-      const tokenData = await mp.createCardToken({
-        cardNumber: number,
-        cardholderName: cardName,
-        cardExpirationMonth: expMonth,
-        cardExpirationYear: `20${expYear}`,
-        securityCode: cardCvv,
-        identificationType: 'CPF',
-        identificationNumber: unmaskCPF(customer.cpf),
-      }).catch(() => { throw new Error('Dados do cartão inválidos'); });
+      const tokenData = await new Promise<IuguTokenResponse>((resolve, reject) => {
+        Iugu.createPaymentToken({
+          number: cardNumber.replace(/\s/g, ''),
+          verification_value: cardCvv,
+          first_name: cardName.split(' ')[0],
+          last_name: cardName.split(' ').slice(1).join(' ') || '',
+          month: expMonth,
+          year: `20${expYear}`,
+        }, (response) => {
+          if (response.errors) reject(new Error('Dados do cartão inválidos'));
+          else resolve(response);
+        });
+      });
 
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
           orderId: order.id,
           paymentMethod: type,
           token: tokenData.id,
-          paymentMethodId: method.id,
-          issuerId: method.issuer?.id,
           installments: type === 'credit_card' ? parseInt(installments) : 1,
           customerName: customer.name,
           customerEmail: customer.email,
@@ -543,8 +505,7 @@ export default function Checkout() {
       if (data.error) throw new Error(data.message || data.error);
 
       await clearCart.mutateAsync();
-      if (data.status === 'pending') toast.info(data.message || 'Pagamento em análise.');
-      else toast.success('Pagamento aprovado!');
+      toast.success('Pagamento aprovado!');
       navigate(`/pedido-confirmado?pedido=${(order as { order_number?: string }).order_number || ''}`);
     } catch (error) {
       console.error('Card error:', error);
@@ -837,9 +798,7 @@ export default function Checkout() {
                     ) : (
                       <div className="text-center space-y-4">
                         <div className="bg-white p-4 rounded-lg inline-block">
-                          {pixData.qrCodeBase64
-                            ? <img src={`data:image/png;base64,${pixData.qrCodeBase64}`} alt="QR Code PIX" width={192} height={192} />
-                            : <QRCodeSVG value={pixData.qrCodeText} size={192} />}
+                          <QRCodeSVG value={pixData.qrCodeText} size={192} />
                         </div>
                         <div className="bg-muted p-3 rounded-lg">
                           <p className="text-xs text-muted-foreground mb-2">Código PIX copia e cola:</p>
@@ -851,20 +810,17 @@ export default function Checkout() {
                         <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 flex gap-3 text-left">
                           <CheckCircle className="h-5 w-5 text-primary shrink-0" />
                           <div className="space-y-1">
-                            <p className="text-sm font-bold text-primary flex items-center gap-2">
-                              <Loader2 className="h-3 w-3 animate-spin" />Aguardando pagamento
-                            </p>
+                            <p className="text-sm font-bold text-primary">PIX Gerado!</p>
                             <p className="text-xs text-muted-foreground leading-relaxed">
-                              Pague pelo app do seu banco. A confirmação é automática e esta página atualiza sozinha.
+                              Após realizar o pagamento, clique no botão abaixo para concluir seu pedido. Entraremos em contato para confirmar a produção.
                             </p>
                           </div>
                         </div>
                         <Button 
                           className="w-full h-12 text-lg font-bold bg-green-600 hover:bg-green-700" 
-                          onClick={() => checkPixStatus(true)}
-                          disabled={isCheckingPix}
+                          onClick={handleFinishOrder}
                         >
-                          {isCheckingPix ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Já realizei o pagamento'}
+                          Já realizei o pagamento
                         </Button>
                       </div>
                     )}
