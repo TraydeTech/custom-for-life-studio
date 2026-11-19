@@ -23,7 +23,7 @@ import {
 import { toast } from 'sonner';
 import { maskCPF, unmaskCPF, isValidCPF } from '@/lib/cpf';
 import { buildInstallmentOptions } from '@/lib/installments';
-import { PAYMENT_ENABLED, buildWhatsAppOrderLink } from '@/lib/store-config';
+import { canUseMercadoPago, PAYMENT_ENABLED, buildWhatsAppOrderLink } from '@/lib/store-config';
 
 interface IuguTokenResponse {
   id: string;
@@ -79,7 +79,8 @@ interface AddressData {
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const mercadoPagoEnabled = canUseMercadoPago(isAdmin);
   const { cartItems, cartTotal: liveCartTotal, clearCart } = useCart();
   const [fixedTotal, setFixedTotal] = useState<number | null>(null);
   const cartTotal = fixedTotal ?? liveCartTotal;
@@ -238,6 +239,33 @@ export default function Checkout() {
     isValidCPF(customer.cpf);
   const isPickup = deliveryMethod === 'pickup';
   const isBlumenau = normalizeCity(address.city) === FREE_SHIPPING_CITY;
+  const usesMercadoPago = mercadoPagoEnabled && (isPickup || isBlumenau);
+  const mercadoPagoAttempt = useRef<string>();
+  const startMercadoPago = async () => {
+    if (!user || !canProceedStep1 || !canProceedStep2 || !usesMercadoPago) return;
+    setIsSubmitting(true);
+    try {
+      const key = `mercado-pago-checkout:${user.id}:${deliveryMethod}:${address.zip_code}:${cartItems.map(item => `${item.id}-${item.quantity}`).sort().join(',')}`;
+      mercadoPagoAttempt.current = sessionStorage.getItem(key) || crypto.randomUUID();
+      sessionStorage.setItem(key, mercadoPagoAttempt.current);
+      const { data, error } = await supabase.functions.invoke('mercado-pago', {
+        body: {
+          attempt: mercadoPagoAttempt.current,
+          delivery: { ...address, name: customer.name, phone: customer.phone, delivery_method: deliveryMethod },
+        },
+      });
+      if (error) {
+        const body = error.context instanceof Response ? await error.context.json().catch(() => null) : null;
+        throw new Error(body?.error || 'Não foi possível abrir o Mercado Pago.');
+      }
+      window.location.assign(data.checkoutUrl);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Pagamento indisponível.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const canProceedStep2 = isPickup
     ? true
     : Boolean(address.zip_code.trim() && address.street.trim() && address.number.trim() && address.neighborhood.trim() && address.city.trim() && address.state.trim());
@@ -533,7 +561,7 @@ export default function Checkout() {
       <main className="flex-1 container py-8 max-w-3xl">
         <h1 className="text-3xl font-bold mb-2">Finalizar Compra</h1>
 
-        {!PAYMENT_ENABLED && (
+        {!PAYMENT_ENABLED && !mercadoPagoEnabled && (
           <div className="mb-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 flex items-start gap-3">
             <MessageCircle className="h-5 w-5 text-yellow-600 mt-0.5 shrink-0" />
             <div className="text-sm">
@@ -765,11 +793,20 @@ export default function Checkout() {
                 )}
               </CardHeader>
               <CardContent>
-                {!PAYMENT_ENABLED ? (
+                {usesMercadoPago ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      {isPickup ? 'Retirada na loja sem custo.' : 'Entrega grátis em Blumenau.'}
+                    </p>
+                    <Button className="w-full" size="lg" onClick={startMercadoPago} disabled={isSubmitting}>
+                      {isSubmitting ? 'Abrindo pagamento…' : 'Pagar com Mercado Pago'}
+                    </Button>
+                  </div>
+                ) : !PAYMENT_ENABLED || mercadoPagoEnabled ? (
                   <div className="text-center space-y-4 py-4">
                     <MessageCircle className="h-14 w-14 mx-auto text-primary" />
                     <p className="text-muted-foreground text-sm">
-                      Para pagar e concluir seu pedido, fale com a gente no WhatsApp. Enviamos as formas de pagamento por lá.
+                      {mercadoPagoEnabled ? 'Entregas fora de Blumenau são combinadas pelo WhatsApp.' : 'Para pagar e concluir seu pedido, fale com a gente no WhatsApp.'}
                     </p>
                     <Button size="lg" className="gap-2" style={{ backgroundColor: '#25D366' }} asChild>
                       <a href={buildWhatsAppOrderLink(cartItems, cartTotal)} target="_blank" rel="noopener noreferrer">

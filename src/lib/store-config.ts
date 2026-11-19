@@ -10,6 +10,10 @@
 export const WHATSAPP_NUMBER = '5547984492949';
 
 export const PAYMENT_ENABLED = false;
+export function canUseMercadoPago(isAdmin: boolean) {
+  const mode = import.meta.env.VITE_MERCADO_PAGO_ENABLED;
+  return mode === 'true' || (mode === 'admin' && isAdmin);
+}
 
 /** Endereço físico da loja. */
 export const STORE_ADDRESS = 'Rua Leopoldo dos Santos, 591 - Blumenau/SC';
