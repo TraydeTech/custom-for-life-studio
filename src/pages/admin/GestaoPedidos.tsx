@@ -94,8 +94,9 @@ function GestaoPedidosContent() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, status, payment_status, payment_method, total, created_at, tracking_code, notes, shipping_address, user_id')
+        .select('id, order_number, status, payment_status, payment_method, total, created_at, tracking_code, notes, shipping_address, user_id, pdv_status')
         .eq('source', 'site')
+        .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

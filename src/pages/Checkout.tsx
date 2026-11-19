@@ -120,6 +120,8 @@ export default function Checkout() {
 
   const checkIntervalRef = useRef<number | null>(null);
   const timerRef = useRef<number | null>(null);
+  // Precisa ficar antes de qualquer return condicional (regra dos hooks do React).
+  const mercadoPagoAttempt = useRef<string>();
 
   // Carrega Iugu.js corretamente via DOM (script tag em JSX não executa)
   useEffect(() => {
@@ -240,7 +242,6 @@ export default function Checkout() {
   const isPickup = deliveryMethod === 'pickup';
   const isBlumenau = normalizeCity(address.city) === FREE_SHIPPING_CITY;
   const usesMercadoPago = mercadoPagoEnabled && (isPickup || isBlumenau);
-  const mercadoPagoAttempt = useRef<string>();
   const startMercadoPago = async () => {
     if (!user || !canProceedStep1 || !canProceedStep2 || !usesMercadoPago) return;
     setIsSubmitting(true);
@@ -255,6 +256,8 @@ export default function Checkout() {
         },
       });
       if (error) {
+        // Próxima tentativa usa um pedido novo (o anterior pode ter sido liberado ou recusado).
+        sessionStorage.removeItem(key);
         const body = error.context instanceof Response ? await error.context.json().catch(() => null) : null;
         throw new Error(body?.error || 'Não foi possível abrir o Mercado Pago.');
       }
