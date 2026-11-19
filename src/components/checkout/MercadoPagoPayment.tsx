@@ -46,6 +46,23 @@ interface Props {
   onFinished: (orderId: string, orderNumber: string) => void;
 }
 
+// Script antifraude do Mercado Pago: identifica o aparelho (MP_DEVICE_SESSION_ID).
+// Enviar esse ID na cobrança melhora a aprovação de cartões.
+const SECURITY_URL = 'https://www.mercadopago.com/v2/security.js';
+function loadSecurityScript() {
+  if (document.querySelector(`script[src="${SECURITY_URL}"]`)) return;
+  const script = document.createElement('script');
+  script.src = SECURITY_URL;
+  script.setAttribute('view', 'checkout');
+  script.async = true;
+  document.head.appendChild(script);
+}
+
+export function getDeviceId(): string | undefined {
+  const id = (window as unknown as { MP_DEVICE_SESSION_ID?: unknown }).MP_DEVICE_SESSION_ID;
+  return typeof id === 'string' && id ? id : undefined;
+}
+
 function loadSdk(): Promise<void> {
   if (window.MercadoPago) return Promise.resolve();
   return new Promise((resolve, reject) => {
@@ -81,6 +98,7 @@ export function MercadoPagoPayment({ amount, payerEmail, onPay, onFinished }: Pr
     }
     let controller: BrickController | undefined;
     let cancelled = false;
+    loadSecurityScript();
 
     loadSdk()
       .then(async () => {
