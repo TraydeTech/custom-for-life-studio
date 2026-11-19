@@ -114,13 +114,17 @@ Deno.serve(async (req) => {
     if (query.get("webhook") === "1") {
       const raw = query.get("data.id") || "";
       const id = raw.toUpperCase();
-      // Assinatura primeiro: o 401 passa a significar só "assinatura inválida".
-      if (!anyOrder.test(id) || !await validateSignature(req, raw, secret)) {
-        console.error("Mercado Pago webhook: invalid signature or id", raw);
+      // Assinatura primeiro, com qualquer ID: o 401 passa a significar só "assinatura inválida".
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(raw) || !await validateSignature(req, raw, secret)) {
+        console.error("Mercado Pago webhook: invalid signature", raw);
         return reply({ error: "Notificação inválida." }, 401);
       }
-      // Orders de teste (ORDTST...) não existem com o token de produção.
-      if (!realOrder.test(id)) return reply({ received: true, ignored: "test" });
+      // Assinatura OK. IDs que não são orders de produção (simulador "123456",
+      // orders de teste ORDTST...) são ignorados com 200.
+      if (!anyOrder.test(id) || !realOrder.test(id)) {
+        console.log("Mercado Pago webhook: signature ok, ignored id", raw);
+        return reply({ received: true, ignored: "not_a_production_order" });
+      }
 
       const response = await fetch(`${api}/${id}`, { headers: providerHeaders, signal: AbortSignal.timeout(10000) });
       // 404: ID inexistente (ex.: simulador do painel). Responde 200 para não gerar reenvios.
