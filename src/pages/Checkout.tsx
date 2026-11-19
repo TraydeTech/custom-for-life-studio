@@ -685,6 +685,7 @@ export default function Checkout() {
                     <p className="text-muted-foreground">Combinamos o local e horário de retirada pelo WhatsApp após o pedido.</p>
                   )}
                   <p className="text-primary font-medium">Sem custo de frete.</p>
+                  {!mercadoPagoEnabled && (
                   <a
                     href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Olá! Fiz um pedido no site para retirar na loja e gostaria de combinar a retirada.')}`}
                     target="_blank"
@@ -693,6 +694,7 @@ export default function Checkout() {
                   >
                     Combinar retirada pelo WhatsApp
                   </a>
+                  )}
                 </div>
               ) : (
               <>
