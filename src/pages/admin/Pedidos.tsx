@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { OrderReceipt } from '@/components/admin/OrderReceipt';
+import { paymentMethodLabel, paymentStatusLabel } from '@/lib/payment-labels';
 import { CRUDModule } from '@/components/admin/CRUDModule';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ProtectedAdminRoute } from '@/components/admin/ProtectedAdminRoute';
 import { Tables, Constants } from '@/integrations/supabase/types';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { ShoppingBag, Eye, Printer, Globe, Store, Package, Download, FileImage } from 'lucide-react';
+import { Eye, Printer, Globe, Store, Package, Download, FileImage, CreditCard } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -69,6 +72,27 @@ export default function AdminPedidos() {
   };
   const queryClient = useQueryClient();
 
+  // paid_at existe no banco, mas ainda não está nos tipos gerados.
+  const paidAt = (selectedOrder as { paid_at?: string | null } | null)?.paid_at ?? null;
+
+  // Impressão do recibo: busca os itens, renderiza o recibo fora da tela e abre a impressão.
+  const [printing, setPrinting] = useState<{ order: Order; items: OrderItem[] } | null>(null);
+  const handlePrint = async (order: Order) => {
+    const { data, error } = await supabase.from('order_items').select('*').eq('order_id', order.id);
+    if (error) {
+      toast.error('Não foi possível carregar os itens do pedido.');
+      return;
+    }
+    setPrinting({ order, items: data || [] });
+  };
+  useEffect(() => {
+    if (!printing) return;
+    const done = () => setPrinting(null);
+    window.addEventListener('afterprint', done, { once: true });
+    const t = window.setTimeout(() => window.print(), 50);
+    return () => { window.clearTimeout(t); window.removeEventListener('afterprint', done); };
+  }, [printing]);
+
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase.from('orders').update({ status: status as Order['status'] }).eq('id', id);
@@ -100,6 +124,9 @@ export default function AdminPedidos() {
           searchPlaceholder="Buscar por número do pedido..."
           searchFields={['order_number']}
           hideAddButton
+          hideEditButton
+          canDelete={(item) => item.status === 'cancelled'}
+          deleteBlockedMessage="Só pedidos cancelados podem ser excluídos. Cancele o pedido antes."
           initialData={{}}
           columns={[
             { header: 'Número', key: 'order_number', render: (val) => <span className="font-mono font-bold">{val}</span> },
@@ -146,10 +173,10 @@ export default function AdminPedidos() {
           ]}
           customActions={(item) => (
             <div className="flex gap-1">
-              <Button variant="ghost" size="icon" onClick={() => { setSelectedOrder(item); setIsDetailsOpen(true); }}>
+              <Button variant="ghost" size="icon" title="Ver detalhes" aria-label="Ver detalhes" onClick={() => { setSelectedOrder(item); setIsDetailsOpen(true); }}>
                 <Eye className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" title="Imprimir Recibo">
+              <Button variant="ghost" size="icon" title="Imprimir recibo" aria-label="Imprimir recibo" onClick={() => handlePrint(item)}>
                 <Printer className="h-4 w-4" />
               </Button>
             </div>
@@ -171,6 +198,34 @@ export default function AdminPedidos() {
                   <div>
                     <p className="text-muted-foreground">Total</p>
                     <p className="font-bold text-primary text-lg">{formatCurrency(Number(selectedOrder.total))}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-semibold flex items-center gap-2"><CreditCard className="h-4 w-4" /> Pagamento</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm p-4 border rounded-lg">
+                    <div>
+                      <p className="text-muted-foreground">Forma de pagamento</p>
+                      <p className="font-bold">
+                        {paymentMethodLabel(selectedOrder.payment_method, (selectedOrder as { installments?: number | null }).installments)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Situação</p>
+                      <p className="font-bold">{paymentStatusLabel(selectedOrder.payment_status)}</p>
+                    </div>
+                    {paidAt && (
+                      <div>
+                        <p className="text-muted-foreground">Pago em</p>
+                        <p className="font-bold">{format(new Date(paidAt), 'dd/MM/yyyy HH:mm')}</p>
+                      </div>
+                    )}
+                    {Number(selectedOrder.shipping_cost) > 0 && (
+                      <div>
+                        <p className="text-muted-foreground">Frete</p>
+                        <p className="font-bold">{formatCurrency(Number(selectedOrder.shipping_cost))}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -315,6 +370,12 @@ export default function AdminPedidos() {
             </div>
           </DialogContent>
         </Dialog>
+        {printing && createPortal(
+          <div id="print-root" className="fixed -left-[10000px] top-0 print:static">
+            <OrderReceipt order={printing.order} items={printing.items} />
+          </div>,
+          document.body,
+        )}
       </AdminLayout>
     </ProtectedAdminRoute>
   );

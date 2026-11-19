@@ -53,6 +53,12 @@ interface CRUDModuleProps<T> {
   customForm?: (formData: any, setFormData: (data: any) => void) => React.ReactNode;
   filterFn?: (item: T) => boolean;
   filterControls?: React.ReactNode;
+  /** Esconde o botão de editar (lápis). */
+  hideEditButton?: boolean;
+  /** Define quais registros podem ser excluídos (padrão: todos). */
+  canDelete?: (item: T) => boolean;
+  /** Mensagem quando a exclusão não é permitida para o registro. */
+  deleteBlockedMessage?: string;
 }
 
 export function CRUDModule<T extends { id: string }>({
@@ -72,6 +78,9 @@ export function CRUDModule<T extends { id: string }>({
   customForm,
   filterFn,
   filterControls,
+  hideEditButton = false,
+  canDelete,
+  deleteBlockedMessage = 'Este registro não pode ser excluído.',
 }: CRUDModuleProps<T>) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -164,8 +173,11 @@ export function CRUDModule<T extends { id: string }>({
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from(tableName as any).delete().eq('id', id);
+      // .select() devolve as linhas apagadas: com RLS, um DELETE sem permissão
+      // não dá erro, só apaga 0 linhas — nesse caso avisamos em vez de "sucesso".
+      const { data, error } = await supabase.from(tableName as any).delete().eq('id', id).select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error('sem permissão ou registro não encontrado');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKey] });
@@ -225,15 +237,21 @@ export function CRUDModule<T extends { id: string }>({
   const renderActions = (item: T) => (
     <div className="flex flex-wrap items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
       {customActions?.(item)}
-      <Button variant="ghost" size="icon" aria-label={`Editar ${title}`} onClick={() => handleEdit(item)}>
-        <Pencil className="h-4 w-4" />
-      </Button>
+      {!hideEditButton && (
+        <Button variant="ghost" size="icon" aria-label={`Editar ${title}`} onClick={() => handleEdit(item)}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+      )}
       <Button
         variant="ghost"
         size="icon"
         className="text-destructive hover:text-destructive"
         aria-label={`Excluir ${title}`}
         onClick={() => {
+          if (canDelete && !canDelete(item)) {
+            toast.error(deleteBlockedMessage);
+            return;
+          }
           if (confirm('Tem certeza que deseja excluir este registro?')) {
             deleteMutation.mutate(item.id);
           }
