@@ -10,6 +10,9 @@
 export const WHATSAPP_NUMBER = '5547984492949';
 
 export const PAYMENT_ENABLED = false;
+
+/** Frete fixo para entregas fora de Blumenau (o servidor usa o mesmo valor). */
+export const FIXED_SHIPPING = 25;
 export function canUseMercadoPago(isAdmin: boolean) {
   const mode = import.meta.env.VITE_MERCADO_PAGO_ENABLED;
   return mode === 'true' || (mode === 'admin' && isAdmin);
