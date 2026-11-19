@@ -106,7 +106,7 @@ export function MercadoPagoPayment({ amount, payerEmail, onPay, onFinished }: Pr
         controller = await mp.bricks().create('payment', 'mp-payment-brick', {
           initialization: { amount: Number(amount.toFixed(2)), payer: { email: payerEmail } },
           customization: {
-            paymentMethods: { creditCard: 'all', bankTransfer: ['pix'], maxInstallments: 12 },
+            paymentMethods: { creditCard: 'all', bankTransfer: ['pix'], maxInstallments: 10 },
             visual: { style: { theme: 'dark' } },
           },
           callbacks: {

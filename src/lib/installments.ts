@@ -2,18 +2,17 @@
  * Configuração única de parcelamento — fonte da verdade para
  * a página do produto, carrinho e checkout.
  *
- * Mantenha em sintonia com a configuração real do gateway Iugu.
- * Confirmado: a loja absorve juros em até 3x. Acima disso o cliente paga
- * juros — a taxa é a da operadora do cartão.
+ * Mantenha em sintonia com a configuração de parcelamento do Mercado Pago.
+ * Confirmado: a loja absorve os juros em até 10x (configurado no Mercado Pago).
  */
 
 import { formatCurrency } from '@/lib/utils';
 
 export const INSTALLMENT_CONFIG = {
   /** Número máximo de parcelas oferecido no checkout. */
-  maxInstallments: 12,
+  maxInstallments: 10,
   /** Até quantas parcelas são sem juros (loja absorve). */
-  interestFreeUpTo: 3,
+  interestFreeUpTo: 10,
   /** Valor mínimo aceitável por parcela (em reais). */
   minInstallmentValue: 5,
   /** Preço mínimo do produto para mostrar a opção de parcelamento.
