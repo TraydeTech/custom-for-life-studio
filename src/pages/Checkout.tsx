@@ -23,7 +23,7 @@ import {
 import { toast } from 'sonner';
 import { maskCPF, unmaskCPF, isValidCPF } from '@/lib/cpf';
 import { buildInstallmentOptions } from '@/lib/installments';
-import { canUseMercadoPago, PAYMENT_ENABLED, buildWhatsAppOrderLink } from '@/lib/store-config';
+import { canUseMercadoPago, PAYMENT_ENABLED, FIXED_SHIPPING, buildWhatsAppOrderLink } from '@/lib/store-config';
 import { MercadoPagoPayment, type PayResult } from '@/components/checkout/MercadoPagoPayment';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -244,7 +244,13 @@ export default function Checkout() {
     isValidCPF(customer.cpf);
   const isPickup = deliveryMethod === 'pickup';
   const isBlumenau = normalizeCity(address.city) === FREE_SHIPPING_CITY;
-  const usesMercadoPago = mercadoPagoEnabled && (isPickup || isBlumenau);
+  const usesMercadoPago = mercadoPagoEnabled;
+  // Frete exibido; o valor cobrado é recalculado no servidor pelo CEP.
+  const shippingCost = mercadoPagoEnabled && !isPickup && !isBlumenau ? FIXED_SHIPPING : 0;
+  const orderTotal = cartTotal + shippingCost;
+  const shippingLabel = isPickup || isBlumenau
+    ? 'Grátis'
+    : mercadoPagoEnabled ? formatCurrency(FIXED_SHIPPING) : 'A combinar';
   // Pagamento direto no site (cartão de crédito ou Pix) pelo Mercado Pago.
   const payWithMercadoPago = async (payment: { selectedPaymentMethod: string; formData: unknown }): Promise<PayResult> => {
     if (!user) {
@@ -729,7 +735,9 @@ export default function Checkout() {
                 <div className={`rounded-lg p-3 text-sm font-medium ${isBlumenau ? 'bg-green-500/10 text-green-600 border border-green-500/20' : 'bg-muted text-muted-foreground border'}`}>
                   {isBlumenau
                     ? '🎉 Frete grátis para Blumenau!'
-                    : 'Frete a combinar pelo WhatsApp — sem cobrança online.'}
+                    : mercadoPagoEnabled
+                      ? `Frete fixo: ${formatCurrency(FIXED_SHIPPING)}`
+                      : 'Frete a combinar pelo WhatsApp — sem cobrança online.'}
                 </div>
               )}
               </>
@@ -761,9 +769,17 @@ export default function Checkout() {
                   </div>
                 ))}
                 <Separator />
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span>{formatCurrency(cartTotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Frete</span>
+                  <span className={shippingCost === 0 && shippingLabel === 'Grátis' ? 'text-green-600 font-medium' : ''}>{shippingLabel}</span>
+                </div>
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-primary">{formatCurrency(cartTotal)}</span>
+                  <span className="text-primary">{formatCurrency(orderTotal)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -783,7 +799,7 @@ export default function Checkout() {
                     <p>{address.street}, {address.number}{address.complement ? ` - ${address.complement}` : ''}</p>
                     <p>{address.neighborhood}, {address.city}/{address.state} - CEP: {address.zip_code}</p>
                     <p className={isBlumenau ? 'text-green-600 font-medium' : 'text-muted-foreground'}>
-                      {isBlumenau ? 'Frete grátis (Blumenau)' : 'Frete a combinar pelo WhatsApp'}
+                      {isBlumenau ? 'Frete grátis (Blumenau)' : mercadoPagoEnabled ? `Frete: ${formatCurrency(FIXED_SHIPPING)}` : 'Frete a combinar pelo WhatsApp'}
                     </p>
                   </>
                 )}
@@ -807,10 +823,10 @@ export default function Checkout() {
                 {usesMercadoPago ? (
                   <div className="space-y-4">
                     <p className="text-sm text-muted-foreground">
-                      {isPickup ? 'Retirada na loja sem custo.' : 'Entrega grátis em Blumenau.'} Pague com cartão de crédito ou Pix.
+                      Pague com cartão de crédito ou Pix.
                     </p>
                     <MercadoPagoPayment
-                      amount={cartTotal}
+                      amount={orderTotal}
                       payerEmail={customer.email}
                       onPay={payWithMercadoPago}
                       onFinished={finishMercadoPago}

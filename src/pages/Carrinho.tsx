@@ -12,7 +12,7 @@ import { formatCurrency } from '@/lib/utils';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { canUseMercadoPago, PAYMENT_ENABLED, buildWhatsAppOrderLink } from '@/lib/store-config';
+import { canUseMercadoPago, PAYMENT_ENABLED, FIXED_SHIPPING, buildWhatsAppOrderLink } from '@/lib/store-config';
 
 export default function Carrinho() {
   const { user, isAdmin } = useAuth();
@@ -216,9 +216,13 @@ export default function Carrinho() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Frete</span>
-                  <span>A combinar</span>
+                  <span>{mercadoPagoEnabled ? 'Calculado no checkout' : 'A combinar'}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Entrega grátis para Blumenau. Para outras cidades, confirme o frete antes de fechar o pedido.</p>
+                <p className="text-xs text-muted-foreground">
+                  {mercadoPagoEnabled
+                    ? `Grátis em Blumenau e na retirada. Outras cidades: ${formatCurrency(FIXED_SHIPPING)}.`
+                    : 'Entrega grátis para Blumenau. Para outras cidades, confirme o frete antes de fechar o pedido.'}
+                </p>
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total dos produtos</span>

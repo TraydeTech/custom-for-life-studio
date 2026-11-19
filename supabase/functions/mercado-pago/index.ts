@@ -7,6 +7,8 @@ const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const anyOrder = /^ORD[A-Z0-9]+$/;
 const realOrder = /^ORD(?!TST)[A-Z0-9]+$/;
 const paymentsApi = "https://api.mercadopago.com/v1/payments";
+// Frete fixo para entregas fora de Blumenau (manter igual a FIXED_SHIPPING em src/lib/store-config.ts).
+const FIXED_SHIPPING = 25;
 const paymentId = /^\d{1,20}$/;
 
 // ── Checkout Transparente (/v1/payments) ──────────────────────────────────
@@ -292,10 +294,15 @@ Deno.serve(async (req) => {
       const response = await fetch(`https://viacep.com.br/ws/${zip}/json/`, { signal: AbortSignal.timeout(5000) });
       if (!response.ok) return reply({ error: "Não foi possível validar o CEP. Tente novamente." }, 502);
       const address = await response.json();
-      if (address.localidade !== "Blumenau" || address.uf !== "SC") {
-        return reply({ error: "Para entregas fora de Blumenau, finalize pelo WhatsApp." }, 400);
+      if (address.erro || !address.localidade || !address.uf) {
+        return reply({ error: "CEP não encontrado. Confira o endereço de entrega." }, 400);
       }
-      Object.assign(delivery, { city: "Blumenau", state: "SC", zip_code: zip, free_shipping: true });
+      // Frete: grátis em Blumenau/SC, valor fixo para o resto do Brasil.
+      const blumenau = address.localidade === "Blumenau" && address.uf === "SC";
+      Object.assign(delivery, {
+        city: address.localidade, state: address.uf, zip_code: zip,
+        free_shipping: blumenau, shipping_cost: blumenau ? 0 : FIXED_SHIPPING,
+      });
     } else if (delivery.delivery_method !== "pickup") {
       return reply({ error: "Escolha a forma de entrega." }, 400);
     }
