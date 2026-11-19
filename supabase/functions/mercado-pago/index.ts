@@ -342,6 +342,12 @@ Deno.serve(async (req) => {
     if (payment.status === "in_process" || payment.status === "pending") {
       return reply({ ...base, status: "pending", message: "Pagamento em análise. Você recebe a confirmação em instantes." });
     }
+    // Diagnóstico de recusa (sem dados do cartão): ajuda a entender o antifraude.
+    console.log("payment rejected", JSON.stringify({
+      payment_id: payment.id, status_detail: payment.status_detail, method: payment.payment_method_id,
+      amount: payment.transaction_amount, device_id_sent: typeof body.deviceId === "string" && body.deviceId.length > 0,
+      has_identification: Boolean(doc?.number), items: additionalInfo.items.length,
+    }));
     return reply({ error: rejectionMessage(String(payment.status_detail ?? "")) }, 402);
   } catch (e) {
     console.error("mercado-pago error", e);
