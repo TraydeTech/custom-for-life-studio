@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/hooks/useCart';
 import { Header } from '@/components/layout/Header';
@@ -10,14 +10,50 @@ import { Separator } from '@/components/ui/separator';
 import { Minus, Plus, Trash2, ShoppingBag, X, LogIn, MessageCircle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { PAYMENT_ENABLED, buildWhatsAppOrderLink } from '@/lib/store-config';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { canUseMercadoPago, PAYMENT_ENABLED, buildWhatsAppOrderLink } from '@/lib/store-config';
 
 export default function Carrinho() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const mercadoPagoEnabled = canUseMercadoPago(isAdmin);
   const navigate = useNavigate();
   const { cartItems, cartTotal, isLoading, updateQuantity, removeFromCart } = useCart();
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const [searchParams] = useSearchParams();
+  const [isTestingPayment, setIsTestingPayment] = useState(false);
+  const testAttempt = useRef<string>();
+  const returnedFromTest = searchParams.get('mercado-pago-teste') === 'retorno';
+  const testOrderId = returnedFromTest
+    ? searchParams.get('order_id') || sessionStorage.getItem('mercado-pago-test-order')
+    : null;
+
+  const testMercadoPago = async (id?: string) => {
+    setIsTestingPayment(true);
+    try {
+      testAttempt.current ??= crypto.randomUUID();
+      const { data, error } = await supabase.functions.invoke('mercado-pago-test', {
+        body: id ? { action: 'status', id } : { action: 'create', attempt: testAttempt.current },
+      });
+      if (error) {
+        const response = error.context;
+        const body = response instanceof Response ? await response.json().catch(() => null) : null;
+        throw new Error(body?.error || 'Não foi possível acessar o teste do Mercado Pago.');
+      }
+      if (id) {
+        toast.info(`Mercado Pago informou: ${data.status} (${data.detail}).`);
+      } else {
+        sessionStorage.setItem('mercado-pago-test-order', data.id);
+        window.location.assign(data.checkoutUrl);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Falha no teste do Mercado Pago.');
+    } finally {
+      setIsTestingPayment(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -190,37 +226,42 @@ export default function Carrinho() {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-2">
-                {!PAYMENT_ENABLED ? (
-                  <>
-                    <p className="text-xs text-muted-foreground text-center w-full">
-                      Finalize pelo WhatsApp para confirmar entrega, arte e pagamento.
-                    </p>
-                    <Button className="w-full" size="lg" style={{ backgroundColor: '#25D366' }} asChild>
-                      <a
-                        href={buildWhatsAppOrderLink(cartItems, cartTotal)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        Pedir pelo WhatsApp
-                      </a>
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    {!user && (
-                      <p className="text-xs text-muted-foreground text-center w-full">
-                        Faça login para finalizar sua compra
-                      </p>
+                {isAdmin && (
+                  <div className="w-full space-y-2 border-b pb-3">
+                    <p className="text-xs text-muted-foreground">Teste do Mercado Pago disponível para administradores.</p>
+                    {testOrderId && (
+                      <Button className="w-full" variant="outline" disabled={isTestingPayment} onClick={() => testMercadoPago(testOrderId)}>
+                        Consultar resultado do teste
+                      </Button>
                     )}
-                    <Button
-                      className="w-full"
-                      size="lg"
-                      onClick={() => user ? navigate('/checkout') : setShowAuthModal(true)}
-                    >
-                      {user ? 'Finalizar Compra' : <><LogIn className="mr-2 h-4 w-4" />Entrar e Finalizar</>}
+                    <Button className="w-full" variant="outline" disabled={isTestingPayment} onClick={() => testMercadoPago()}>
+                      {isTestingPayment ? 'Aguarde…' : 'Testar pagamento no Mercado Pago'}
                     </Button>
-                  </>
+                  </div>
+                )}
+                {!user && (
+                  <p className="w-full text-center text-xs text-muted-foreground">
+                    Entre ou crie uma conta para continuar.
+                  </p>
+                )}
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={() => user ? navigate('/checkout') : setShowAuthModal(true)}
+                >
+                  {user ? 'Finalizar compra' : <><LogIn className="mr-2 h-4 w-4" />Entrar ou criar conta</>}
+                </Button>
+                {!PAYMENT_ENABLED && !mercadoPagoEnabled && (
+                  <Button className="w-full" size="lg" variant="outline" asChild>
+                    <a
+                      href={buildWhatsAppOrderLink(cartItems, cartTotal)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      Pedir pelo WhatsApp
+                    </a>
+                  </Button>
                 )}
               </CardFooter>
             </Card>

@@ -2,7 +2,7 @@
  * Configuração única de parcelamento — fonte da verdade para
  * a página do produto, carrinho e checkout.
  *
- * Mantenha em sintonia com a configuração real do gateway (Mercado Pago).
+ * Mantenha em sintonia com a configuração real do gateway Iugu.
  * Confirmado: a loja absorve juros em até 3x. Acima disso o cliente paga
  * juros — a taxa é a da operadora do cartão.
  */
