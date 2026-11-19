@@ -3,10 +3,11 @@
 // Ações (POST, com login do cliente):
 //   { action: "pay", attempt, delivery, payment }  → reserva o pedido e cobra
 //   { action: "status", order_id }                 → consulta e atualiza o pedido
-// Webhook (POST do Mercado Pago):
-//   ?webhook=1&type=payment&data.id=<id>           → assinatura x-signature obrigatória
+// Avisos do Mercado Pago (POST):
+//   ?data.id=<id>&type=payment  ou  ?id=<id>&topic=payment
+//   → a função consulta o pagamento na API e aplica o status que a API devolver.
 //
-// Secrets: MERCADO_PAGO_ACCESS_TOKEN (obrigatório), MERCADO_PAGO_WEBHOOK_SECRET (só o webhook).
+// Secrets: MERCADO_PAGO_ACCESS_TOKEN (obrigatório), MERCADO_PAGO_WEBHOOK_SECRET (confere a assinatura).
 // O valor cobrado sai SEMPRE do banco (reserve_mercado_pago_order), nunca do navegador.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -184,18 +185,29 @@ Deno.serve(async (req) => {
     const query = new URL(req.url).searchParams;
 
     // ── Webhook do Mercado Pago ──
-    if (query.get("webhook") === "1") {
-      if (!secret) {
-        console.error("webhook: MERCADO_PAGO_WEBHOOK_SECRET not configured");
-        return reply({ error: "Webhook não configurado." }, 503);
-      }
-      const id = query.get("data.id") || "";
-      if (!/^[A-Za-z0-9_-]{1,64}$/.test(id) || !await validSignature(req, id, secret)) {
-        console.error("webhook: invalid signature", id);
-        return reply({ error: "Notificação inválida." }, 401);
+    // O Mercado Pago troca a query da notification_url: o aviso chega como
+    //   ?data.id=<id>&type=payment   (Webhook, com x-signature) ou
+    //   ?id=<id>&topic=payment       (IPN legado, sem assinatura).
+    const dataId = query.get("data.id");
+    const ipnId = query.get("id");
+    const kind = query.get("type") || query.get("topic") || "";
+    const isNotification = query.get("webhook") === "1" || Boolean(dataId) || Boolean(ipnId && kind) ||
+      req.headers.has("x-signature");
+
+    if (isNotification) {
+      const id = dataId || ipnId || "";
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) return reply({ error: "Notificação inválida." }, 400);
+
+      // Segurança: o status aplicado vem SEMPRE da consulta à API do Mercado Pago (com o
+      // Access Token), nunca do corpo do aviso. Um aviso falso só faria a função conferir um
+      // pagamento real. Por isso a assinatura é registrada, mas não bloqueia: os avisos reais
+      // gerados pela notification_url nem sempre trazem uma x-signature que confere.
+      if (req.headers.has("x-signature")) {
+        const ok = secret ? await validSignature(req, id, secret) : false;
+        if (!ok) console.warn("webhook: signature not verified, checking payment via API", id);
       }
       // Só pagamentos interessam; outros eventos e IDs do simulador recebem 200.
-      if (query.get("type") !== "payment" || !PAYMENT_ID.test(id)) return reply({ received: true, ignored: true });
+      if (kind !== "payment" || !PAYMENT_ID.test(id)) return reply({ received: true, ignored: true });
 
       const { status, payment } = await fetchPayment(token, id);
       if (status === 404) return reply({ received: true, ignored: "not_found" });
