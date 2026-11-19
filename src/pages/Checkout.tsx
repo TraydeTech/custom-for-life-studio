@@ -24,6 +24,8 @@ import { toast } from 'sonner';
 import { maskCPF, unmaskCPF, isValidCPF } from '@/lib/cpf';
 import { buildInstallmentOptions } from '@/lib/installments';
 import { canUseMercadoPago, PAYMENT_ENABLED, buildWhatsAppOrderLink } from '@/lib/store-config';
+import { MercadoPagoPayment, type PayResult } from '@/components/checkout/MercadoPagoPayment';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface IuguTokenResponse {
   id: string;
@@ -79,6 +81,7 @@ interface AddressData {
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, isAdmin } = useAuth();
   const mercadoPagoEnabled = canUseMercadoPago(isAdmin);
   const { cartItems, cartTotal: liveCartTotal, clearCart } = useCart();
@@ -242,31 +245,36 @@ export default function Checkout() {
   const isPickup = deliveryMethod === 'pickup';
   const isBlumenau = normalizeCity(address.city) === FREE_SHIPPING_CITY;
   const usesMercadoPago = mercadoPagoEnabled && (isPickup || isBlumenau);
-  const startMercadoPago = async () => {
-    if (!user || !canProceedStep1 || !canProceedStep2 || !usesMercadoPago) return;
-    setIsSubmitting(true);
-    try {
-      const key = `mercado-pago-checkout:${user.id}:${deliveryMethod}:${address.zip_code}:${cartItems.map(item => `${item.id}-${item.quantity}`).sort().join(',')}`;
-      mercadoPagoAttempt.current = sessionStorage.getItem(key) || crypto.randomUUID();
-      sessionStorage.setItem(key, mercadoPagoAttempt.current);
-      const { data, error } = await supabase.functions.invoke('mercado-pago', {
-        body: {
-          attempt: mercadoPagoAttempt.current,
-          delivery: { ...address, name: customer.name, phone: customer.phone, delivery_method: deliveryMethod },
-        },
-      });
-      if (error) {
-        // Próxima tentativa usa um pedido novo (o anterior pode ter sido liberado ou recusado).
-        sessionStorage.removeItem(key);
-        const body = error.context instanceof Response ? await error.context.json().catch(() => null) : null;
-        throw new Error(body?.error || 'Não foi possível abrir o Mercado Pago.');
-      }
-      window.location.assign(data.checkoutUrl);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Pagamento indisponível.');
-    } finally {
-      setIsSubmitting(false);
+  // Pagamento direto no site (cartão de crédito ou Pix) pelo Mercado Pago.
+  const payWithMercadoPago = async (payment: { selectedPaymentMethod: string; formData: unknown }): Promise<PayResult> => {
+    if (!user) {
+      setShowAuthModal(true);
+      throw new Error('Entre na sua conta para pagar.');
     }
+    const key = `mercado-pago-checkout:${user.id}:${deliveryMethod}:${address.zip_code}:${cartItems.map(item => `${item.id}-${item.quantity}`).sort().join(',')}`;
+    mercadoPagoAttempt.current = sessionStorage.getItem(key) || crypto.randomUUID();
+    sessionStorage.setItem(key, mercadoPagoAttempt.current);
+    const { data, error } = await supabase.functions.invoke('mercado-pago', {
+      body: {
+        action: 'pay',
+        attempt: mercadoPagoAttempt.current,
+        delivery: { ...address, name: customer.name, phone: customer.phone, delivery_method: deliveryMethod },
+        payment,
+      },
+    });
+    if (error) {
+      const status = error.context instanceof Response ? error.context.status : 0;
+      // Recusa do cartão (402) mantém o mesmo pedido para tentar de novo; outros erros recomeçam.
+      if (status !== 402) sessionStorage.removeItem(key);
+      const body = error.context instanceof Response ? await error.context.json().catch(() => null) : null;
+      throw new Error(body?.error || 'Não foi possível processar o pagamento.');
+    }
+    return data as PayResult;
+  };
+
+  const finishMercadoPago = async (paidOrderId: string, orderNumber: string) => {
+    await queryClient.invalidateQueries({ queryKey: ['cart'] });
+    navigate(`/pedido-confirmado?mp=${paidOrderId}&pedido=${encodeURIComponent(orderNumber)}`);
   };
 
   const canProceedStep2 = isPickup
@@ -797,13 +805,16 @@ export default function Checkout() {
               </CardHeader>
               <CardContent>
                 {usesMercadoPago ? (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <p className="text-sm text-muted-foreground">
-                      {isPickup ? 'Retirada na loja sem custo.' : 'Entrega grátis em Blumenau.'}
+                      {isPickup ? 'Retirada na loja sem custo.' : 'Entrega grátis em Blumenau.'} Pague com cartão de crédito ou Pix.
                     </p>
-                    <Button className="w-full" size="lg" onClick={startMercadoPago} disabled={isSubmitting}>
-                      {isSubmitting ? 'Abrindo pagamento…' : 'Pagar com Mercado Pago'}
-                    </Button>
+                    <MercadoPagoPayment
+                      amount={cartTotal}
+                      payerEmail={customer.email}
+                      onPay={payWithMercadoPago}
+                      onFinished={finishMercadoPago}
+                    />
                   </div>
                 ) : !PAYMENT_ENABLED || mercadoPagoEnabled ? (
                   <div className="text-center space-y-4 py-4">
