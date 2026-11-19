@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tables } from '@/integrations/supabase/types';
+import { paymentMethodLabel } from '@/lib/payment-labels';
 
 type Order = Tables<'orders'>;
 type OrderItem = Tables<'order_items'>;
@@ -17,7 +18,14 @@ const formatCurrency = (value: number) =>
 const formatAddress = (address: unknown) => {
   if (!address || typeof address !== 'object') return 'Não informado';
   const addr = address as Record<string, string>;
-  return `${addr.street}, ${addr.number}${addr.complement ? ` - ${addr.complement}` : ''}, ${addr.neighborhood}, ${addr.city} - ${addr.state}, ${addr.zip_code}`;
+  if (addr.delivery_method === 'pickup' || !addr.street) return 'Retirada na loja';
+  const parts = [
+    `${addr.street}, ${addr.number ?? ''}${addr.complement ? ` - ${addr.complement}` : ''}`,
+    addr.neighborhood,
+    [addr.city, addr.state].filter(Boolean).join(' - '),
+    addr.zip_code,
+  ].filter(Boolean);
+  return parts.join(', ');
 };
 
 export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
@@ -28,7 +36,6 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
         <div className="text-center border-b-2 border-dashed border-gray-400 pb-4 mb-4">
           <h1 className="text-xl font-bold mb-1">CUSTOM FOR LIFE</h1>
           <p className="text-xs text-gray-600">Brindes Personalizados</p>
-          <p className="text-xs text-gray-600 mt-2">CNPJ: 00.000.000/0001-00</p>
         </div>
 
         {/* Order Info */}
@@ -48,7 +55,7 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
           {order.payment_method && (
             <div className="flex justify-between">
               <span className="font-bold">Pagamento:</span>
-              <span className="uppercase">{order.payment_method}</span>
+              <span>{paymentMethodLabel(order.payment_method, (order as { installments?: number | null }).installments)}</span>
             </div>
           )}
         </div>
@@ -56,6 +63,9 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
         {/* Customer/Address */}
         <div className="border-b border-dashed border-gray-400 pb-3 mb-3">
           <p className="font-bold mb-1">Entrega:</p>
+          {(order.shipping_address as Record<string, string> | null)?.name && (
+            <p className="text-xs">{(order.shipping_address as Record<string, string>).name}{(order.shipping_address as Record<string, string>).phone ? ` — ${(order.shipping_address as Record<string, string>).phone}` : ''}</p>
+          )}
           <p className="text-xs leading-relaxed">{formatAddress(order.shipping_address)}</p>
         </div>
 
