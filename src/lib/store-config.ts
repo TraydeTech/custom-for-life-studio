@@ -14,22 +14,13 @@ export const PAYMENT_ENABLED = false;
 /** Frete fixo para entregas fora de Blumenau (o servidor usa o mesmo valor). */
 export const FIXED_SHIPPING = 25;
 /**
- * Pagamento online pelo Mercado Pago.
- * - 'admin': só administradores veem o pagamento (fase de teste).
- * - 'true': liberado para todos os clientes.
- * - 'false': desligado (pedidos pelo WhatsApp).
- * O servidor também exige o secret MERCADO_PAGO_PRODUCTION_ENABLED no Supabase.
+ * Pagamento online pelo Mercado Pago (cartão de crédito e Pix) para todos os clientes.
+ * false = desliga e volta para pedidos pelo WhatsApp.
  */
-export const MERCADO_PAGO_MODE: 'admin' | 'true' | 'false' = 'admin';
+export const MERCADO_PAGO_ENABLED = false;
 
 /** Public Key de PRODUÇÃO do Mercado Pago. Não é secreta (vai para o navegador). */
 export const MERCADO_PAGO_PUBLIC_KEY = 'APP_USR-0335e3db-0005-424c-bc17-4f28d92ef9f0';
-
-export function canUseMercadoPago(isAdmin: boolean) {
-  // Só o valor do código vale (variáveis antigas da Vercel não interferem).
-  const mode: string = MERCADO_PAGO_MODE;
-  return mode === 'true' || (mode === 'admin' && isAdmin);
-}
 
 /** Endereço físico da loja. */
 export const STORE_ADDRESS = 'Rua Leopoldo dos Santos, 591 - Blumenau/SC';
