@@ -6,6 +6,73 @@ const storefrontOrigins = new Set([new URL(site).origin, "https://www.customforl
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const anyOrder = /^ORD[A-Z0-9]+$/;
 const realOrder = /^ORD(?!TST)[A-Z0-9]+$/;
+const paymentsApi = "https://api.mercadopago.com/v1/payments";
+const paymentId = /^\d{1,20}$/;
+
+// ── Checkout Transparente (/v1/payments) ──────────────────────────────────
+function paymentMethodOf(payment: any): string {
+  const type = String(payment?.payment_type_id ?? "");
+  if (type === "credit_card") return "credito";
+  if (type === "debit_card") return "debito";
+  if (type === "bank_transfer" || payment?.payment_method_id === "pix") return "pix";
+  return "mercado_pago";
+}
+
+function rejectionMessage(detail: string): string {
+  const map: Record<string, string> = {
+    cc_rejected_bad_filled_card_number: "Número do cartão inválido.",
+    cc_rejected_bad_filled_date: "Data de validade inválida.",
+    cc_rejected_bad_filled_security_code: "Código de segurança (CVV) inválido.",
+    cc_rejected_bad_filled_other: "Confira os dados do cartão.",
+    cc_rejected_insufficient_amount: "Limite insuficiente no cartão.",
+    cc_rejected_call_for_authorize: "Autorize o pagamento com o banco do cartão e tente de novo.",
+    cc_rejected_card_disabled: "Cartão desabilitado. Fale com o banco emissor.",
+    cc_rejected_duplicated_payment: "Pagamento duplicado. Aguarde alguns minutos.",
+    cc_rejected_high_risk: "Pagamento recusado por segurança. Tente outro cartão ou Pix.",
+    cc_rejected_max_attempts: "Limite de tentativas atingido. Tente outro cartão ou Pix.",
+  };
+  return map[detail] || "Pagamento recusado. Confira os dados ou tente outro cartão ou Pix.";
+}
+
+// Aplica no banco o estado de um pagamento buscado na API do Mercado Pago.
+async function applyPayment(db: any, payment: any): Promise<{ paid: boolean; result: string }> {
+  const localId = payment.external_reference;
+  const id = String(payment.id);
+  const status = String(payment.status ?? "");
+
+  if (status === "approved") {
+    // O pagamento aprovado é a referência do pedido (cobre Pix antigo pago depois de outra tentativa).
+    await db.from("mercado_pago_orders").update({ provider_id: id }).eq("order_id", localId);
+    const { data, error } = await db.rpc("confirm_mercado_pago_order", {
+      local_id: localId, payment_id: id, paid_amount: payment.transaction_amount,
+      method: paymentMethodOf(payment), n_installments: payment.installments || 1,
+    });
+    if (error) throw new Error(`confirm failed: ${error.message}`);
+    if (data !== "confirmed" && data !== "already_paid") {
+      console.error("Mercado Pago payment not confirmed", id, data, payment.transaction_amount);
+    }
+    return { paid: data === "confirmed" || data === "already_paid", result: String(data) };
+  }
+
+  if (status === "refunded" || status === "charged_back") {
+    const { data, error } = await db.rpc("refund_mercado_pago_order", { local_id: localId, payment_id: id });
+    if (error) throw new Error(`refund failed: ${error.message}`);
+    return { paid: false, result: String(data) };
+  }
+
+  // Pix expirado: libera a reserva, só se for a tentativa atual do pedido.
+  if (status === "cancelled") {
+    const { data: link } = await db.from("mercado_pago_orders").select("provider_id").eq("order_id", localId).maybeSingle();
+    if (link?.provider_id === id) {
+      const { error } = await db.rpc("release_mercado_pago_order", { local_id: localId });
+      if (error) throw new Error(`release failed: ${error.message}`);
+    }
+    return { paid: false, result: "cancelled" };
+  }
+
+  // rejected: o pedido continua reservado para o cliente tentar de novo.
+  return { paid: false, result: status || "pending" };
+}
 
 // Converte o meio de pagamento do Mercado Pago no padrão do painel (pix | credito | debito).
 // Campos lidos de forma defensiva: confira o formato em um pagamento de teste.
@@ -119,6 +186,24 @@ Deno.serve(async (req) => {
         console.error("Mercado Pago webhook: invalid signature", raw);
         return reply({ error: "Notificação inválida." }, 401);
       }
+      // Notificação de pagamento (Checkout Transparente).
+      if (query.get("type") === "payment" && paymentId.test(raw)) {
+        const response = await fetch(`${paymentsApi}/${raw}`, { headers: providerHeaders, signal: AbortSignal.timeout(10000) });
+        if (response.status === 404) return reply({ received: true, ignored: "not_found" });
+        if (!response.ok) return reply({ error: "Falha na consulta do pagamento." }, 502);
+        const payment = await response.json();
+        if (String(payment.id) !== raw || payment.currency_id !== "BRL" || !uuid.test(payment.external_reference ?? "")) {
+          return reply({ received: true });
+        }
+        try {
+          await applyPayment(db, payment);
+        } catch (e) {
+          console.error("Mercado Pago payment webhook update failed", raw, e);
+          return reply({ error: "Falha na atualização." }, 503);
+        }
+        return reply({ received: true });
+      }
+
       // Assinatura OK. IDs que não são orders de produção (simulador "123456",
       // orders de teste ORDTST...) são ignorados com 200.
       if (!anyOrder.test(id) || !realOrder.test(id)) {
@@ -162,6 +247,16 @@ Deno.serve(async (req) => {
       if (local.payment_status === "paid") return reply({ paid: true, status: "paid" });
       const link = Array.isArray(local.mercado_pago_orders) ? local.mercado_pago_orders[0] : local.mercado_pago_orders;
       if (!link?.provider_id) return reply({ paid: false, status: local.payment_status });
+      if (paymentId.test(link.provider_id)) {
+        const response = await fetch(`${paymentsApi}/${link.provider_id}`, { headers: providerHeaders, signal: AbortSignal.timeout(10000) });
+        if (!response.ok) return reply({ paid: false, status: "unknown" });
+        const payment = await response.json();
+        if (String(payment.id) !== link.provider_id || payment.external_reference !== local.id) {
+          return reply({ paid: false, status: "unknown" });
+        }
+        const { paid, result } = await applyPayment(db, payment);
+        return reply({ paid, status: result });
+      }
       const response = await fetch(`${api}/${link.provider_id}`, { headers: providerHeaders, signal: AbortSignal.timeout(10000) });
       if (!response.ok) return reply({ paid: false, status: "unknown" });
       const order = await response.json();
@@ -214,6 +309,73 @@ Deno.serve(async (req) => {
     }
 
     await uploadPreviews(db, user.id, order.id);
+
+    // Pagamento direto no site: cartão de crédito ou Pix (Payment Brick).
+    if (body.action === "pay") {
+      const selected = body.payment?.selectedPaymentMethod;
+      const form = body.payment?.formData ?? {};
+      const email = typeof form.payer?.email === "string" && form.payer.email ? form.payer.email : user.email;
+      const doc = form.payer?.identification;
+      const payload: Record<string, unknown> = {
+        transaction_amount: Math.round(Number(order.total) * 100) / 100,
+        description: `Pedido ${order.order_number} - Custom For Life`,
+        external_reference: order.id,
+        notification_url: `${url}/functions/v1/mercado-pago?webhook=1`,
+        payer: {
+          email,
+          identification: doc?.type && doc?.number ? { type: String(doc.type), number: String(doc.number) } : undefined,
+        },
+        metadata: { order_id: order.id, order_number: order.order_number },
+      };
+
+      if (selected === "credit_card") {
+        if (typeof form.token !== "string" || typeof form.payment_method_id !== "string") {
+          return reply({ error: "Confira os dados do cartão." }, 400);
+        }
+        Object.assign(payload, {
+          token: form.token,
+          payment_method_id: form.payment_method_id,
+          issuer_id: form.issuer_id ? String(form.issuer_id) : undefined,
+          installments: Math.min(Math.max(1, Math.floor(Number(form.installments) || 1)), 12),
+          statement_descriptor: "CUSTOMFORLIFE",
+        });
+      } else if (selected === "bank_transfer") {
+        Object.assign(payload, {
+          payment_method_id: "pix",
+          date_of_expiration: new Date(Date.now() + 30 * 60_000).toISOString(),
+        });
+      } else {
+        return reply({ error: "Escolha cartão de crédito ou Pix." }, 400);
+      }
+
+      const response = await fetch(paymentsApi, {
+        method: "POST",
+        headers: { ...providerHeaders, "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
+        signal: AbortSignal.timeout(20000),
+        body: JSON.stringify(payload),
+      });
+      const payment = await response.json().catch(() => ({}));
+      if (!response.ok || !payment?.id) {
+        console.error("Mercado Pago create payment returned", response.status, payment?.message, payment?.cause);
+        return reply({ error: "Não foi possível processar o pagamento. Confira os dados e tente novamente." }, 502);
+      }
+
+      await db.from("mercado_pago_orders").update({ provider_id: String(payment.id) }).eq("order_id", order.id);
+      const base = { orderId: order.id, orderNumber: order.order_number };
+
+      if (payment.status === "approved") {
+        await applyPayment(db, payment);
+        return reply({ ...base, status: "paid" });
+      }
+      if (selected === "bank_transfer") {
+        const tx = payment.point_of_interaction?.transaction_data ?? {};
+        return reply({ ...base, status: "pix", pixQrCode: tx.qr_code, pixQrCodeBase64: tx.qr_code_base64 });
+      }
+      if (payment.status === "in_process" || payment.status === "pending") {
+        return reply({ ...base, status: "pending", message: "Pagamento em análise. Você recebe a confirmação em instantes." });
+      }
+      return reply({ error: rejectionMessage(String(payment.status_detail ?? "")) }, 402);
+    }
 
     const { data: payment, error: paymentError } = await db.from("mercado_pago_orders")
       .select("checkout_url").eq("order_id", order.id).single();
