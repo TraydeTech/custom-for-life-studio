@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
+import { MERCADO_PAGO_PUBLIC_KEY } from '@/lib/store-config';
 
 /**
  * Checkout Transparente do Mercado Pago (Payment Brick).
@@ -15,7 +16,7 @@ import { formatCurrency } from '@/lib/utils';
  */
 
 const SDK_URL = 'https://sdk.mercadopago.com/js/v2';
-const PUBLIC_KEY = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY as string | undefined;
+const PUBLIC_KEY = MERCADO_PAGO_PUBLIC_KEY;
 const PIX_POLL_MS = 5000;
 
 interface BrickController { unmount: () => void }
