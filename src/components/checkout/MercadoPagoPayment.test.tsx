@@ -15,10 +15,13 @@ function mockSdk() {
   (window as unknown as { MercadoPago: unknown }).MercadoPago = class {
     bricks() {
       return {
-        create: async (_type: string, _id: string, settings: Settings) => {
+        create: async (_type: string, id: string, settings: Settings) => {
+          // Como o SDK real: guarda o elemento do container e o esvazia/remove no unmount.
+          const container = document.getElementById(id)!;
+          container.innerHTML = '<iframe title="mp-brick"></iframe>';
           settings.callbacks.onReady();
           await settings.callbacks.onSubmit({ selectedPaymentMethod: 'bank_transfer', formData: {} });
-          return { unmount: () => {} };
+          return { unmount: () => { container.innerHTML = ''; container.remove(); } };
         },
       };
     }
