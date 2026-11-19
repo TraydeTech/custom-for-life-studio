@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Copy, Loader2 } from 'lucide-react';
+import { Check, Copy, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { MERCADO_PAGO_PUBLIC_KEY } from '@/lib/store-config';
@@ -168,6 +167,25 @@ export function MercadoPagoPayment({ amount, payerEmail, onPay, onFinished }: Pr
     };
   }, [pix]);
 
+  const [copied, setCopied] = useState(false);
+  const copyPix = async () => {
+    if (!pix?.pixQrCode) return;
+    try {
+      await navigator.clipboard.writeText(pix.pixQrCode);
+    } catch {
+      // Fallback para navegadores sem acesso à área de transferência.
+      const el = document.createElement('textarea');
+      el.value = pix.pixQrCode;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      el.remove();
+    }
+    setCopied(true);
+    toast.success('Código Pix copiado! Cole no app do seu banco.');
+    window.setTimeout(() => setCopied(false), 3000);
+  };
+
   if (pix?.pixQrCode) {
     return (
       <div className="text-center space-y-4">
@@ -177,19 +195,22 @@ export function MercadoPagoPayment({ amount, payerEmail, onPay, onFinished }: Pr
             ? <img src={`data:image/png;base64,${pix.pixQrCodeBase64}`} alt="QR Code Pix" width={200} height={200} />
             : <QRCodeSVG value={pix.pixQrCode} size={200} />}
         </div>
-        <div className="bg-muted p-3 rounded-lg text-left">
-          <p className="text-xs text-muted-foreground mb-2">Pix copia e cola:</p>
-          <div className="flex gap-2">
-            <Input value={pix.pixQrCode} readOnly className="text-xs font-mono" />
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Copiar código Pix"
-              onClick={() => { navigator.clipboard.writeText(pix.pixQrCode!); toast.success('Código Pix copiado!'); }}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="space-y-2 text-left">
+          <p className="text-sm font-medium">Ou copie o código Pix (copia e cola):</p>
+          <textarea
+            readOnly
+            value={pix.pixQrCode}
+            rows={3}
+            onFocus={(e) => e.currentTarget.select()}
+            className="w-full resize-none rounded-lg border bg-muted p-3 text-xs font-mono break-all"
+            aria-label="Código Pix copia e cola"
+          />
+          <Button size="lg" className="w-full gap-2" onClick={copyPix}>
+            {copied ? <><Check className="h-4 w-4" /> Código copiado!</> : <><Copy className="h-4 w-4" /> Copiar código Pix</>}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            No app do seu banco, escolha Pix → "Pix copia e cola" e cole o código.
+          </p>
         </div>
         <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
