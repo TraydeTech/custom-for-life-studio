@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/hooks/useCart';
 import { Header } from '@/components/layout/Header';
@@ -10,50 +10,15 @@ import { Separator } from '@/components/ui/separator';
 import { Minus, Plus, Trash2, ShoppingBag, X, LogIn, MessageCircle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { canUseMercadoPago, PAYMENT_ENABLED, FIXED_SHIPPING, buildWhatsAppOrderLink } from '@/lib/store-config';
+import { MERCADO_PAGO_ENABLED, PAYMENT_ENABLED, FIXED_SHIPPING, buildWhatsAppOrderLink } from '@/lib/store-config';
 
 export default function Carrinho() {
-  const { user, isAdmin } = useAuth();
-  const mercadoPagoEnabled = canUseMercadoPago(isAdmin);
+  const { user } = useAuth();
+  const mercadoPagoEnabled = MERCADO_PAGO_ENABLED;
   const navigate = useNavigate();
   const { cartItems, cartTotal, isLoading, updateQuantity, removeFromCart } = useCart();
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-
-  const [searchParams] = useSearchParams();
-  const [isTestingPayment, setIsTestingPayment] = useState(false);
-  const testAttempt = useRef<string>();
-  const returnedFromTest = searchParams.get('mercado-pago-teste') === 'retorno';
-  const testOrderId = returnedFromTest
-    ? searchParams.get('order_id') || sessionStorage.getItem('mercado-pago-test-order')
-    : null;
-
-  const testMercadoPago = async (id?: string) => {
-    setIsTestingPayment(true);
-    try {
-      testAttempt.current ??= crypto.randomUUID();
-      const { data, error } = await supabase.functions.invoke('mercado-pago-test', {
-        body: id ? { action: 'status', id } : { action: 'create', attempt: testAttempt.current },
-      });
-      if (error) {
-        const response = error.context;
-        const body = response instanceof Response ? await response.json().catch(() => null) : null;
-        throw new Error(body?.error || 'Não foi possível acessar o teste do Mercado Pago.');
-      }
-      if (id) {
-        toast.info(`Mercado Pago informou: ${data.status} (${data.detail}).`);
-      } else {
-        sessionStorage.setItem('mercado-pago-test-order', data.id);
-        window.location.assign(data.checkoutUrl);
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Falha no teste do Mercado Pago.');
-    } finally {
-      setIsTestingPayment(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -230,19 +195,6 @@ export default function Carrinho() {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-2">
-                {isAdmin && (
-                  <div className="w-full space-y-2 border-b pb-3">
-                    <p className="text-xs text-muted-foreground">Teste do Mercado Pago disponível para administradores.</p>
-                    {testOrderId && (
-                      <Button className="w-full" variant="outline" disabled={isTestingPayment} onClick={() => testMercadoPago(testOrderId)}>
-                        Consultar resultado do teste
-                      </Button>
-                    )}
-                    <Button className="w-full" variant="outline" disabled={isTestingPayment} onClick={() => testMercadoPago()}>
-                      {isTestingPayment ? 'Aguarde…' : 'Testar pagamento no Mercado Pago'}
-                    </Button>
-                  </div>
-                )}
                 {!user && (
                   <p className="w-full text-center text-xs text-muted-foreground">
                     Entre ou crie uma conta para continuar.

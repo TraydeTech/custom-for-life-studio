@@ -23,7 +23,7 @@ import {
 import { toast } from 'sonner';
 import { maskCPF, unmaskCPF, isValidCPF } from '@/lib/cpf';
 import { buildInstallmentOptions } from '@/lib/installments';
-import { canUseMercadoPago, PAYMENT_ENABLED, FIXED_SHIPPING, buildWhatsAppOrderLink } from '@/lib/store-config';
+import { MERCADO_PAGO_ENABLED, PAYMENT_ENABLED, FIXED_SHIPPING, buildWhatsAppOrderLink } from '@/lib/store-config';
 import { MercadoPagoPayment, type PayResult } from '@/components/checkout/MercadoPagoPayment';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -82,8 +82,8 @@ interface AddressData {
 export default function Checkout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, isAdmin } = useAuth();
-  const mercadoPagoEnabled = canUseMercadoPago(isAdmin);
+  const { user } = useAuth();
+  const mercadoPagoEnabled = MERCADO_PAGO_ENABLED;
   const { cartItems, cartTotal: liveCartTotal, clearCart } = useCart();
   const [fixedTotal, setFixedTotal] = useState<number | null>(null);
   const cartTotal = fixedTotal ?? liveCartTotal;
