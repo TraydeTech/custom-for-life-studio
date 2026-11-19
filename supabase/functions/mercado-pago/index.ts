@@ -16,7 +16,7 @@ const SITE = Deno.env.get("SITE_URL") || "https://www.customforlife.com.br";
 const ORIGINS = new Set([new URL(SITE).origin, "https://www.customforlife.com.br", "https://customforlife.com.br"]);
 // Frete fixo fora de Blumenau (manter igual a FIXED_SHIPPING em src/lib/store-config.ts).
 const FIXED_SHIPPING = 25;
-const MAX_INSTALLMENTS = 12;
+const MAX_INSTALLMENTS = 10;
 const PIX_MINUTES = 30;
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const PAYMENT_ID = /^\d{1,20}$/;

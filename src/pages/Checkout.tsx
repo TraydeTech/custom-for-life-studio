@@ -279,9 +279,12 @@ export default function Checkout() {
     return data as PayResult;
   };
 
-  const finishMercadoPago = async (paidOrderId: string, orderNumber: string) => {
-    await queryClient.invalidateQueries({ queryKey: ['cart'] });
+  const finishMercadoPago = (paidOrderId: string, orderNumber: string) => {
+    // Marca o pedido e navega ANTES de atualizar o carrinho: com o carrinho vazio,
+    // o checkout redirecionaria para /carrinho e esconderia a confirmação.
+    setOrderId(paidOrderId);
     navigate(`/pedido-confirmado?mp=${paidOrderId}&pedido=${encodeURIComponent(orderNumber)}`);
+    queryClient.invalidateQueries({ queryKey: ['cart'] });
   };
 
   const canProceedStep2 = isPickup
