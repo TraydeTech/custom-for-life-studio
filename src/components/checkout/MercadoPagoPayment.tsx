@@ -187,8 +187,10 @@ export function MercadoPagoPayment({ amount, payerEmail, onPay, onFinished }: Pr
   };
 
   if (pix?.pixQrCode) {
+    // key diferente: o React cria a tela do Pix do zero em vez de reaproveitar a
+    // div do formulário do Mercado Pago (que o SDK esvazia ao desmontar).
     return (
-      <div className="text-center space-y-4">
+      <div key="pix" className="text-center space-y-4">
         <p className="font-semibold">Pague {formatCurrency(amount)} com Pix</p>
         <div className="bg-white p-4 rounded-lg inline-block">
           {pix.pixQrCodeBase64
@@ -221,7 +223,7 @@ export function MercadoPagoPayment({ amount, payerEmail, onPay, onFinished }: Pr
   }
 
   return (
-    <div className="space-y-3">
+    <div key="brick" className="space-y-3">
       {loading && (
         <p className="text-sm text-muted-foreground flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" /> Carregando formas de pagamento…
