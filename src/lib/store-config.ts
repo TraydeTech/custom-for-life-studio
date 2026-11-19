@@ -18,18 +18,16 @@ export const FIXED_SHIPPING = 25;
  * - 'admin': só administradores veem o pagamento (fase de teste).
  * - 'true': liberado para todos os clientes.
  * - 'false': desligado (pedidos pelo WhatsApp).
- * A variável VITE_MERCADO_PAGO_ENABLED da Vercel, se existir, tem prioridade.
  * O servidor também exige o secret MERCADO_PAGO_PRODUCTION_ENABLED no Supabase.
  */
 export const MERCADO_PAGO_MODE: 'admin' | 'true' | 'false' = 'admin';
 
 /** Public Key de PRODUÇÃO do Mercado Pago. Não é secreta (vai para o navegador). */
-export const MERCADO_PAGO_PUBLIC_KEY =
-  (import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY as string | undefined) ||
-  'APP_USR-0335e3db-0005-424c-bc17-4f28d92ef9f0';
+export const MERCADO_PAGO_PUBLIC_KEY = 'APP_USR-0335e3db-0005-424c-bc17-4f28d92ef9f0';
 
 export function canUseMercadoPago(isAdmin: boolean) {
-  const mode = (import.meta.env.VITE_MERCADO_PAGO_ENABLED as string | undefined) || MERCADO_PAGO_MODE;
+  // Só o valor do código vale (variáveis antigas da Vercel não interferem).
+  const mode: string = MERCADO_PAGO_MODE;
   return mode === 'true' || (mode === 'admin' && isAdmin);
 }
 
