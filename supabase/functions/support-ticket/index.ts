@@ -4,7 +4,7 @@ const ALLOWED_ORIGIN = Deno.env.get("SITE_URL") || "https://customforlife.com.br
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
-  const allowed = origin === ALLOWED_ORIGIN || origin.endsWith(".supabase.co") || origin.endsWith(".lovable.app") || origin.startsWith("http://localhost");
+  const allowed = origin === ALLOWED_ORIGIN || origin.endsWith(".supabase.co") || origin.startsWith("http://localhost");
   return {
     "Access-Control-Allow-Origin": allowed ? origin : ALLOWED_ORIGIN,
     "Access-Control-Allow-Headers":
