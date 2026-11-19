@@ -249,6 +249,29 @@ Deno.serve(async (req) => {
     }
     await uploadPreviews(db, user.id, order.id);
 
+    // Detalhes da compra para o antifraude do Mercado Pago (melhora a aprovação).
+    const { data: items } = await db.from("order_items")
+      .select("product_id, product_name, quantity, unit_price").eq("order_id", order.id);
+    const [firstName, ...lastNames] = String(delivery.name).split(/\s+/);
+    const phone = String(delivery.phone).replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+    const additionalInfo = {
+      items: (items ?? []).map((i: any) => ({
+        id: String(i.product_id), title: String(i.product_name).slice(0, 250),
+        quantity: i.quantity, unit_price: Number(i.unit_price), category_id: "others",
+      })),
+      payer: {
+        first_name: firstName,
+        last_name: lastNames.join(" ") || undefined,
+        phone: phone.length >= 10 ? { area_code: phone.slice(0, 2), number: phone.slice(2) } : undefined,
+      },
+      shipments: delivery.delivery_method === "delivery" ? {
+        receiver_address: {
+          zip_code: delivery.zip_code, street_name: delivery.street, street_number: delivery.number,
+          city_name: delivery.city, state_name: delivery.state,
+        },
+      } : undefined,
+    };
+
     const selected = body.payment?.selectedPaymentMethod;
     const form = body.payment?.formData ?? {};
     const doc = form.payer?.identification;
@@ -259,9 +282,12 @@ Deno.serve(async (req) => {
       notification_url: `${url}/functions/v1/mercado-pago?webhook=1`,
       payer: {
         email: typeof form.payer?.email === "string" && form.payer.email ? form.payer.email : user.email,
+        first_name: firstName,
+        last_name: lastNames.join(" ") || undefined,
         identification: doc?.type && doc?.number ? { type: String(doc.type), number: String(doc.number) } : undefined,
       },
       metadata: { order_id: order.id, order_number: order.order_number },
+      additional_info: additionalInfo,
     };
 
     if (selected === "credit_card") {
@@ -286,7 +312,13 @@ Deno.serve(async (req) => {
 
     const res = await fetch(PAYMENTS_API, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "X-Idempotency-Key": crypto.randomUUID(),
+        // Identificação do aparelho (security.js) para o antifraude.
+        ...(typeof body.deviceId === "string" && /^[\w-]{1,128}$/.test(body.deviceId) ? { "X-meli-session-id": body.deviceId } : {}),
+      },
       signal: AbortSignal.timeout(20000),
       body: JSON.stringify(payload),
     });

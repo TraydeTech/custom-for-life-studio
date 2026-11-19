@@ -24,7 +24,7 @@ import { toast } from 'sonner';
 import { maskCPF, unmaskCPF, isValidCPF } from '@/lib/cpf';
 import { buildInstallmentOptions } from '@/lib/installments';
 import { MERCADO_PAGO_ENABLED, PAYMENT_ENABLED, FIXED_SHIPPING, buildWhatsAppOrderLink } from '@/lib/store-config';
-import { MercadoPagoPayment, type PayResult } from '@/components/checkout/MercadoPagoPayment';
+import { MercadoPagoPayment, getDeviceId, type PayResult } from '@/components/checkout/MercadoPagoPayment';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface IuguTokenResponse {
@@ -266,6 +266,7 @@ export default function Checkout() {
         attempt: mercadoPagoAttempt.current,
         delivery: { ...address, name: customer.name, phone: customer.phone, delivery_method: deliveryMethod },
         payment,
+        deviceId: getDeviceId(),
       },
     });
     if (error) {
