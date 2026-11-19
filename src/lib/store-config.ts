@@ -17,7 +17,7 @@ export const FIXED_SHIPPING = 25;
  * Pagamento online pelo Mercado Pago (cartão de crédito e Pix) para todos os clientes.
  * false = desliga e volta para pedidos pelo WhatsApp.
  */
-export const MERCADO_PAGO_ENABLED = true;
+export const MERCADO_PAGO_ENABLED = false;
 
 /** Public Key de PRODUÇÃO do Mercado Pago. Não é secreta (vai para o navegador). */
 export const MERCADO_PAGO_PUBLIC_KEY = 'APP_USR-0335e3db-0005-424c-bc17-4f28d92ef9f0';

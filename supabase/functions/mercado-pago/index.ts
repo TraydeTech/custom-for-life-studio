@@ -6,7 +6,7 @@
 // Webhook (POST do Mercado Pago):
 //   ?webhook=1&type=payment&data.id=<id>           → assinatura x-signature obrigatória
 //
-// Secrets: MERCADO_PAGO_ACCESS_TOKEN, MERCADO_PAGO_WEBHOOK_SECRET.
+// Secrets: MERCADO_PAGO_ACCESS_TOKEN (obrigatório), MERCADO_PAGO_WEBHOOK_SECRET (só o webhook).
 // O valor cobrado sai SEMPRE do banco (reserve_mercado_pago_order), nunca do navegador.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -172,8 +172,10 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return reply({ error: "Método inválido." }, 405);
 
   const token = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
+  // Sem o secret do webhook os pagamentos funcionam; só o webhook fica parado
+  // (responde 503 e o Mercado Pago reenvia depois que o secret for salvo).
   const secret = Deno.env.get("MERCADO_PAGO_WEBHOOK_SECRET");
-  if (!token || !secret) return reply({ error: "Pagamento online indisponível." }, 503);
+  if (!token) return reply({ error: "Pagamento online indisponível." }, 503);
 
   const url = Deno.env.get("SUPABASE_URL")!;
   const db = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -183,6 +185,10 @@ Deno.serve(async (req) => {
 
     // ── Webhook do Mercado Pago ──
     if (query.get("webhook") === "1") {
+      if (!secret) {
+        console.error("webhook: MERCADO_PAGO_WEBHOOK_SECRET not configured");
+        return reply({ error: "Webhook não configurado." }, 503);
+      }
       const id = query.get("data.id") || "";
       if (!/^[A-Za-z0-9_-]{1,64}$/.test(id) || !await validSignature(req, id, secret)) {
         console.error("webhook: invalid signature", id);
